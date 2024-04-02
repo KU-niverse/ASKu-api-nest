@@ -12,6 +12,7 @@ import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { AdminModule } from './admin/admin.module';
 import { SearchModule } from './search/search.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { SearchModule } from './search/search.module';
     ReportModule,
     AdminModule,
     SearchModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
