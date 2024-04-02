@@ -8,7 +8,7 @@ import {
   BaseEntity,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from 'src/user/user.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Entity('search_history')
 export class SearchHistory extends BaseEntity {

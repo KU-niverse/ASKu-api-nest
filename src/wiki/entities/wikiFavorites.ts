@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
-import { User } from 'src/user/user.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Entity('wiki_favorites')
 export class WikiFavorites extends BaseEntity {

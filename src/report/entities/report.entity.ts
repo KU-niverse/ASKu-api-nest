@@ -8,7 +8,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from 'src/user/user.entity';
+import { User } from 'src/user/entities/user.entity';
 import { ReportType } from 'src/report/entities/reportType.entity';
 import { ReportReason } from 'src/report/entities/reportReason.entity';
 

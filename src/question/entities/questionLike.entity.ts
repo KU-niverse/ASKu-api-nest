@@ -8,7 +8,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Question } from 'src/question/entities/question.entity';
 
-import { User } from 'src/user/user.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Entity('question_like')
 export class QuestionLike extends BaseEntity {
