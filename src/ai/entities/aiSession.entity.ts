@@ -10,7 +10,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/user/user.entity';
 
 @Entity('ai_session')
-export class aISession extends BaseEntity {
+export class AiSession extends BaseEntity {
   @PrimaryGeneratedColumn()
   @ApiProperty({ description: 'AI 세션의 고유 식별자' })
   id: number;
