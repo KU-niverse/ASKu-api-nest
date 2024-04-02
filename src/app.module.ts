@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { BadgesModule } from './badges/badges.module';
-import { UsersModule } from './users/users.module';
+import { UserModule } from './user/user.module';
 import { WikiModule } from './wiki/wiki.module';
 import { QuestionModule } from './question/question.module';
 import { DebateModule } from './debate/debate.module';
@@ -31,7 +31,7 @@ import { SearchModule } from './search/search.module';
       multipleStatements: true,
     }),
     BadgesModule,
-    UsersModule,
+    UserModule,
     WikiModule,
     QuestionModule,
     DebateModule,
