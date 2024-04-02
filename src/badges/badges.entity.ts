@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity()
+@Entity('badges')
 export class Badge {
   @PrimaryGeneratedColumn()
   id: number;
