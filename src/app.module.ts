@@ -13,6 +13,7 @@ import { ReportModule } from './report/report.module';
 import { AdminModule } from './admin/admin.module';
 import { SearchModule } from './search/search.module';
 import { AiModule } from './ai/ai.module';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AiModule } from './ai/ai.module';
       autoLoadEntities: true,
       synchronize: true,
       multipleStatements: true,
+      namingStrategy: new SnakeNamingStrategy(),
     }),
     BadgesModule,
     UserModule,
