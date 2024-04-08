@@ -7,7 +7,7 @@ import {
   JoinColumn,
   BaseEntity,
 } from 'typeorm';
-import { Badge } from 'src/badge/entities/badges.entity';
+import { Badge } from 'src/badge/entities/badge.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('users')

@@ -1,21 +1,17 @@
-// import { Controller } from '@nestjs/common';
-
-// @Controller('badge')
-// export class BadgeController {}
 import { Controller, Get, Param } from '@nestjs/common';
 import { BadgeService } from './badge.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Badge } from './entities/badges.entity';
+import { Badge } from './entities/badge.entity';
 
 @Controller('badge')
 export class BadgeController {
-    constructor(private readonly BadgeService:BadgeService) {}
+    constructor(private readonly badgeService:BadgeService) {}
     @Get('all/:id')
 
-    @ApiOperation({summary: '유저 뱃지', description: '유저의 배지를 조회합니다.'})
+    @ApiOperation({summary: '유저 배지', description: '유저 배지를 조회합니다.'})
     @ApiResponse({
         status: 201,
-        description: '유저의 뱃지 조회에 성공했습니다.',
+        description: '유저 배지 조회에 성공했습니다.',
         type: Badge,
     })
     @ApiResponse({
@@ -40,6 +36,6 @@ export class BadgeController {
     })
 
     getMeBadgeAll(@Param('id') id: number): Promise<Badge> {
-        return this.BadgeService.getMyBadgeAll(id);
+        return this.badgeService.getMyBadgeAll(id);
     }
 }

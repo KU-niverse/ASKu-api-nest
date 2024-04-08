@@ -1,11 +1,6 @@
-// import { Injectable } from '@nestjs/common';
-
-// @Injectable()
-// export class BadgeService {}
-
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Badge } from './entities/badges.entity';
+import { Badge } from './entities/badge.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
