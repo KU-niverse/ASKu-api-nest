@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Badge } from './entities/badge.entity';
 import { Repository } from 'typeorm';
 import { BadgeHistory } from './entities/badgeHistory.entity';
 

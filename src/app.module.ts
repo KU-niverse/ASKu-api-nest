@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { BadgesModule } from './badge/badge.module';
+import { BadgeModule } from './badge/badge.module';
 import { UserModule } from './user/user.module';
 import { WikiModule } from './wiki/wiki.module';
 import { QuestionModule } from './question/question.module';
@@ -33,7 +33,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
       multipleStatements: true,
       namingStrategy: new SnakeNamingStrategy(),
     }),
-    BadgesModule,
+    BadgeModule,
     UserModule,
     WikiModule,
     QuestionModule,

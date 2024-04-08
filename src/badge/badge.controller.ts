@@ -2,18 +2,16 @@ import { Controller, Get, Param } from '@nestjs/common';
 import { BadgeService } from './badge.service';
 import { BadgeHistory } from './entities/badgeHistory.entity';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { User } from 'src/user/entities/user.entity';
-import { Badge } from './entities/badge.entity';
 
 @Controller('badge')
 export class BadgeController {
     constructor(private readonly BadgeService:BadgeService) {}
     @Get('me/history/:userId')
 
-    @ApiOperation({summary: '유저 뱃지 히스토리', description: '유저의 배지 히스토리를 조회합니다.'})
+    @ApiOperation({summary: '유저 배지 히스토리', description: '유저 배지 히스토리를 조회합니다.'})
     @ApiResponse({
         status: 201,
-        description: '유저의 뱃지 히스토리를 조회에 성공했습니다.',
+        description: '유저 배지 히스토리를 조회에 성공했습니다.',
         type: BadgeHistory,
     })
     @ApiResponse({

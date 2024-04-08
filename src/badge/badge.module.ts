@@ -10,4 +10,4 @@ import { BadgeService } from './badge.service';
   controllers: [BadgeController],
   providers: [BadgeService],
 })
-export class BadgesModule {}
+export class BadgeModule {}
