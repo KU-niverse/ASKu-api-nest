@@ -1,13 +1,15 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { User } from 'src/user/entities/user.entity';
+import { Debate } from './entities/debate.entity';
 
 @Controller('debate')
 export class DebateController {
   constructor(private readonly debateService: DebateService) {}
-  @Get('me/debatehistory/:id')
+  @Get('me/debatehistory/:userId')
+  @HttpCode(201)
   @ApiOperation({
     summary: '유저 토론 히스토리',
     description: '유저의 토론 히스토리를 조회합니다.',
@@ -15,7 +17,7 @@ export class DebateController {
   @ApiResponse({
     status: 201,
     description: '위키 히스토리 불러오기 성공',
-    type: User,
+    type: Debate,
   })
   @ApiResponse({
     status: 400,
@@ -33,7 +35,7 @@ export class DebateController {
     status: 500,
     description: '서버 에러',
   })
-  getMeInfo(@Param('id') id: number): Promise<DebateHistory> {
-    return this.debateService.getMyDebateHistory(id);
+  getMyDebateHistory(@Param('userId') userId: number): Promise<DebateHistory> {
+    return this.debateService.getMyDebateHistory(userId);
   }
 }
