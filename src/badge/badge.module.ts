@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BadgeHistory } from 'src/badges/entities/badgeHistory.entity';
-import { Badge } from 'src/badges/entities/badges.entity';
+import { BadgeHistory } from './entities/badgeHistory.entity';
+import { Badge } from './entities/badge.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Badge, BadgeHistory])],
