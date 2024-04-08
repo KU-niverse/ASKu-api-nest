@@ -12,10 +12,10 @@ export class BadgeController {
     constructor(private readonly BadgeService:BadgeService) {}
     @Get('all/:id')
 
-    @ApiOperation({summary: '유저 뱃지 히스토리', description: '유저의 배지 히스토리를 조회합니다.'})
+    @ApiOperation({summary: '유저 뱃지', description: '유저의 배지를 조회합니다.'})
     @ApiResponse({
         status: 201,
-        description: '유저의 뱃지 히스토리를 조회에 성공했습니다.',
+        description: '유저의 뱃지 조회에 성공했습니다.',
         type: Badge,
     })
     @ApiResponse({
@@ -24,7 +24,7 @@ export class BadgeController {
     })
     @ApiResponse({
         status: 400,
-        description: '잘못된 접근입니다. 배지 히스토리 불러오기에 실패하였습니다.',
+        description: '잘못된 접근입니다. 배지 불러오기에 실패하였습니다.',
     })
     @ApiResponse({
         status: 401,
