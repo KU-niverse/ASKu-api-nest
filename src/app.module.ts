@@ -44,5 +44,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
     SearchModule,
     AiModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
