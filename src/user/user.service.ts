@@ -5,12 +5,15 @@ import { User } from 'src/user/entities/user.entity';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { Repository } from 'typeorm';
+import { Badge } from 'src/badge/entities/badge.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Badge)
+    private badgeRepository: Repository<Badge>,
     @InjectRepository(UserAttend)
     private userAttendRepository: Repository<UserAttend>,
     @InjectRepository(UserAction)
@@ -95,5 +98,22 @@ export class UserService {
       throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다.');
     }
     return result;
+  }
+
+  //FIXME: 이름 오타
+  async updateRepBade(userId: number, badgeId: number): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('해당 ID를 가진 유저가 없습니다.');
+    }
+    const badge = await this.badgeRepository.findOne({
+      where: { id: badgeId },
+    });
+    if (!badge) {
+      throw new NotFoundException('해당 ID를 가진 배지가 없습니다.');
+    }
+    user.repBadge = badge;
+    await this.userRepository.save(user);
+    return user;
   }
 }

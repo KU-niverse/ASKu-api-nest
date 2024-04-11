@@ -37,4 +37,28 @@ export class UserController {
   ): Promise<User> {
     return this.userService.getUserById(userId);
   }
+
+  @ApiOperation({
+    summary: '유저 배지 수정',
+    description: '유저 배지를 수정합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '유저 배지 수정에 성공했습니다.',
+    type: User,
+  })
+  @ApiResponse({ status: 404, description: '해당 ID를 가진 유저가 없습니다.' })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 접근입니다. 배지 수정에 실패하였습니다.',
+  })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자입니다.' })
+  @ApiResponse({ status: 403, description: '권한이 없습니다.' })
+  @ApiResponse({ status: 500, description: '서버 에러' })
+  async updateUserRepBadge(
+    @Param('userId') userId: number,
+    @Param('badgeId') badgeId: number,
+  ): Promise<User> {
+    return this.userService.updateRepBade(userId, badgeId);
+  }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Badge } from './entities/badge.entity';
 import { BadgeHistory } from './entities/badgeHistory.entity';
@@ -37,5 +37,11 @@ export class BadgeService {
       relations: ['badge'],
     });
     return result;
+  }
+
+  validateBadgeId(badge_id: number): void {
+    if (badge_id < 1 || badge_id > 31) {
+      throw new NotFoundException('해당 ID를 가진 배지가 없습니다.');
+    }
   }
 }
