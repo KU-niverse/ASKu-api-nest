@@ -10,7 +10,6 @@ import { BadgeService } from './badge.service';
 import { BadgeHistory } from './entities/badgeHistory.entity';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Badge } from './entities/badge.entity';
-import { User } from 'src/user/entities/user.entity';
 
 @Controller('badge')
 export class BadgeController {
