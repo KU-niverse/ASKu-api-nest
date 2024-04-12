@@ -1,7 +1,15 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Body,
+  Patch,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
+// import { UpdateUserRepBadgeDto } from './dto/update-user-rep-badge.dto';
 
 @Controller('user')
 export class UserController {
@@ -56,9 +64,11 @@ export class UserController {
   @ApiResponse({ status: 403, description: '권한이 없습니다.' })
   @ApiResponse({ status: 500, description: '서버 에러' })
   async updateUserRepBadge(
-    @Param('userId') userId: number,
-    @Param('badgeId') badgeId: number,
+    @Body() updateUserRepBadgeDto: UpdateUserRepBadgeDto,
   ): Promise<User> {
-    return this.userService.updateRepBade(userId, badgeId);
+    return this.userService.updateRepBade(
+      updateUserRepBadgeDto.userId,
+      updateUserRepBadgeDto.badgeId,
+    );
   }
 }
