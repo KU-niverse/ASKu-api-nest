@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Repository } from 'typeorm';
@@ -7,7 +7,7 @@ import { User } from './entities/user.entity';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  @Get('me/info/:id')
+  @Get('me/info/:userId')
   @ApiOperation({
     summary: '내 정보 조회',
     description: '로그인되었을때 나의 아이디 기반으로 유저 정보 가져오기',
@@ -33,7 +33,7 @@ export class UserController {
     status: 500,
     description: '서버 에러',
   })
-  getMeInfo(@Param('id') id: number): Promise<User> {
-    return this.userService.getMyInfo(id);
+  getMeInfo(@Param('userId', ParseIntPipe) userId: number): Promise<User> {
+    return this.userService.getUserInfoById(userId);
   }
 }

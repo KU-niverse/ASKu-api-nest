@@ -10,8 +10,10 @@ export class UserService {
     private userRepository: Repository<User>,
   ) {}
 
-  async getMyInfo(id: number): Promise<User> {
-    const result = await this.userRepository.findOne({ where: { id } });
+  async getUserInfoById(userId: number): Promise<User> {
+    const result = (await this.userRepository.findOne({
+      where: { id: userId },
+    })) as User;
     if (!result) {
       throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다.');
     }
