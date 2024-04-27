@@ -16,7 +16,7 @@ import { AiModule } from './ai/ai.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AuthModule } from './auth/auth.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { SuccessInterceptor } from 'src/success.interceptor';
+import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 
 @Module({
   imports: [
