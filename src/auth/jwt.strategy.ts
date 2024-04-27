@@ -14,13 +14,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     super({
       secretOrKey: process.env.JWT_SECRET,
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request) => {
+          // TODO: 이 부분 버그 수정 ? 로 임시방편으로 수정해놓음
+          return request.cookies?.accessToken;
+        },
+      ]),
+      ignoreExpiration: false,
+      // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     });
   }
+
   async validate(payload) {
-    const { userId } = payload;
+    const { id } = payload;
     const user: User = await this.userRepository.findOne({
-      where: { id: userId },
+      where: { id },
     });
     if (!user) {
       throw new UnauthorizedException();

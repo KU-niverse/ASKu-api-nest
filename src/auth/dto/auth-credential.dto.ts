@@ -1,9 +1,17 @@
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { Not } from 'typeorm';
 
 export class AuthCredentialsDto {
   // @IsString()
   // @MinLength(4)
   // @MaxLength(20)
+  @IsNotEmpty()
   loginId: string;
   // @IsString()
   // @MinLength(4)
@@ -12,5 +20,7 @@ export class AuthCredentialsDto {
   // @Matches(/^[a-zA-Z0-9]*$/, {
   //   message: 'password only accepts english and numbers',
   // })
+
+  @IsNotEmpty()
   password: string;
 }
