@@ -11,10 +11,12 @@ export class WikiService {
     private wikiRepository: Repository<WikiHistory>,
   ) {}
 
-  async getMyWikiHistory(id: number): Promise<WikiHistory> {
-    const result = await this.wikiRepository.findOne({ where: { id } });
+  async getWikiHistoryByUserId(userId: number): Promise<WikiHistory> {
+    const result = await this.wikiRepository.findOne({ where: { userId } });
     if (!result) {
-      throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다.');
+      throw new NotFoundException(
+        '해당 유저가 작성한 위키가 존재하지 않습니다.',
+      );
     }
     return result;
   }

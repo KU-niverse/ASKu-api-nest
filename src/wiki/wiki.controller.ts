@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiDoc } from './entities/wikiDoc.entity';
 import { WikiHistory } from './entities/wikiHistory.entity';
@@ -34,7 +34,9 @@ export class WikiController {
     status: 500,
     description: '서버 에러',
   })
-  getMeInfo(@Param('id') id: number): Promise<WikiHistory> {
-    return this.wikiService.getMyWikiHistory(id);
+  getWikiHistoryByUserId(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<WikiHistory> {
+    return this.wikiService.getWikiHistoryByUserId(userId);
   }
 }
