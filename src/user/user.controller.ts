@@ -36,6 +36,6 @@ export class UserController {
   getUserInfoById(
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<User> {
-    return this.userService.getUserInfoById(userId);
+    return this.userService.getUserById(userId);
   }
 }
