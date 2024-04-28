@@ -17,6 +17,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AuthService } from 'src/auth/auth.service';
 import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
+import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
 
@@ -25,6 +26,7 @@ import { User } from 'src/user/entities/user.entity';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // TODO: Refresh Token 구현
   @Post('/signin')
   @HttpCode(HttpStatus.OK)
   async signIn(
@@ -47,6 +49,14 @@ export class AuthController {
 
     return;
   }
+
+  // @Post('/signup')
+  // @HttpCode(HttpStatus.CREATED)
+  // async signUp(
+  //   @Body(ValidationPipe) koreapasCredentialsDto: KoreapasCredentialsDto,
+  // ): Promise<void> {
+  //   return this.authService.signUp(koreapasCredentialsDto);
+  // }
 
   @Get('/signout')
   @HttpCode(HttpStatus.OK)
