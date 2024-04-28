@@ -1,7 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 
 @Controller('user')

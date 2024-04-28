@@ -7,6 +7,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
 import { UserService } from 'src/user/user.service';
+import { UserAttend } from 'src/user/entities/userAttend.entity';
+import { UserAction } from 'src/user/entities/userAction.entity';
 
 @Module({
   imports: [
@@ -19,7 +21,7 @@ import { UserService } from 'src/user/user.service';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserAttend, UserAction]),
   ],
   controllers: [AuthController],
   // authmodule에서 사용하기 위함

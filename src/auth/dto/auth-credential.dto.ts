@@ -12,7 +12,7 @@ export class AuthCredentialsDto {
   // @MinLength(4)
   // @MaxLength(20)
   @IsNotEmpty()
-  loginId: string;
+  login_id: string;
   // @IsString()
   // @MinLength(4)
   // @MaxLength(20)
