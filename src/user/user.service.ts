@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 
@@ -9,6 +10,10 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
+
+  async getUserByUuid(koreapasUuid: string): Promise<User> {
+    return await this.userRepository.findOne({ where: { uuid: koreapasUuid } });
+  }
 
   async getUserById(userId: number): Promise<User> {
     const result: User = await this.userRepository.findOne({

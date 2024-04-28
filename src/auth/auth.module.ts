@@ -6,6 +6,7 @@ import { User } from 'src/user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
+import { UserService } from 'src/user/user.service';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { JwtStrategy } from 'src/auth/jwt.strategy';
   ],
   controllers: [AuthController],
   // authmodule에서 사용하기 위함
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, UserService],
   // 다른 모듈에서 이용하기 위함
   exports: [JwtStrategy, PassportModule],
 })
