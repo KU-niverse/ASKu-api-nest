@@ -14,6 +14,7 @@ import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
 import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { KoreapasLoginException } from 'src/common/exceptions/koreapas-login.exception';
 import { User } from 'src/user/entities/user.entity';
+import { UserService } from 'src/user/user.service';
 import { Repository } from 'typeorm';
 @Injectable()
 export class AuthService {
@@ -21,12 +22,13 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private userService: UserService,
   ) {}
 
   async signUp(koreapasCredentialsDto: KoreapasCredentialsDto): Promise<void> {
     const { uuid, nickname } = koreapasCredentialsDto;
 
-    const user = await this.getUserByUuid(uuid);
+    const user = await this.userService.getUserByUuid(uuid);
 
     if (user) {
       throw new NotAcceptableException('이미 가입된 회원입니다.');
@@ -36,10 +38,6 @@ export class AuthService {
       uuid,
       nickname,
     });
-  }
-
-  async getUserByUuid(koreapasUuid: string): Promise<User> {
-    return await this.userRepository.findOne({ where: { uuid: koreapasUuid } });
   }
 
   async updateNickname(user: User, nickname: string): Promise<User> {
@@ -94,7 +92,7 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const { uuid, nickname } =
       await this.validateKoreapasCredentials(authCredentialsDto);
-    const user: User = await this.getUserByUuid(uuid);
+    const user: User = await this.userService.getUserByUuid(uuid);
 
     if (!user) {
       throw new KoreapasLoginException(
