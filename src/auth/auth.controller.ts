@@ -50,30 +50,45 @@ export class AuthController {
     return;
   }
 
-  // @Post('/signup')
-  // @HttpCode(HttpStatus.CREATED)
-  // async signUp(
-  //   @Body(ValidationPipe) koreapasCredentialsDto: KoreapasCredentialsDto,
-  // ): Promise<void> {
-  //   return this.authService.signUp(koreapasCredentialsDto);
-  // }
+  @Post('/signup')
+  @HttpCode(HttpStatus.CREATED)
+  async signUp(
+    @Body(ValidationPipe) koreapasCredentialsDto: KoreapasCredentialsDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const { accessToken, refreshToken } = await this.authService.signUp(
+      koreapasCredentialsDto,
+    );
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'none',
+    });
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'none',
+    });
+    return;
+  }
 
   @Get('/signout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard())
-  async signOut(@Res({ passthrough: true }) response: Response): Promise<void> {
-    response.clearCookie('accessToken', {
+  async signOut(@Res({ passthrough: true }) res: Response): Promise<void> {
+    res.clearCookie('accessToken', {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
     });
-    response.clearCookie('refreshToken', {
+    res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
     });
 
-    response.set('Cache-Control', 'no-store');
+    res.set('Cache-Control', 'no-store');
     return;
   }
 }

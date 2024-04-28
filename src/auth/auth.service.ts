@@ -16,6 +16,7 @@ import { KoreapasLoginException } from 'src/common/exceptions/koreapas-login.exc
 import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
 import { Repository } from 'typeorm';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -25,19 +26,22 @@ export class AuthService {
     private userService: UserService,
   ) {}
 
-  async signUp(koreapasCredentialsDto: KoreapasCredentialsDto): Promise<void> {
+  async signUp(
+    koreapasCredentialsDto: KoreapasCredentialsDto,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const { uuid, nickname } = koreapasCredentialsDto;
-
     const user = await this.userService.getUserByUuid(uuid);
 
     if (user) {
       throw new NotAcceptableException('이미 가입된 회원입니다.');
     }
 
-    await this.userRepository.save({
-      uuid,
-      nickname,
-    });
+    const createdUser: User = await this.userService.createUser(
+      koreapasCredentialsDto,
+    );
+    // TODO: 출석 로직 추가
+
+    return this.getJwt(createdUser.id);
   }
 
   async updateNickname(user: User, nickname: string): Promise<User> {
@@ -64,9 +68,9 @@ export class AuthService {
   async validateKoreapasCredentials(
     authCredentialsDto: AuthCredentialsDto,
   ): Promise<{ uuid: string; nickname: string }> {
-    const { loginId, password } = authCredentialsDto;
+    const { login_id, password } = authCredentialsDto;
     const res = await axios.post(
-      `https://www.koreapas.com/bbs/login_api.php?user_id=${encodeURIComponent(loginId)}&password=${encodeURIComponent(password)} &api_key=${process.env.KOREAPAS_API_KEY}`,
+      `https://www.koreapas.com/bbs/login_api.php?user_id=${encodeURIComponent(login_id)}&password=${encodeURIComponent(password)} &api_key=${process.env.KOREAPAS_API_KEY}`,
       {},
     );
 
@@ -87,6 +91,15 @@ export class AuthService {
     }
   }
 
+  getJwt(userId: number): { accessToken: string; refreshToken: string } {
+    const payload = { id: userId };
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+    });
+    return { accessToken, refreshToken };
+  }
+
   async signIn(
     authCredentialsDto: AuthCredentialsDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -101,15 +114,12 @@ export class AuthService {
         nickname,
       );
     }
+    // TODO: 출석 로직 추가
 
     await this.syncNickname(user, nickname);
     await this.validateUser(user);
 
-    const payload = { id: user.id };
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-
-    return { accessToken, refreshToken };
+    return this.getJwt(user.id);
   }
 
   async signOut(): Promise<void> {
