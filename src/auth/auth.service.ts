@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import axios from 'axios';
 import { Response } from 'express';
 import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
+import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { KoreapasLoginException } from 'src/common/exceptions/koreapas-login.exception';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -21,6 +22,21 @@ export class AuthService {
     private userRepository: Repository<User>,
     private jwtService: JwtService,
   ) {}
+
+  async signUp(koreapasCredentialsDto: KoreapasCredentialsDto): Promise<void> {
+    const { uuid, nickname } = koreapasCredentialsDto;
+
+    const user = await this.getUserByUuid(uuid);
+
+    if (user) {
+      throw new NotAcceptableException('이미 가입된 회원입니다.');
+    }
+
+    await this.userRepository.save({
+      uuid,
+      nickname,
+    });
+  }
 
   async getUserByUuid(koreapasUuid: string): Promise<User> {
     return await this.userRepository.findOne({ where: { uuid: koreapasUuid } });
