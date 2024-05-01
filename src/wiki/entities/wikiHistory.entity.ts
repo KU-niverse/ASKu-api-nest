@@ -31,7 +31,7 @@ export class WikiHistory extends BaseEntity {
 
   @ManyToOne(() => WikiDoc, { nullable: false })
   @JoinColumn({ name: 'doc_id' })
-  doc: WikiDoc;
+  wikiDoc: WikiDoc;
 
   @Column('text', { nullable: false })
   @ApiProperty({ description: '위키 문서 원본 링크' })
