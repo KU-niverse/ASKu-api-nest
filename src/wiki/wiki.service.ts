@@ -7,11 +7,11 @@ import { Repository } from 'typeorm';
 export class WikiService {
   constructor(
     @InjectRepository(WikiHistory)
-    private wikiRepository: Repository<WikiHistory>,
+    private wikiHistoryRepository: Repository<WikiHistory>,
   ) {}
 
   async getWikiHistoryByUserId(userId: number): Promise<WikiHistory[]> {
-    const wikiHistory: WikiHistory[] = await this.wikiRepository.find({
+    const wikiHistory: WikiHistory[] = await this.wikiHistoryRepository.find({
       where: { userId },
       relations: ['wikiDoc'],
     });
