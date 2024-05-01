@@ -9,12 +9,36 @@ import {
 import { BadgeService } from './badge.service';
 import { BadgeHistory } from './entities/badgeHistory.entity';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Badge } from './entities/badge.entity';
 
 @Controller('badge')
 export class BadgeController {
   constructor(private readonly badgeService: BadgeService) {}
 
   // TODO: 이 api 기존 api와 달라짐
+  @Get('/all')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '모든 배지',
+    description: '존재하는 모든 배지를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '유저 배지 조회에 성공했습니다.',
+    type: Badge,
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+  })
+  getBadgeAll(): Promise<Badge[]> {
+    return this.badgeService.getBadgeAll();
+  }
+
   @Get('me/history/:userId')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
