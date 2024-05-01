@@ -23,7 +23,7 @@ export class Question extends BaseEntity {
 
   @ManyToOne(() => WikiDoc, { nullable: false })
   @JoinColumn({ name: 'doc_id' })
-  doc: WikiDoc;
+  wikiDoc: WikiDoc;
 
   @Column({ type: 'int', nullable: false })
   @ApiProperty({ description: '질문을 작성한 사용자 ID' })
