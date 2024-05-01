@@ -1,13 +1,22 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { BadgeService } from './badge.service';
 import { BadgeHistory } from './entities/badgeHistory.entity';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('badge')
 export class BadgeController {
-  constructor(private readonly BadgeService: BadgeService) {}
+  constructor(private readonly badgeService: BadgeService) {}
 
+  // TODO: 이 api 기존 api와 달라짐
   @Get('me/history/:userId')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '유저 배지 히스토리',
     description: '유저 배지 히스토리를 조회합니다.',
@@ -43,6 +52,6 @@ export class BadgeController {
   getBadgeHistory(
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<BadgeHistory[]> {
-    return this.BadgeService.getBadgeHistoryByUserId(userId);
+    return this.badgeService.getBadgeHistoryByUserId(userId);
   }
 }

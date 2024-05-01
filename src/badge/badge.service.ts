@@ -9,6 +9,7 @@ export class BadgeService {
     @InjectRepository(BadgeHistory)
     private badgHistoryRepository: Repository<BadgeHistory>,
   ) {}
+
   async getBadgeHistoryByUserId(userId: number): Promise<BadgeHistory[]> {
     const result: BadgeHistory[] = await this.badgHistoryRepository.find({
       where: { userId },
