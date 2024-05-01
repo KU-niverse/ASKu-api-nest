@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
 import { Question } from './entities/question.entity';
@@ -10,6 +17,7 @@ export class QuestionController {
   // TODO: 유저 정보 getUser로 받아오도록 수정
   // TODO: 이 api 기존 api와 달라짐
   @Get('me/history/:userId')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '유저 질문 히스토리',
     description: '유저 질문 히스토리를 조회합니다.',
