@@ -2,7 +2,6 @@ import { Controller, Get, HttpCode, Param } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
-import { User } from 'src/user/entities/user.entity';
 import { Debate } from './entities/debate.entity';
 
 @Controller('debate')
@@ -35,7 +34,9 @@ export class DebateController {
     status: 500,
     description: '서버 에러',
   })
-  getMyDebateHistory(@Param('userId') userId: number): Promise<DebateHistory> {
+  getMyDebateHistory(
+    @Param('userId') userId: number,
+  ): Promise<DebateHistory[]> {
     return this.debateService.getMyDebateHistory(userId);
   }
 }
