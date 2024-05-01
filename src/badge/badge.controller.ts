@@ -35,7 +35,7 @@ export class BadgeController {
     status: 500,
     description: '서버 에러',
   })
-  getMeBadgeAll(): Promise<Badge[]> {
+  getBadgeAll(): Promise<Badge[]> {
     return this.badgeService.getBadgeAll();
   }
 
