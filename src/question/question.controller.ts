@@ -55,4 +55,28 @@ export class QuestionController {
   ): Promise<Question[]> {
     return this.questionService.getQuestionsByUserId(userId);
   }
+
+  // TODO: 이 api 기존 api와 달라짐
+  @Get('/lookup/:id')
+  @ApiOperation({
+    summary: '유저 질문 히스토리',
+    description: '유저 질문 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '유저 질문 히스토리 조회를 성공했습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 id 값입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생하였습니다.',
+  })
+  getQuestionById(@Param('id', ParseIntPipe) id: number): Promise<Question> {
+    return this.questionService.getQuestionById(id);
+  }
 }
