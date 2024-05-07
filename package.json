@@ -28,6 +28,7 @@
     "@nestjs/typeorm": "^10.0.2",
     "mysql2": "^3.9.2",
     "reflect-metadata": "^0.2.0",
+    "run": "^1.5.0",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20",
     "typeorm-naming-strategies": "^4.1.0"
