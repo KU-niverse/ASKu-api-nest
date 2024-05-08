@@ -1,11 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { User } from 'src/user/entities/user.entity';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { Repository } from 'typeorm';
-import { Badge } from 'src/badge/entities/badge.entity';
+import { BadgeService } from 'src/badge/badge.service';
 
 @Injectable()
 export class UserService {
@@ -18,6 +18,7 @@ export class UserService {
     private userAttendRepository: Repository<UserAttend>,
     @InjectRepository(UserAction)
     private userActionRepository: Repository<UserAction>,
+    private badgeService: BadgeService,
     // private aiService: AiService,
   ) {}
 
@@ -100,20 +101,14 @@ export class UserService {
     return result;
   }
 
-  //FIXME: 이름 오타
-  async updateRepBade(userId: number, badgeId: number): Promise<User> {
+  async updateRepBadge(userId: number, badgeId: number): Promise<void> {
+    // 유저가 유효한가 -> 여기서 필요없다, 나중에 이유 알려드림
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('해당 ID를 가진 유저가 없습니다.');
-    }
-    const badge = await this.badgeRepository.findOne({
-      where: { id: badgeId },
-    });
-    if (!badge) {
-      throw new NotFoundException('해당 ID를 가진 배지가 없습니다.');
-    }
-    user.repBadge = badge;
+    // badgeId가 유효한가
+    this.badgeService.validateBadgeId(badgeId);
+
+    // 유저의 대표 배지를 수정
+    user.repBadge = badgeId;
     await this.userRepository.save(user);
-    return user;
   }
 }
