@@ -1,9 +1,7 @@
 import {
   Controller,
   Get,
-  Param,
   HttpCode,
-  ParseIntPipe,
   HttpStatus,
   Put,
   ValidationPipe,
@@ -17,7 +15,6 @@ import { UpdateUserRepBadgeDto } from 'src/user/dto/updateRepBadge.dto';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { AuthGuard } from '@nestjs/passport';
-import { use } from 'passport';
 
 @Controller('user')
 export class UserController {

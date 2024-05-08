@@ -1,5 +1,11 @@
+import { IsNotEmpty, IsNumber } from 'class-validator';
+
 export class UpdateUserRepBadgeDto {
-  // TODO: class validator추가
+  @IsNumber()
+  @IsNotEmpty()
   userId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
   badgeId: number;
 }
