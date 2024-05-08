@@ -1,25 +1,27 @@
 import {
   Controller,
   Get,
-  Param,
   HttpCode,
-  ParseIntPipe,
   HttpStatus,
   Put,
   ValidationPipe,
   Body,
-  Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { UpdateUserRepBadgeDto } from 'src/user/dto/updateRepBadge.dto';
 import { Badge } from 'src/badge/entities/badge.entity';
+import { GetUser } from 'src/auth/get-user.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  @Get('me/info/:userId')
+  // TODO: 이 api 기존 api와 달라짐
+  @Get('me/info')
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '내 정보 조회',
     description: '로그인되었을때 나의 아이디 기반으로 유저 정보 가져오기',
@@ -45,14 +47,13 @@ export class UserController {
     status: 500,
     description: '서버 에러',
   })
-  getUserInfoById(
-    @Param('userId', ParseIntPipe) userId: number,
-  ): Promise<User> {
-    return this.userService.getUserById(userId);
+  async getUserInfoById(@GetUser() user: User): Promise<User> {
+    return user;
   }
 
   @Put('/me/setrepbadge')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 배지 수정',
     description: '유저 배지를 수정합니다.',
@@ -79,12 +80,10 @@ export class UserController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  async updateUserRepBadge(
+  async updateMyRepBadge(
+    @GetUser() user: User,
     @Body(ValidationPipe) updateUserRepBadgeDto: UpdateUserRepBadgeDto,
   ): Promise<void> {
-    await this.userService.updateRepBadge(
-      updateUserRepBadgeDto.userId,
-      updateUserRepBadgeDto.badgeId,
-    );
+    await this.userService.updateRepBadge(user, updateUserRepBadgeDto.badgeId);
   }
 }

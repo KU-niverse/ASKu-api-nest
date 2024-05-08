@@ -6,11 +6,13 @@ import { UserService } from './user.service';
 import { BadgeModule } from 'src/badge/badge.module';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, UserAttend, UserAction]),
-    BadgeModule,
+    forwardRef(() => BadgeModule),
+    forwardRef(() => AuthModule),
   ],
   controllers: [UserController],
   providers: [UserService],

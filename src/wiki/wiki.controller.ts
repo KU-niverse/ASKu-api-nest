@@ -3,13 +3,14 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from 'src/user/entities/user.entity';
+import { AuthGuard } from '@nestjs/passport';
+import { GetUser } from 'src/auth/get-user.decorator';
 
 @Controller('wiki')
 export class WikiController {
@@ -18,6 +19,7 @@ export class WikiController {
   // TODO: 이 api 기존 api와 달라짐
   @Get('me/wikihistory/:userId')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 위키 히스토리',
     description: '유저의 위키 히스토리를 조회합니다.',
@@ -35,9 +37,7 @@ export class WikiController {
     status: 500,
     description: '서버 에러',
   })
-  getWikiHistoryByUserId(
-    @Param('userId', ParseIntPipe) userId: number,
-  ): Promise<WikiHistory[]> {
-    return this.wikiService.getWikiHistoryByUserId(userId);
+  getWikiHistoryByUserId(@GetUser() user: User): Promise<WikiHistory[]> {
+    return this.wikiService.getWikiHistoryByUserId(user.id);
   }
 }

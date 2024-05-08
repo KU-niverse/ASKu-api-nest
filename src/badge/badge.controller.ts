@@ -3,13 +3,15 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { BadgeService } from './badge.service';
 import { BadgeHistory } from './entities/badgeHistory.entity';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Badge } from './entities/badge.entity';
+import { AuthGuard } from '@nestjs/passport';
+import { GetUser } from 'src/auth/get-user.decorator';
+import { User } from 'src/user/entities/user.entity';
 
 @Controller('badge')
 export class BadgeController {
@@ -39,8 +41,9 @@ export class BadgeController {
     return this.badgeService.getBadgeAll();
   }
 
-  @Get('me/history/:userId')
+  @Get('me/history')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 배지 히스토리',
     description: '유저 배지 히스토리를 조회합니다.',
@@ -73,9 +76,7 @@ export class BadgeController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  getBadgeHistory(
-    @Param('userId', ParseIntPipe) userId: number,
-  ): Promise<BadgeHistory[]> {
-    return this.badgeService.getBadgeHistoryByUserId(userId);
+  getBadgeHistory(@GetUser() user: User): Promise<BadgeHistory[]> {
+    return this.badgeService.getBadgeHistoryByUserId(user.id);
   }
 }
