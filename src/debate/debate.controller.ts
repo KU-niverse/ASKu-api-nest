@@ -13,8 +13,6 @@ export class DebateController {
   @Get('me/debatehistory')
   @HttpCode(201)
   @UseGuards(AuthGuard())
-  @Get('all/recent')
-  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '유저 토론 히스토리',
     description: '유저의 토론 히스토리를 조회합니다.',
