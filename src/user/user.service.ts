@@ -99,9 +99,7 @@ export class UserService {
     return result;
   }
 
-  async updateRepBadge(userId: number, badgeId: number): Promise<void> {
-    // 유저가 유효한가 -> 여기서 필요없다, 나중에 이유 알려드림
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  async updateRepBadge(user: User, badgeId: number): Promise<void> {
     // badgeId가 유효한가
     this.badgeService.validateBadgeId(badgeId);
 

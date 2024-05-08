@@ -8,13 +8,15 @@ import {
   Put,
   ValidationPipe,
   Body,
-  Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { UpdateUserRepBadgeDto } from 'src/user/dto/updateRepBadge.dto';
 import { Badge } from 'src/badge/entities/badge.entity';
+import { GetUser } from 'src/auth/get-user.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('user')
 export class UserController {
@@ -53,6 +55,7 @@ export class UserController {
 
   @Put('/me/setrepbadge')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 배지 수정',
     description: '유저 배지를 수정합니다.',
@@ -79,12 +82,10 @@ export class UserController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  async updateUserRepBadge(
+  async updateMyRepBadge(
+    @GetUser() user: User,
     @Body(ValidationPipe) updateUserRepBadgeDto: UpdateUserRepBadgeDto,
   ): Promise<void> {
-    await this.userService.updateRepBadge(
-      updateUserRepBadgeDto.userId,
-      updateUserRepBadgeDto.badgeId,
-    );
+    await this.userService.updateRepBadge(user, updateUserRepBadgeDto.badgeId);
   }
 }
