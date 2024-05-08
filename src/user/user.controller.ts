@@ -1,7 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 
 @Controller('user')
@@ -36,6 +35,6 @@ export class UserController {
   getUserInfoById(
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<User> {
-    return this.userService.getUserInfoById(userId);
+    return this.userService.getUserById(userId);
   }
 }

@@ -14,6 +14,9 @@ import { AdminModule } from './admin/admin.module';
 import { SearchModule } from './search/search.module';
 import { AiModule } from './ai/ai.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { AuthModule } from './auth/auth.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 
 @Module({
   imports: [
@@ -43,8 +46,12 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
     AdminModule,
     SearchModule,
     AiModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_INTERCEPTOR, useClass: SuccessInterceptor },
+  ],
 })
 export class AppModule {}
