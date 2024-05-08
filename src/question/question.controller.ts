@@ -65,12 +65,12 @@ export class QuestionController {
   // TODO: 이 api 기존 api와 달라짐
   @Get('/lookup/:id')
   @ApiOperation({
-    summary: '유저 질문 히스토리',
-    description: '유저 질문 히스토리를 조회합니다.',
+    summary: 'id로 질문 조회하기',
+    description: '질문 목록을 조회하였습니다.',
   })
   @ApiResponse({
     status: 200,
-    description: '유저 질문 히스토리 조회를 성공했습니다.',
+    description: '질문 목록을 조회하였습니다.',
     type: Question,
     isArray: true,
   })
