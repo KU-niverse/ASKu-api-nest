@@ -5,6 +5,7 @@ import { User } from 'src/user/entities/user.entity';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { Repository } from 'typeorm';
+import { BadgeService } from 'src/badge/badge.service';
 
 @Injectable()
 export class UserService {
@@ -15,6 +16,7 @@ export class UserService {
     private userAttendRepository: Repository<UserAttend>,
     @InjectRepository(UserAction)
     private userActionRepository: Repository<UserAction>,
+    private badgeService: BadgeService,
     // private aiService: AiService,
   ) {}
 
@@ -95,5 +97,16 @@ export class UserService {
       throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다.');
     }
     return result;
+  }
+
+  async updateRepBadge(userId: number, badgeId: number): Promise<void> {
+    // 유저가 유효한가 -> 여기서 필요없다, 나중에 이유 알려드림
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    // badgeId가 유효한가
+    this.badgeService.validateBadgeId(badgeId);
+
+    // 유저의 대표 배지를 수정
+    user.repBadge = badgeId;
+    await this.userRepository.save(user);
   }
 }
