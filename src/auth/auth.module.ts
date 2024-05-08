@@ -1,14 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from 'src/user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
-import { UserService } from 'src/user/user.service';
-import { UserAttend } from 'src/user/entities/userAttend.entity';
-import { UserAction } from 'src/user/entities/userAction.entity';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
@@ -21,11 +17,12 @@ import { UserAction } from 'src/user/entities/userAction.entity';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User, UserAttend, UserAction]),
+    UserModule,
+    // TypeOrmModule.forFeature([User, UserAttend, UserAction]),
   ],
   controllers: [AuthController],
   // authmodule에서 사용하기 위함
-  providers: [AuthService, JwtStrategy, UserService],
+  providers: [AuthService, JwtStrategy],
   // 다른 모듈에서 이용하기 위함
   exports: [JwtStrategy, PassportModule],
 })

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { User } from 'src/user/entities/user.entity';
@@ -12,8 +12,6 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @InjectRepository(Badge)
-    private badgeRepository: Repository<Badge>,
     @InjectRepository(UserAttend)
     private userAttendRepository: Repository<UserAttend>,
     @InjectRepository(UserAction)
