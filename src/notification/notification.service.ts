@@ -28,11 +28,17 @@ export class NotificationService {
     const notification = await this.notificationRepository.findOne({
       where: { id: notificationId },
     });
-    if (notification) {
-      notification.readOrNot = true;
-      await this.notificationRepository.save(notification);
-      return notification;
+
+    if (!notification) {
+      throw new Error('Notification not found');
     }
-    return null;
+
+    if (notification.readOrNot) {
+      throw new Error('Notification already marked as read');
+    }
+
+    notification.readOrNot = true;
+    await this.notificationRepository.save(notification);
+    return notification;
   }
 }
