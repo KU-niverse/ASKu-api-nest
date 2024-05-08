@@ -8,7 +8,10 @@ import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, UserAttend, UserAction])],
+  imports: [
+    TypeOrmModule.forFeature([User, UserAttend, UserAction]),
+    BadgeModule,
+  ],
   controllers: [UserController],
   providers: [UserService],
   exports: [TypeOrmModule, UserService],

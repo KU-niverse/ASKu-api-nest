@@ -39,8 +39,8 @@ export class BadgeService {
     return result;
   }
 
-  validateBadgeId(badge_id: number): void {
-    if (badge_id < 1 || badge_id > 31) {
+  validateBadgeId(badgeId: number): void {
+    if (badgeId < 1 || badgeId > 31) {
       throw new NotFoundException('해당 ID를 가진 배지가 없습니다.');
     }
   }
