@@ -17,11 +17,14 @@ import { UpdateUserRepBadgeDto } from 'src/user/dto/updateRepBadge.dto';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { use } from 'passport';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  @Get('me/info/:userId')
+  // TODO: 이 api 기존 api와 달라짐
+  @Get('me/info')
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '내 정보 조회',
     description: '로그인되었을때 나의 아이디 기반으로 유저 정보 가져오기',
@@ -47,10 +50,8 @@ export class UserController {
     status: 500,
     description: '서버 에러',
   })
-  getUserInfoById(
-    @Param('userId', ParseIntPipe) userId: number,
-  ): Promise<User> {
-    return this.userService.getUserById(userId);
+  async getUserInfoById(@GetUser() user: User): Promise<User> {
+    return user;
   }
 
   @Put('/me/setrepbadge')
