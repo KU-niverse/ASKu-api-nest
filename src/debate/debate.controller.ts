@@ -42,7 +42,7 @@ export class DebateController {
   })
   getMyDebateHistory(@GetUser() user: User): Promise<DebateHistory[]> {
     return this.debateService.getMyDebateHistory(user.id);
-
+  }
 
   // TODO: 이 api 기존 api와 달라짐
   @Get('all/recent')
@@ -61,6 +61,8 @@ export class DebateController {
     status: 500,
     description: '오류가 발생했습니다.',
   })
-
+  getAllDebateByEdit(): Promise<Debate[]> {
+    return this.debateService.getAllDebateByEdit();
+  }
 
 }

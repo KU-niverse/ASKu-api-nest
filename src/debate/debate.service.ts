@@ -2,11 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Debate } from './entities/debate.entity';
+import { DebateHistory } from './entities/debateHistory.entity';
 @Injectable()
 export class DebateService {
   constructor(
-    @InjectRepository(Debate)
-    private debateRepository: Repository<Debate>,
+    @InjectRepository(DebateHistory)
+    private debateRepository: Repository<DebateHistory>,
   ) {}
 
   async getAllDebateByEdit(): Promise<Debate[]> {
@@ -22,4 +23,7 @@ export class DebateService {
   
     return debate;
   }
+
+
 }
+
