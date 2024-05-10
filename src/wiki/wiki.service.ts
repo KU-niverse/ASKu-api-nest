@@ -12,7 +12,7 @@ export class WikiService {
 
   async getWikiHistoryByUserId(userId: number): Promise<WikiHistory[]> {
     const wikiHistory: WikiHistory[] = await this.wikiHistoryRepository.find({
-      where: { userId },
+      where: { userId: userId },
       relations: ['wikiDoc'],
     });
     return wikiHistory;
