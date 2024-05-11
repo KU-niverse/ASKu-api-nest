@@ -23,6 +23,21 @@ export class QuestionService {
     return qusetions;
   }
 
+  async getQuestionByTitle(title: string): Promise<Question[]> {
+    const questions: Question[] = await this.questionRepository.find({
+      where: {
+        wikiDoc: {
+          title: title,
+        },
+      },
+      relations: ['user', 'wikiDoc', 'user.repBadge'],
+    });
+    if (questions.length === 0) {
+      throw new NotFoundException('해당 제목을 가진 문서가 존재하지 않습니다');
+    }
+    return questions;
+  }
+
   // TODO TYPORM 으로 변경 가능여부 재고
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
   async getQuestionById(id: number): Promise<Question> {
