@@ -23,60 +23,39 @@ export class QuestionService {
     return qusetions;
   }
 
-  // TODO : "like_count" & "answer_count" 구현
-
-  // async getQuestionOne(id: number): Promise<Question> {
-  //   const result = await this.questionRepository
-  //     .createQueryBuilder('question')
-  //     .leftJoinAndSelect('question.user', 'user')
-  //     .leftJoinAndSelect('user.repBadge', 'badge')
-  //     .leftJoinAndMapOne(
-  //       'question.likeCount',
-  //       (subQuery) => {
-  //         return subQuery
-  //           .from(QuestionLike, 'question_like')
-  //           .select('COUNT(*)', 'count')
-  //           .where('question_like.id = :id', { id })
-  //           .groupBy('question_like.id');
-  //       },
-  //       'question_like',
-  //       'question.id = question_like.id',
-  //     )
-  //     .leftJoinAndMapOne(
-  //       'question.answerCount',
-  //       (subQuery) => {
-  //         return subQuery
-  //           .from(Answer, 'answer')
-  //           .select('COUNT(*)', 'count')
-  //           .where('answer.questionId = :id', { id })
-  //           .groupBy('answer.questionId');
-  //       },
-  //       'answer',
-  //       'question.id = answer.questionId',
-  //     )
-  //     .where('question.id = :id', { id })
-  //     .select([
-  //       'question',
-  //       'user.nickname',
-  //       'badge.image',
-  //       'question_like.count',
-  //       'answer.count',
-  //     ])
-  //     .getOne();
-  //   if (!result) {
-  //     throw new NotFoundException('해당 ID의 질문이 존재하지 않습니다.');
-  //   }
-  //   return result;
-  // }
-
+  // TODO TYPORM 으로 변경 가능여부 재고
   async getQuestionById(id: number): Promise<Question> {
-    const result = await this.questionRepository.findOne({
-      where: { id },
-      relations: ['user', 'user.repBadge'],
-    });
+    const result = await this.questionRepository.query(
+      `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
+      FROM questions q
+      INNER JOIN users ON q.user_id = users.id
+      INNER JOIN badges ON users.rep_badge = badges.id
+      LEFT JOIN (
+          SELECT id, COUNT(*) as like_count 
+          FROM question_like 
+          GROUP BY id
+      ) ql ON q.id = ql.id
+      LEFT JOIN (
+          SELECT question_id, COUNT(*) as answer_count 
+          FROM answers 
+          GROUP BY question_id
+      ) a ON q.id = a.question_id
+      WHERE q.id = ${id};`,
+    );
     if (!result) {
       throw new NotFoundException('해당 ID의 질문이 존재하지 않습니다.');
     }
     return result;
   }
+
+  // async getQuestionById(id: number): Promise<Question> {
+  //   const result = await this.questionRepository.findOne({
+  //     where: { id },
+  //     relations: ['user', 'user.repBadge'],
+  //   });
+  //   if (!result) {
+  //     throw new NotFoundException('해당 ID의 질문이 존재하지 않습니다.');
+  //   }
+  //   return result;
+  // }
 }
