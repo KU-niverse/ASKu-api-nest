@@ -1,18 +1,20 @@
-import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/user/entities/user.entity';
+// import { GetUser } from 'src/auth/get-user.decorator';
+import { GetUser } from '../auth/get-user.decorator';
+// import { User } from 'src/user/entities/user.entity';
+import { User } from '../user/entities/user.entity';
 
 @Controller('debate')
 export class DebateController {
-  constructor(private readonly debateService: DebateService) {}
+  constructor(private readonly debateService: DebateService, ) {}
   @Get('me/debatehistory')
   @HttpCode(201)
-  @UseGuards(AuthGuard())
+  //@UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 토론 히스토리',
     description: '유저의 토론 히스토리를 조회합니다.',
@@ -40,5 +42,47 @@ export class DebateController {
   })
   getMyDebateHistory(@GetUser() user: User): Promise<DebateHistory[]> {
     return this.debateService.getMyDebateHistory(user.id);
+  }
+
+  // TODO: 이 api 기존 api와 달라짐
+  //@UseGuards(AuthGuard())
+  @Get('all/recent')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '전체 토론방 목록 조회',
+    description: '전체 토론방 목록 조회 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '전체 토론방 목록 조회 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  getAllDebateByEdit(): Promise<Debate[]> {
+    return this.debateService.getAllDebateByEdit();
+  } 
+
+  @Get('list/:subject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '주제로 토론방 목록 조회',
+    description: '주제로 토론방 목록 조회 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '주제로 토론방 목록 조회 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  getAllDebateByCreate(@Param('subject') subject: string): Promise<Debate[]> {
+    return this.debateService.getAllDebateByCreate(subject);
   }
 }
