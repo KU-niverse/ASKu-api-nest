@@ -7,10 +7,12 @@ import {
   HttpCode,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { Notification } from 'src/notification/entities/notification.entity';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('notification')
 @Controller('notification')
@@ -18,7 +20,7 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Get('/user/:userId')
-  // TODO: isSignedIn 대용 guard 필요
+  @UseGuards(AuthGuard())
   @ApiOperation({ summary: '유저 알림 조회' })
   @ApiResponse({
     status: 200,
@@ -33,7 +35,8 @@ export class NotificationController {
   }
 
   @Get('/admin/:userId')
-  // TODO: isSignedIn, isAdmin 대용 guard 필요
+  // TODO: isAdmin 대용 guard 필요한데 현재 고파스 로그인 환경에서 여전히 사용 가능한지 의문임
+  @UseGuards(AuthGuard())
   @ApiOperation({ summary: '관리자 알림 조회' })
   @ApiResponse({
     status: 200,
@@ -49,6 +52,7 @@ export class NotificationController {
 
   @Post('/read')
   @HttpCode(200)
+  @UseGuards(AuthGuard())
   @ApiOperation({ summary: '알림 읽음 표시' })
   @ApiBody({
     description: '알림 id',
