@@ -24,6 +24,7 @@ export class QuestionService {
   }
 
   // TODO TYPORM 으로 변경 가능여부 재고
+  // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는쿼리문 입니다.
   async getQuestionById(id: number): Promise<Question> {
     const result = await this.questionRepository.query(
       `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
