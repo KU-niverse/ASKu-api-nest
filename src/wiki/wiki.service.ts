@@ -17,4 +17,5 @@ export class WikiService {
     });
     return wikiHistory;
   }
+
 }
