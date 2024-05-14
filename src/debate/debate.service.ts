@@ -36,7 +36,7 @@ export class DebateService {
     return debate;
   }
 
-  async getAllDebateByCreate(subject?: string): Promise<Debate[]> {
+  async getDebateListBySubject(subject?: string): Promise<Debate[]> {
     const queryBuilder = this.debate
       .createQueryBuilder('debate')
       .innerJoinAndSelect('debate.wikiDoc', 'wikiDoc')

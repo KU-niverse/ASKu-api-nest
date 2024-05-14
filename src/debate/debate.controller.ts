@@ -69,12 +69,12 @@ export class DebateController {
   @Get('list/:subject')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '주제로 토론방 목록 조회',
-    description: '주제로 토론방 목록 조회 성공',
+    summary: '토론방 목록을 조회하였습니다.',
+    description: '토론방 목록 조회 성공',
   })
   @ApiResponse({
     status: 200,
-    description: '주제로 토론방 목록 조회 성공',
+    description: '토론방 목록 조회 성공',
     type: Debate,
     isArray: true,
   })
@@ -82,7 +82,7 @@ export class DebateController {
     status: 500,
     description: '오류가 발생했습니다.',
   })
-  getAllDebateByCreate(@Param('subject') subject: string): Promise<Debate[]> {
-    return this.debateService.getAllDebateByCreate(subject);
+  getDebateListBySubject(@Param('subject') subject: string): Promise<Debate[]> {
+    return this.debateService.getDebateListBySubject(subject);
   }
 }
