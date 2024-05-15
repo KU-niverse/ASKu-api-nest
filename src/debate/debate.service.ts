@@ -21,20 +21,14 @@ export class DebateService {
     return result;
   }
 
-
   async getAllDebateByEdit(): Promise<Debate[]> {
     const debate: Debate[] = await this.debate
       .createQueryBuilder('debate')
       .innerJoinAndSelect('debate.wikiDoc', 'wikiDoc')
-      .select([
-        'debate',
-        'wikiDoc.title',
-      ])
+      .select(['debate', 'wikiDoc.title'])
       .orderBy('debate.recentEditedAt', 'DESC')
       .getMany();
-  
+
     return debate;
   }
-
 }
-

@@ -3,6 +3,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -11,15 +12,16 @@ import { Question } from './entities/question.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
+import { QuestionArrange } from 'src/question/enums/questeionArrange.enum';
 
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
 
   // TODO: 이 api 기존 api와 달라짐
-  @Get('me/history')
+  // GET /user/mypage/questionhistory 유저 질문 히스토리
+  @Get('me/history/:arrange')
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 질문 히스토리',
     description: '유저 질문 히스토리를 조회합니다.',
@@ -52,7 +54,11 @@ export class QuestionController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  getQuestionHistory(@GetUser() user: User): Promise<Question[]> {
-    return this.questionService.getQuestionsByUserId(user.id);
+  @UseGuards(AuthGuard())
+  getQuestionHistory(
+    @GetUser() user: User,
+    @Param('arrange') arrange: QuestionArrange,
+  ): Promise<Question[]> {
+    return this.questionService.getQuestionsByUserId(user.id, arrange);
   }
 }

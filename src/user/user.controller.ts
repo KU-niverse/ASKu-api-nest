@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { UpdateUserRepBadgeDto } from 'src/user/dto/updateRepBadge.dto';
 import { Badge } from 'src/badge/entities/badge.entity';
@@ -20,8 +20,8 @@ import { AuthGuard } from '@nestjs/passport';
 export class UserController {
   constructor(private readonly userService: UserService) {}
   // TODO: 이 api 기존 api와 달라짐
+  // GET /user/mypage/info 유저 정보 조회
   @Get('me/info')
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '내 정보 조회',
     description: '로그인되었을때 나의 아이디 기반으로 유저 정보 가져오기',
@@ -47,17 +47,20 @@ export class UserController {
     status: 500,
     description: '서버 에러',
   })
+  @UseGuards(AuthGuard())
   async getUserInfoById(@GetUser() user: User): Promise<User> {
     return user;
   }
 
+  // TODO: 이 api 기존 api와 달라짐
+  // PUT /user/mypage/setrepbadge 유저 대표 배지 설정
   @Put('/me/setrepbadge')
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 배지 수정',
     description: '유저 배지를 수정합니다.',
   })
+  @ApiBody({ type: UpdateUserRepBadgeDto })
   @ApiResponse({
     status: 201,
     description: '유저의 대표 배지를 성공적으로 수정되었습니다.',
@@ -80,6 +83,7 @@ export class UserController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
+  @UseGuards(AuthGuard())
   async updateMyRepBadge(
     @GetUser() user: User,
     @Body(ValidationPipe) updateUserRepBadgeDto: UpdateUserRepBadgeDto,

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from './entities/question.entity';
+import { QuestionArrange } from 'src/question/enums/questeionArrange.enum';
 
 @Injectable()
 export class QuestionService {
@@ -9,7 +10,11 @@ export class QuestionService {
     @InjectRepository(Question)
     private questionRepository: Repository<Question>,
   ) {}
-  async getQuestionsByUserId(userId: number): Promise<Question[]> {
+  async getQuestionsByUserId(
+    userId: number,
+    arrange: QuestionArrange,
+  ): Promise<Question[]> {
+    //TODO: arrange 반영하여 쿼리 수정 필요
     const qusetions: Question[] = await this.questionRepository.find({
       where: { userId },
       relations: ['user', 'wikiDoc'],

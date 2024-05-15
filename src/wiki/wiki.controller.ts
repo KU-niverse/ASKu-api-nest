@@ -17,9 +17,9 @@ export class WikiController {
   constructor(private readonly wikiService: WikiService) {}
 
   // TODO: 이 api 기존 api와 달라짐
-  @Get('me/wikihistory/:userId')
+  //GET /user/mypage/wikihistory 유저 위키 히스토리
+  @Get('me/history')
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 위키 히스토리',
     description: '유저의 위키 히스토리를 조회합니다.',
@@ -37,6 +37,7 @@ export class WikiController {
     status: 500,
     description: '서버 에러',
   })
+  @UseGuards(AuthGuard())
   getWikiHistoryByUserId(@GetUser() user: User): Promise<WikiHistory[]> {
     return this.wikiService.getWikiHistoryByUserId(user.id);
   }
