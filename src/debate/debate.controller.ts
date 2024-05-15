@@ -1,18 +1,30 @@
-import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/user/entities/user.entity';
+// import { GetUser } from 'src/auth/get-user.decorator';
+import { GetUser } from '../auth/get-user.decorator';
+// import { User } from 'src/user/entities/user.entity';
+import { User } from '../user/entities/user.entity';
 
 @Controller('debate')
 export class DebateController {
   constructor(private readonly debateService: DebateService) {}
-  @Get('me/debatehistory')
+
+  // TODO: 이 api 기존 api와 달라짐
+  // GET /user/mypage/debatehistory 유저 토론 히스토리
+  @Get('me/history')
   @HttpCode(201)
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 토론 히스토리',
     description: '유저의 토론 히스토리를 조회합니다.',
@@ -38,7 +50,52 @@ export class DebateController {
     status: 500,
     description: '서버 에러',
   })
+  @UseGuards(AuthGuard())
   getMyDebateHistory(@GetUser() user: User): Promise<DebateHistory[]> {
     return this.debateService.getMyDebateHistory(user.id);
+  }
+
+  // TODO: 이 api 기존 api와 달라짐
+  // GET /debate/all/recent 최근 수정된 전체 토론방 목록 조회(전체, 최근 수정순)
+  @Get('all/recent')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '전체 토론방 목록 조회',
+    description: '전체 토론방 목록 조회 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '전체 토론방 목록 조회 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  getAllDebateByEdit(): Promise<Debate[]> {
+    return this.debateService.getAllDebateByEdit();
+  }
+
+  // TODO: 이 api 기존 api와 달라짐
+  // GET /debate/list/{title} 토론방 목록 조회(문서별, 최근 생성순)GET /debate/list/:subject 특정 주제의 토론방 목록 조회
+  @Get('list/:subject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '토론방 목록을 조회하였습니다.',
+    description: '토론방 목록 조회 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '토론방 목록 조회 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  getDebateListBySubject(@Param('subject') subject: string): Promise<Debate[]> {
+    return this.debateService.getDebateListBySubject(subject);
   }
 }
