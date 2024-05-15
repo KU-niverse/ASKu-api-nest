@@ -1,9 +1,12 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   UseGuards,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -78,5 +81,32 @@ export class QuestionController {
   })
   getQuestionById(@Param('id', ParseIntPipe) id: number): Promise<Question> {
     return this.questionService.getQuestionById(id);
+  }
+
+  @Get('view/:flag/:title')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '질문 목록 조회',
+    description: '질문 목록을 조회하였습니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '질문 목록을 조회하였습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 flag 값입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 내부 에러가 발생했습니다.',
+  })
+  getQuestionByTitle(
+    @Param('flag') flag: string,
+    @Param('title') title: string,
+  ): Promise<Question[]> {
+    return this.questionService.getQuestionByTitle(title, flag);
   }
 }
