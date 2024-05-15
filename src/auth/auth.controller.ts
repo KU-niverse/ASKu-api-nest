@@ -13,7 +13,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AuthService } from 'src/auth/auth.service';
 import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
@@ -52,6 +52,16 @@ export class AuthController {
 
   @Post('/signup')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '회원가입' })
+  @ApiBody({ type: KoreapasCredentialsDto })
+  @ApiResponse({
+    status: 201,
+    description: '회원가입 성공',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '이미 존재하는 사용자',
+  })
   async signUp(
     @Body(ValidationPipe) koreapasCredentialsDto: KoreapasCredentialsDto,
     @Res({ passthrough: true }) res: Response,
@@ -75,6 +85,11 @@ export class AuthController {
 
   @Get('/signout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '로그아웃' })
+  @ApiResponse({
+    status: 200,
+    description: '로그아웃 성공',
+  })
   @UseGuards(AuthGuard())
   async signOut(@Res({ passthrough: true }) res: Response): Promise<void> {
     res.clearCookie('accessToken', {
