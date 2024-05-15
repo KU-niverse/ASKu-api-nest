@@ -43,9 +43,6 @@ export class QuestionService {
       ) a ON q.id = a.question_id
       WHERE q.id = ${id};`,
     );
-    if (!result) {
-      throw new NotFoundException('해당 ID의 질문이 존재하지 않습니다.');
-    }
     return result;
   }
 
