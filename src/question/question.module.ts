@@ -6,10 +6,11 @@ import { QuestionLike } from 'src/question/entities/questionLike.entity';
 import { QuestionController } from './question.controller';
 import { QuestionService } from './question.service';
 import { AuthModule } from 'src/auth/auth.module';
+import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Question, Answer, QuestionLike]),
+    TypeOrmModule.forFeature([Question, Answer, QuestionLike, WikiDoc]),
     AuthModule,
   ],
   controllers: [QuestionController],
