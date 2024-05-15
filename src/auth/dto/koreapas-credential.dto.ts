@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsString,
@@ -11,6 +12,7 @@ export class KoreapasCredentialsDto {
   // @IsString()
   // @MinLength(4)
   // @MaxLength(20)
+  @ApiProperty({ description: '유저 고파스 uuid', default: '12314154' })
   @IsNotEmpty()
   uuid: string;
   // @IsString()
@@ -20,7 +22,7 @@ export class KoreapasCredentialsDto {
   // @Matches(/^[a-zA-Z0-9]*$/, {
   //   message: 'password only accepts english and numbers',
   // })
-
+  @ApiProperty({ description: '유저 닉네임', default: 'test' })
   @IsNotEmpty()
   nickname: string;
 }
