@@ -1,4 +1,12 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
@@ -11,10 +19,12 @@ import { User } from '../user/entities/user.entity';
 
 @Controller('debate')
 export class DebateController {
-  constructor(private readonly debateService: DebateService, ) {}
-  @Get('me/debatehistory')
+  constructor(private readonly debateService: DebateService) {}
+
+  // TODO: 이 api 기존 api와 달라짐
+  // GET /user/mypage/debatehistory 유저 토론 히스토리
+  @Get('me/history')
   @HttpCode(201)
-  //@UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 토론 히스토리',
     description: '유저의 토론 히스토리를 조회합니다.',
@@ -40,12 +50,13 @@ export class DebateController {
     status: 500,
     description: '서버 에러',
   })
+  @UseGuards(AuthGuard())
   getMyDebateHistory(@GetUser() user: User): Promise<DebateHistory[]> {
     return this.debateService.getMyDebateHistory(user.id);
   }
 
   // TODO: 이 api 기존 api와 달라짐
-  //@UseGuards(AuthGuard())
+  // GET /debate/all/recent 최근 수정된 전체 토론방 목록 조회(전체, 최근 수정순)
   @Get('all/recent')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -64,8 +75,10 @@ export class DebateController {
   })
   getAllDebateByEdit(): Promise<Debate[]> {
     return this.debateService.getAllDebateByEdit();
-  } 
+  }
 
+  // TODO: 이 api 기존 api와 달라짐
+  // GET /debate/list/{title} 토론방 목록 조회(문서별, 최근 생성순)GET /debate/list/:subject 특정 주제의 토론방 목록 조회
   @Get('list/:subject')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
