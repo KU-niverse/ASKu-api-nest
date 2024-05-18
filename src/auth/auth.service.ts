@@ -126,4 +126,53 @@ export class AuthService {
     // 로그아웃 시 추가적인 작업이 필요한 경우 여기에 구현할 수 있습니다.
     // 예를 들어, 사용자 세션 정보를 삭제하거나 로그를 기록하는 등의 작업을 수행할 수 있습니다.
   }
+
+  getUserByUuid(uuid: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { uuid } });
+  }
+
+  async koreapasOAuth(uuid: string): Promise<{
+    is_registered: boolean;
+    koreapas_nickname: string | null;
+    koreapas_uuid: string | null;
+    user_id: number | null;
+  }> {
+    console.log('🚀 ~ AuthService ~ koreapasOAuth ~ uuid:', uuid);
+    const response = await axios.get(
+      `https://www.koreapas.com/bbs/valid_api.php?api_key=${process.env.KOREAPAS_API_KEY}&uuid=${uuid}`,
+    );
+    console.log('🚀 ~ AuthService ~ koreapasOAuth ~ response:', response.data);
+
+    if (response.data.result == false) {
+      throw new UnauthorizedException('유효하지 않은 접근입니다.');
+    }
+
+    const { koreapas_uuid, nickname, level } = response.data.data;
+    // 9, 10 -> 강등 또는 미인증 상태의 유저
+    if (level > 8) {
+      throw new UnauthorizedException('강등 또는 미인증 상태의 유저입니다.');
+    }
+
+    const user: User | null = await this.getUserByUuid(koreapas_uuid);
+    // 고파스 uuid로 등록된 유저가 없다면 reject
+    if (user == null) {
+      return {
+        is_registered: false,
+        koreapas_nickname: nickname,
+        koreapas_uuid: uuid,
+        user_id: null,
+      };
+    }
+
+    // TODO: 출석 로직 추가
+
+    return {
+      is_registered: true,
+      koreapas_nickname: null,
+      koreapas_uuid: null,
+      user_id: user.id,
+    };
+
+    return;
+  }
 }

@@ -26,3 +26,9 @@ export class KoreapasCredentialsDto {
   @IsNotEmpty()
   nickname: string;
 }
+
+export class KoreapasOAuthDto {
+  @IsNotEmpty()
+  @IsString()
+  uuid: string;
+}

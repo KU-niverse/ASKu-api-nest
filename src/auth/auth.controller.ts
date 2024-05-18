@@ -10,6 +10,7 @@ import {
   Req,
   Res,
   UseGuards,
+  UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -17,8 +18,12 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AuthService } from 'src/auth/auth.service';
 import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
-import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
+import {
+  KoreapasCredentialsDto,
+  KoreapasOAuthDto,
+} from 'src/auth/dto/koreapas-credential.dto';
 import { GetUser } from 'src/auth/get-user.decorator';
+import { IsNotSignedInValidationPipe } from 'src/auth/pipes/is-not-signed-in-validation.pipe';
 import { User } from 'src/user/entities/user.entity';
 
 @ApiTags('auth')
@@ -105,5 +110,37 @@ export class AuthController {
 
     res.set('Cache-Control', 'no-store');
     return;
+  }
+
+  // TODO: is-not-signed-in-validation.pipe.ts를 사용하여 로그인 여부를 검사
+  @Post('/koreapasoauth')
+  @HttpCode(HttpStatus.OK)
+  async koreapasOAuth(
+    @Body() koreapasOAuthDto: KoreapasOAuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void | {
+    is_registered: boolean;
+    koreapas_nickname: string;
+    koreapas_uuid: string;
+  }> {
+    const { is_registered, koreapas_uuid, koreapas_nickname, user_id } =
+      await this.authService.koreapasOAuth(koreapasOAuthDto.uuid);
+    if (is_registered == true) {
+      const { accessToken, refreshToken } = this.authService.getJwt(user_id);
+
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+      });
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+      });
+    }
+    if (is_registered == false) {
+      return { is_registered, koreapas_nickname, koreapas_uuid };
+    }
   }
 }
