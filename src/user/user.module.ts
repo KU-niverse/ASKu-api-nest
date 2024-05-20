@@ -7,10 +7,11 @@ import { BadgeModule } from 'src/badge/badge.module';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { Badge } from 'src/badge/entities/badge.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserAttend, UserAction]),
+    TypeOrmModule.forFeature([User, UserAttend, UserAction, Badge]),
     forwardRef(() => BadgeModule),
     forwardRef(() => AuthModule),
   ],
