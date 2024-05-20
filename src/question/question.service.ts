@@ -6,6 +6,9 @@ import { Question } from './entities/question.entity';
 import { Answer } from './entities/answer.entity';
 import { QuestionLike } from './entities/questionLike.entity';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
+import { User } from 'src/user/entities/user.entity';
+import { Badge } from 'src/badge/entities/badge.entity';
+import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
 
 @Injectable()
 export class QuestionService {
@@ -14,6 +17,14 @@ export class QuestionService {
     private questionRepository: Repository<Question>,
     @InjectRepository(WikiDoc)
     private wikiDocRepository: Repository<WikiDoc>,
+    @InjectRepository(Answer)
+    private readonly answerRepository: Repository<Answer>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Badge)
+    private readonly badgeRepository: Repository<Badge>,
+    @InjectRepository(WikiHistory)
+    private readonly wikiHistoryRepository: Repository<WikiHistory>,
   ) {}
   async getQuestionsByUserId(userId: number): Promise<Question[]> {
     const qusetions: Question[] = await this.questionRepository.find({
@@ -49,12 +60,8 @@ export class QuestionService {
     return result;
   }
 
-  // 인기순 정렬 시도
-  async getQuestionByTitle(
-    // id: number,
-    title: string,
-    flag: string,
-  ): Promise<Question[]> {
+  // 인기순 정렬
+  async getQuestionByTitle(title: string, flag: string): Promise<Question[]> {
     const id = await this.getDocumentIdByTitle(title);
 
     const order = this.getOrderBy(flag);
@@ -123,5 +130,33 @@ export class QuestionService {
     }
 
     return document.id; // 문서 ID 반환
+  }
+
+  // QuestionId로 Answer 가져오기
+  async getAnswerByQuestionId(questionId: number): Promise<Answer[]> {
+    const answers = await this.answerRepository
+      .createQueryBuilder('answer')
+      .leftJoinAndSelect('answer.question', 'question')
+      .leftJoinAndSelect('question.user', 'user')
+      .leftJoinAndSelect('user.badge', 'badge')
+      .leftJoinAndSelect('answer.wikiHistory', 'wikiHistory')
+      .leftJoinAndSelect('question.wikiDoc', 'wikiDoc')
+      .where('answer.questionId = :questionId', { questionId })
+      .orderBy('answer.createdAt', 'ASC')
+      .select([
+        'answer',
+        'question.id',
+        'question.indexTitle',
+        'user',
+        'wikiHistory.version',
+        'wikiDoc.title',
+        'badge.image',
+        'question.content',
+      ])
+      .getMany();
+    if (!answers.length) {
+      throw new NotFoundException('해당 ID를 가진 답변이 존재하지 않습니다');
+    }
+    return answers;
   }
 }
