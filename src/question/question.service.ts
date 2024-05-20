@@ -50,9 +50,9 @@ export class QuestionService {
       .addGroupBy('wikiDoc.id');
     // 정렬 제대로 안 되는 중
     if (flag === 0) {
-      queryBuilder.orderBy('CAST(created_at AS CHAR)', 'DESC');
+      queryBuilder.orderBy('STR_TO_DATE(q.createdAt, \'%Y-%m-%d %H:%i:%s.%f\')', 'DESC');
     } else if (flag === 1) {
-      queryBuilder.orderBy('like_count', 'DESC').addOrderBy('CAST(created_at AS CHAR)', 'DESC');
+      queryBuilder.orderBy('like_count', 'DESC').addOrderBy('STR_TO_DATE(q.createdAt, \'%Y-%m-%d %H:%i:%s.%f\')', 'DESC');
     }
     
     return queryBuilder.getRawMany();
