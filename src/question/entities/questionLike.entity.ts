@@ -27,4 +27,8 @@ export class QuestionLike extends BaseEntity {
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  //
+  @ManyToOne(() => Question, (question) => question.likes)
+  questionLike: Question;
 }

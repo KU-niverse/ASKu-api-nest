@@ -6,10 +6,13 @@ import {
   ManyToOne,
   JoinColumn,
   BaseEntity,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { User } from 'src/user/entities/user.entity';
+import { QuestionLike } from './questionLike.entity';
+import { Answer } from './answer.entity';
 
 @Entity('questions')
 export class Question extends BaseEntity {
@@ -66,4 +69,11 @@ export class Question extends BaseEntity {
     default: false,
   })
   isBad: boolean;
+
+  //
+  @OneToMany(() => QuestionLike, (questionLike) => questionLike.question)
+  likes: QuestionLike[];
+
+  @OneToMany(() => Answer, (answer) => answer.question)
+  answers: Answer[];
 }

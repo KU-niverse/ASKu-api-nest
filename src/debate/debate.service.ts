@@ -45,22 +45,6 @@ export class DebateService {
       where: { wikiDoc: { id: wikidoc.id } },
       order: { createdAt: 'DESC' },
     });
-    console.log(
-      '🚀 ~ DebateService ~ getDebateListBySubject ~ debate:',
-      debate,
-    );
     return debate;
-    // const queryBuilder = this.debate
-    //   .createQueryBuilder('debate')
-    //   .innerJoinAndSelect('debate.wikiDoc', 'wikiDoc')
-    //   .select(['debate'])
-    //   .orderBy('debate.recentEditedAt', 'DESC');
-
-    // queryBuilder.andWhere('debate.subject LIKE :subject', {
-    //   subject: `%${subject}%`,
-    // });
-
-    // const debate: Debate[] = await queryBuilder.getMany();
-    // return debate;
   }
 }

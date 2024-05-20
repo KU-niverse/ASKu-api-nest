@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { getRepository } from 'typeorm';
 import { Question } from './entities/question.entity';
 import { QuestionArrange } from 'src/question/enums/questeionArrange.enum';
 import { Answer } from './entities/answer.entity';
@@ -15,21 +14,50 @@ export class QuestionService {
     private questionRepository: Repository<Question>,
     @InjectRepository(WikiDoc)
     private wikiDocRepository: Repository<WikiDoc>,
+
   ) {}
-  async getQuestionsByUserId(
-    userId: number,
-    arrange: QuestionArrange,
-  ): Promise<Question[]> {
-    //TODO: arrange 반영하여 쿼리 수정 필요
-    const qusetions: Question[] = await this.questionRepository.find({
-      where: { userId },
-      relations: ['user', 'wikiDoc'],
-    });
-    if (qusetions.length === 0) {
-      throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다');
+
+  //TODO: 이 api 기존 api와 달라짐
+
+  async getQuestionsByUserId(userId: number, flag: number) {
+    const queryBuilder = this.questionRepository
+      .createQueryBuilder('q')
+      .innerJoinAndSelect('q.user', 'user')
+      .leftJoinAndSelect('user.badge', 'badge')
+      .innerJoinAndSelect('q.wikiDoc', 'wikiDoc')
+      .leftJoin('q.likes', 'likes')
+      .leftJoin('q.answers', 'answers')
+      .select([
+        'q.id AS id',
+        'q.docId AS doc_id',
+        'q.userId AS user_id',
+        'q.indexTitle AS index_title',
+        'q.content AS content',
+        'q.createdAt AS created_at',
+        'answer_or_not',
+        'is_bad',
+        'nickname',
+        'user.repBadge AS rep_badge',
+        'badge.image',
+        'wikiDoc.title AS doc_title',
+        'COUNT(DISTINCT likes.id) AS like_count',
+        'COUNT(DISTINCT answers.id) AS answer_count',
+      ])
+      .where('q.userId = :userId', { userId })
+      .groupBy('q.id')
+      .addGroupBy('user.id')
+      .addGroupBy('badge.id')
+      .addGroupBy('wikiDoc.id');
+    // 정렬 제대로 안 되는 중
+    if (flag === 0) {
+      queryBuilder.orderBy('CAST(created_at AS CHAR)', 'DESC');
+    } else if (flag === 1) {
+      queryBuilder.orderBy('like_count', 'DESC').addOrderBy('CAST(created_at AS CHAR)', 'DESC');
     }
-    return qusetions;
-  }
+    
+    return queryBuilder.getRawMany();
+}
+
 
   // TODO TYPORM 으로 변경 가능여부 재고
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
