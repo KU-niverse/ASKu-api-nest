@@ -10,6 +10,7 @@ import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { UserModule } from 'src/user/user.module';
 import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
 import { Badge } from 'src/badge/entities/badge.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { Badge } from 'src/badge/entities/badge.entity';
       WikiDoc,
       Badge,
       WikiHistory,
+      User,
     ]),
     UserModule,
     AuthModule,
