@@ -82,4 +82,14 @@ export class DebateService {
 
     return debates;
   }
+
+  async getSearchAllDebateByQuery(query: string): Promise<Debate[]> {
+    const debate: Debate[] = await this.debate.find({
+      where: { subject: Like(`%${query}%`) },
+      order: { createdAt: 'DESC' },
+      relations: ['wikiDoc'],
+    });
+
+    return debate;
+  }
 }
