@@ -1,19 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { getRepository } from 'typeorm';
 import { Question } from './entities/question.entity';
 import { Answer } from './entities/answer.entity';
 import { QuestionLike } from './entities/questionLike.entity';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
+import { User } from 'src/user/entities/user.entity';
+import { Connection } from 'mysql2/typings/mysql/lib/Connection';
 
 @Injectable()
 export class QuestionService {
   constructor(
     @InjectRepository(Question)
-    private questionRepository: Repository<Question>,
+    private readonly questionRepository: Repository<Question>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(WikiDoc)
-    private wikiDocRepository: Repository<WikiDoc>,
+    private readonly wikiDocRepository: Repository<WikiDoc>,
+    @InjectRepository(QuestionLike)
+    private readonly questionLikeRepository: Repository<QuestionLike>,
+    @InjectRepository(Answer)
+    private readonly answerRepository: Repository<Answer>,
+    //@InjectConnection()
+    //private readonly connection: Connection,
   ) {}
   async getQuestionsByUserId(userId: number): Promise<Question[]> {
     const qusetions: Question[] = await this.questionRepository.find({
@@ -123,5 +133,66 @@ export class QuestionService {
     }
 
     return document.id; // 문서 ID 반환
+  }
+
+  // 쿼리 문자열을 포함하는 질문들을 데이터베이스에서 검색
+  async getQuestionsByQuery(query: string): Promise<Question[]> {
+    const rawQuery = `
+      SELECT q.id, q.doc_id, q.user_id, q.index_title, q.content, q.created_at, q.answer_or_not, q.is_bad,
+             u.id AS userId, u.nickname AS userNickname, 
+             w.id AS wikiDocId, w.title AS wikiDocTitle,
+             COALESCE(ql.likeCount, 0) AS likeCount,
+             COALESCE(a.answerCount, 0) AS answerCount
+      FROM questions q
+      LEFT JOIN users u ON q.user_id = u.id
+      LEFT JOIN wiki_docs w ON q.doc_id = w.id
+      LEFT JOIN (
+        SELECT id, COUNT(*) AS likeCount
+        FROM question_like
+        GROUP BY id
+      ) ql ON q.id = ql.id
+      LEFT JOIN (
+        SELECT question_id, COUNT(*) AS answerCount
+        FROM answers
+        GROUP BY question_id
+      ) a ON q.id = a.question_id
+      WHERE w.title LIKE ?
+    `;
+
+    const questions = await this.questionRepository.query(rawQuery, [
+      `%${query}%`,
+    ]);
+
+    try {
+      const questions = await this.questionRepository.query(rawQuery, [
+        `%${query}%`,
+      ]);
+      console.log('Query results:', questions);
+
+      if (questions.length === 0) {
+        throw new NotFoundException('잘못된 검색어입니다.');
+      }
+
+      const result = [];
+      for (const question of questions) {
+        result.push({
+          id: question.id,
+          docId: question.doc_id,
+          userId: question.user_id,
+          indexTitle: question.index_title,
+          content: question.content,
+          createdAt: question.created_at,
+          answerOrNot: question.answer_or_not,
+          isBad: question.is_bad,
+          likeCount: question.likeCount,
+          answerCount: question.answerCount,
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error('잘못된 검색어입니다.');
+      throw error;
+    }
   }
 }

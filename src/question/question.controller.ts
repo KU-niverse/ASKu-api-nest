@@ -7,6 +7,7 @@ import {
   UseGuards,
   Param,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -108,5 +109,31 @@ export class QuestionController {
     @Param('title') title: string,
   ): Promise<Question[]> {
     return this.questionService.getQuestionByTitle(title, flag);
+  }
+
+  @Get('query/:query')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '질문 검색',
+    description: '질문을 검색하였습니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '질문을 검색하였습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 검색어입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생하였습니다.',
+  })
+  async getQuestionsByQuery(
+    @Param('query') query: string,
+  ): Promise<Question[]> {
+    return this.questionService.getQuestionsByQuery(query);
   }
 }

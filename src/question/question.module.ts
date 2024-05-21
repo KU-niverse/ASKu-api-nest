@@ -7,10 +7,11 @@ import { QuestionController } from './question.controller';
 import { QuestionService } from './question.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Question, Answer, QuestionLike, WikiDoc]),
+    TypeOrmModule.forFeature([Question, User, WikiDoc, QuestionLike, Answer]),
     AuthModule,
   ],
   controllers: [QuestionController],
