@@ -112,7 +112,7 @@ export class QuestionController {
   }
 
   @Get('query/:query')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '질문 검색',
     description: '질문을 검색하였습니다.',
@@ -134,6 +134,12 @@ export class QuestionController {
   async getQuestionsByQuery(
     @Param('query') query: string,
   ): Promise<Question[]> {
+    // TODO: 아래 로직 함수 분리하여 추가
+    // let query = decodeURIComponent(req.params.query);
+    // if (query.includes("%") || query.includes("_")) {
+    //   query = query.replace(/%/g, "\\%").replace(/_/g, "\\_");
+    // }
+
     return this.questionService.getQuestionsByQuery(query);
   }
 }
