@@ -154,8 +154,46 @@ export class QuestionController {
     }
   }
 
+  // TODO: 미완성, 사용불가, 위키 로직 작성된 뒤 수정 요함
+  @Get('/answer/:question_id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '답변 리스트 조회',
+    description: '답변 리스트를 조회하였습니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '답변 리스트를 조회하였습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 내부 에러가 발생했습니다.',
+  })
+  async getAnswerByQuestionId(
+    @Param('question_id') questionId: number,
+    @Res() res,
+  ): Promise<void> {
+    try {
+      const answers =
+        await this.questionService.getAnswerByQuestionId(questionId);
+      res.status(HttpStatus.OK).send({
+        success: true,
+        message: '성공적으로 답변을 조회하였습니다.',
+        data: answers,
+      });
+    } catch (err) {
+      console.error('질문을 검색하는 도중 오류가 발생했습니다:', err);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
+    }
+  }
+
   @Get('query/:query')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '질문 검색',
     description: '질문을 검색하였습니다.',
