@@ -129,5 +129,4 @@ export class DebateController {
   ): Promise<Debate[]> {
     return this.debateService.getDebateListByQuery(title, query);
   }
-
 }

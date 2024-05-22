@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { DebateHistory } from './entities/debateHistory.entity';
@@ -49,24 +54,32 @@ export class DebateService {
   }
 
   async getDebateListByQuery(title: string, query: string): Promise<Debate[]> {
-    const wikiDoc = await this.wikiDoc.findOne({ where: { title } });
-    if (!wikiDoc) {
-      throw new NotFoundException('해당 문서가 존재하지 않습니다.');
+    const regex = /[\{\}\[\]?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]/g; // eslint-disable-line
+    // TODO: 로직 설명 추가 요함
+    const query_result = query.trim().replace(regex, '');
+
+    if (!query_result) {
+      throw new BadRequestException('잘못된 검색어입니다.');
     }
+    const decoded_query: string = decodeURIComponent(query_result);
+    const decoded_title: string = decodeURIComponent(title);
+    const wikiDoc = await this.wikiDoc.findOne({
+      where: { title: decoded_title },
+    });
 
     let debates: Debate[] = await this.debate.find({
       where: {
         wikiDoc: { id: wikiDoc.id },
-        subject: Like(`%${query}%`),
+        subject: Like(`%${decoded_query}%`),
       },
-      order: { createdAt: 'DESC',},
+      order: { createdAt: 'DESC' },
     });
-  
-    debates = debates.map(debate => {
+
+    debates = debates.map((debate) => {
       delete debate.wikiDoc;
       return debate;
     });
-  
+
     return debates;
   }
 }
