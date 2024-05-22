@@ -1,6 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
@@ -45,22 +50,36 @@ export class DebateService {
       where: { wikiDoc: { id: wikidoc.id } },
       order: { createdAt: 'DESC' },
     });
-    console.log(
-      '🚀 ~ DebateService ~ getDebateListBySubject ~ debate:',
-      debate,
-    );
     return debate;
-    // const queryBuilder = this.debate
-    //   .createQueryBuilder('debate')
-    //   .innerJoinAndSelect('debate.wikiDoc', 'wikiDoc')
-    //   .select(['debate'])
-    //   .orderBy('debate.recentEditedAt', 'DESC');
+  }
 
-    // queryBuilder.andWhere('debate.subject LIKE :subject', {
-    //   subject: `%${subject}%`,
-    // });
+  async getDebateListByQuery(title: string, query: string): Promise<Debate[]> {
+    const regex = /[\{\}\[\]?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]/g; // eslint-disable-line
+    // TODO: 로직 설명 추가 요함
+    const query_result = query.trim().replace(regex, '');
 
-    // const debate: Debate[] = await queryBuilder.getMany();
-    // return debate;
+    if (!query_result) {
+      throw new BadRequestException('잘못된 검색어입니다.');
+    }
+    const decoded_query: string = decodeURIComponent(query_result);
+    const decoded_title: string = decodeURIComponent(title);
+    const wikiDoc = await this.wikiDoc.findOne({
+      where: { title: decoded_title },
+    });
+
+    let debates: Debate[] = await this.debate.find({
+      where: {
+        wikiDoc: { id: wikiDoc.id },
+        subject: Like(`%${decoded_query}%`),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    debates = debates.map((debate) => {
+      delete debate.wikiDoc;
+      return debate;
+    });
+
+    return debates;
   }
 }
