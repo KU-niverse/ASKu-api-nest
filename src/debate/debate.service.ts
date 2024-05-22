@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
@@ -45,22 +45,28 @@ export class DebateService {
       where: { wikiDoc: { id: wikidoc.id } },
       order: { createdAt: 'DESC' },
     });
-    console.log(
-      '🚀 ~ DebateService ~ getDebateListBySubject ~ debate:',
-      debate,
-    );
     return debate;
-    // const queryBuilder = this.debate
-    //   .createQueryBuilder('debate')
-    //   .innerJoinAndSelect('debate.wikiDoc', 'wikiDoc')
-    //   .select(['debate'])
-    //   .orderBy('debate.recentEditedAt', 'DESC');
+  }
 
-    // queryBuilder.andWhere('debate.subject LIKE :subject', {
-    //   subject: `%${subject}%`,
-    // });
+  async getDebateListByQuery(title: string, query: string): Promise<Debate[]> {
+    const wikiDoc = await this.wikiDoc.findOne({ where: { title } });
+    if (!wikiDoc) {
+      throw new NotFoundException('해당 문서가 존재하지 않습니다.');
+    }
 
-    // const debate: Debate[] = await queryBuilder.getMany();
-    // return debate;
+    let debates: Debate[] = await this.debate.find({
+      where: {
+        wikiDoc: { id: wikiDoc.id },
+        subject: Like(`%${query}%`),
+      },
+      order: { createdAt: 'DESC',},
+    });
+  
+    debates = debates.map(debate => {
+      delete debate.wikiDoc;
+      return debate;
+    });
+  
+    return debates;
   }
 }

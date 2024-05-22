@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Param,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/get-user.decorator';
 // import { User } from 'src/user/entities/user.entity';
 import { User } from '../user/entities/user.entity';
+import { catchError } from 'rxjs';
 
 @Controller('debate')
 export class DebateController {
@@ -98,4 +100,34 @@ export class DebateController {
   getDebateListBySubject(@Param('subject') subject: string): Promise<Debate[]> {
     return this.debateService.getDebateListBySubject(subject);
   }
+
+  // TODO: 이 api 기존 api와 달라짐
+  // GET /debate/search/{title}/{query} 토론방 검색
+  @Get('search/:title/:query')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '토론방 검색에 성공하였습니다.',
+    description: '토론방 목록 검색 조회 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '토론방 목록 검색 조회 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 검색어 입력',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  getDebateListByQuery(
+    @Param('title') title: string,
+    @Param('query') query: string,
+  ): Promise<Debate[]> {
+    return this.debateService.getDebateListByQuery(title, query);
+  }
+
 }
