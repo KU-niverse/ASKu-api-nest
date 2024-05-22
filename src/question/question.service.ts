@@ -158,6 +158,17 @@ export class QuestionService {
 
   // 쿼리 문자열을 포함하는 질문들을 데이터베이스에서 검색
   async getQuestionsByQuery(query: string): Promise<Question[]> {
+    const rawQuery = `
+      SELECT q.*, u.nickname AS userNickname, 
+             w.id AS wikiDocId, w.title AS wikiDocTitle,
+             COALESCE(ql.likeCount, 0) AS likeCount,
+             COALESCE(a.answerCount, 0) AS answerCount
+      FROM questions q
+      INNER JOIN users u ON q.user_id = u.id
+      INNER JOIN wiki_docs w ON q.doc_id = w.id
+      LEFT JOIN (
+        SELECT id, COUNT(*) AS likeCount
+        FROM question_like
     const rawQuery = `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count, wiki_docs.title
     FROM questions q
     INNER JOIN users ON q.user_id = users.id
@@ -171,9 +182,14 @@ export class QuestionService {
         SELECT question_id, COUNT(*) as answer_count 
         FROM answers 
         GROUP BY question_id
-    ) a ON q.id = a.question_id
-    WHERE q.content LIKE ?
-    ORDER BY q.created_at DESC`;
+      ) a ON q.id = a.question_id
+      WHERE q.content LIKE ?
+      ORDER BY q.created_at DESC
+    `;
+
+    const questions = await this.questionRepository.query(rawQuery, [
+      `%${query}%`,
+    ]);
 
     try {
       const questions = await this.questionRepository.query(rawQuery, [
