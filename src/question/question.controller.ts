@@ -23,7 +23,7 @@ export class QuestionController {
 
   // TODO: 이 api 기존 api와 달라짐
   // GET /user/mypage/questionhistory 유저 질문 히스토리
-  @Get('me/history/:arrange')
+  @Get('me/history/:flag')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '유저 질문 히스토리',
@@ -55,9 +55,9 @@ export class QuestionController {
   @UseGuards(AuthGuard())
   getQuestionHistory(
     @GetUser() user: User,
-    @Param('arrange') arrange: QuestionArrange,
+    @Param('flag') flag: number,
   ): Promise<Question[]> {
-    return this.questionService.getQuestionsByUserId(user.id, arrange);
+    return this.questionService.getQuestionsByUserId(user.id, flag);
   }
 
   // TODO: 이 api 기존 api와 달라짐
