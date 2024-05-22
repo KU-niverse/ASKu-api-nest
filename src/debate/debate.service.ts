@@ -84,8 +84,16 @@ export class DebateService {
   }
 
   async getSearchAllDebateByQuery(query: string): Promise<Debate[]> {
+    const regex = /[\{\}\[\]?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]/g; // eslint-disable-line
+    const query_result = query.trim().replace(regex, '');
+
+    if (!query_result) {
+      throw new BadRequestException('잘못된 검색어입니다.');
+    }
+
+    const decodedQuery = decodeURIComponent(query_result);
     const debate: Debate[] = await this.debate.find({
-      where: { subject: Like(`%${query}%`) },
+      where: { subject: Like(`%${decodedQuery}%`) },
       order: { createdAt: 'DESC' },
       relations: ['wikiDoc'],
     });
