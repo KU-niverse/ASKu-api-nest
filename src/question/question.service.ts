@@ -160,6 +160,8 @@ export class QuestionService {
       ]);
 
       return questions;
+
+      return questions;
     } catch (error) {
       console.error('잘못된 검색어입니다.');
       throw error;

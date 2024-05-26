@@ -113,7 +113,7 @@ export class QuestionController {
   }
 
   @Get('query/:query')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '질문 검색',
     description: '질문을 검색하였습니다.',
