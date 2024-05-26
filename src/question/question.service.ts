@@ -137,59 +137,29 @@ export class QuestionService {
 
   // 쿼리 문자열을 포함하는 질문들을 데이터베이스에서 검색
   async getQuestionsByQuery(query: string): Promise<Question[]> {
-    const rawQuery = `
-      SELECT q.id, q.doc_id, q.user_id, q.index_title, q.content, q.created_at, q.answer_or_not, q.is_bad,
-             u.id AS userId, u.nickname AS userNickname, 
-             w.id AS wikiDocId, w.title AS wikiDocTitle,
-             COALESCE(ql.likeCount, 0) AS likeCount,
-             COALESCE(a.answerCount, 0) AS answerCount
-      FROM questions q
-      LEFT JOIN users u ON q.user_id = u.id
-      LEFT JOIN wiki_docs w ON q.doc_id = w.id
-      LEFT JOIN (
-        SELECT id, COUNT(*) AS likeCount
-        FROM question_like
+    const rawQuery = `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count, wiki_docs.title
+    FROM questions q
+    INNER JOIN users ON q.user_id = users.id
+    INNER JOIN wiki_docs ON q.doc_id = wiki_docs.id
+    LEFT JOIN (
+        SELECT id, COUNT(*) as like_count 
+        FROM question_like 
         GROUP BY id
-      ) ql ON q.id = ql.id
-      LEFT JOIN (
-        SELECT question_id, COUNT(*) AS answerCount
-        FROM answers
+    ) ql ON q.id = ql.id
+    LEFT JOIN (
+        SELECT question_id, COUNT(*) as answer_count 
+        FROM answers 
         GROUP BY question_id
-      ) a ON q.id = a.question_id
-      WHERE w.title LIKE ?
-    `;
-
-    const questions = await this.questionRepository.query(rawQuery, [
-      `%${query}%`,
-    ]);
+    ) a ON q.id = a.question_id
+    WHERE q.content LIKE ?
+    ORDER BY q.created_at DESC`;
 
     try {
       const questions = await this.questionRepository.query(rawQuery, [
         `%${query}%`,
       ]);
-      console.log('Query results:', questions);
 
-      if (questions.length === 0) {
-        throw new NotFoundException('잘못된 검색어입니다.');
-      }
-
-      const result = [];
-      for (const question of questions) {
-        result.push({
-          id: question.id,
-          docId: question.doc_id,
-          userId: question.user_id,
-          indexTitle: question.index_title,
-          content: question.content,
-          createdAt: question.created_at,
-          answerOrNot: question.answer_or_not,
-          isBad: question.is_bad,
-          likeCount: question.likeCount,
-          answerCount: question.answerCount,
-        });
-      }
-
-      return result;
+      return questions;
     } catch (error) {
       console.error('잘못된 검색어입니다.');
       throw error;
