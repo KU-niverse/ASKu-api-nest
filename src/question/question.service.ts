@@ -134,63 +134,22 @@ export class QuestionService {
 
   // QuestionId로 Answer 가져오기
   async getAnswerByQuestionId(questionId: number): Promise<Answer[]> {
-    // TODO: 질문을 남긴 유저가 나오고 있음 이것이 아니라 위키 히스토리를 변경하며 답을 남긴 유저가 나와야함
-    const answers = await this.answerRepository
-      .createQueryBuilder('answer')
-      .leftJoinAndSelect('answer.question', 'question')
-      .leftJoinAndSelect('question.user', 'user')
-      .leftJoinAndSelect('user.badge', 'badge')
-      .leftJoinAndSelect('answer.wikiHistory', 'wikiHistory')
-      .leftJoinAndSelect('question.wikiDoc', 'wikiDoc')
-      .where('answer.questionId = :questionId', { questionId })
-      .orderBy('answer.createdAt', 'ASC')
-      .select([
-        'answer',
-        'question.id',
-        'question.indexTitle',
-        'user',
-        'wikiHistory.version',
-        'wikiDoc.title',
-        'badge.image',
-        'question.content',
-      ])
-      .getMany();
-
-    // TODO: 기존 코드 로직 이해하고 반영되지 않은 부분 추가
-    // if (answers.length != 0) {
-    //   updatedAnswers = await Promise.all(
-    //     answers.map(async (item) => {
-    //       // 두 버전의 컨텐츠 가져오기
-    //       const [post_version, current_version] = await Promise.all([
-    //         getWikiContent(res, item.title, item.version - 1),
-    //         getWikiContent(res, item.title, item.version),
-    //       ]);
-
-    //       // 두 버전의 컨텐츠 비교하기
-    //       const diffResult = diff.diffChars(post_version, current_version);
-
-    //       // added 속성이 true인 항목만 필터링하고, 문자열로 합치기
-    //       const content = diffResult
-    //         .filter((change) => change.added)
-    //         .map((change) => change.value)
-    //         .join("\n")
-    //         .trimEnd()
-    //         .replace(/\[\[File:.*?\]\]/g, "[이미지]")
-    //         .replace(/\[\[(https?:\/\/[^\]|]+)(?:\|([^\]]+))?\]\]/g, "$1")
-    //         .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, doc, alias) => alias || doc)
-    //         .replace(/..\/wiki\//g, "");
-
-    //       // 합쳐진 문자열을 answer의 content 속성으로 추가하기
-    //       return {
-    //         ...item,
-    //         content,
-    //       };
-    //     })
-    //   );
-    // } else {
-    //   // 답변이 존재하지 않을 경우
-    //   updatedAnswers = [];
-    // }
+    const answers = await this.answerRepository.query(
+      `SELECT answers.*, wiki_history.user_id, wiki_history.version, wiki_history.index_title,
+      users.nickname, users.rep_badge, wiki_docs.title,
+      badges.image AS badge_image
+      FROM wiki_history
+      INNER JOIN answers ON wiki_history.id = answers.wiki_history_id
+      INNER JOIN users ON wiki_history.user_id = users.id
+      INNER JOIN badges ON users.rep_badge = badges.id
+      INNER JOIN wiki_docs on wiki_history.doc_id = wiki_docs.id
+      WHERE answers.question_id = ?
+      ORDER BY answers.created_at ASC;`,
+      [questionId],
+    );
+    if (!answers.length) {
+      throw new NotFoundException('해당 ID를 가진 답변이 존재하지 않습니다');
+    }
     return answers;
   }
 }
