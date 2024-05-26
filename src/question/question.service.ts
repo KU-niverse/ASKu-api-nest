@@ -28,6 +28,8 @@ export class QuestionService {
     private readonly wikiHistoryRepository: Repository<WikiHistory>,
     @InjectRepository(QuestionLike)
     private readonly questionLikeRepository: Repository<QuestionLike>,
+    @InjectRepository(Answer)
+    private readonly answerRepository: Repository<Answer>,
   ) {}
   async getQuestionsByUserId(userId: number): Promise<Question[]> {
     const qusetions: Question[] = await this.questionRepository.find({
@@ -196,9 +198,14 @@ export class QuestionService {
         `%${query}%`,
       ]);
 
+      // 반환된 결과가 배열이 아닌 경우 처리
+      if (!Array.isArray(questions)) {
+        return [questions];
+      }
+
       return questions;
     } catch (error) {
-      console.error('잘못된 검색어입니다.');
+      console.error('Error occurred while searching for questions:', error);
       throw error;
     }
   }

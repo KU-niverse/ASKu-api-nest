@@ -228,6 +228,12 @@ export class QuestionController {
       } else {
         const questions =
           await this.questionService.getQuestionsByQuery(decodedQuery);
+
+        // 반환된 결과가 배열인지 확인합니다.
+        if (!Array.isArray(questions)) {
+          throw new Error('The result from the service is not an array.');
+        }
+
         res.status(HttpStatus.OK).send({
           success: true,
           message: '질문을 검색하였습니다',
@@ -235,7 +241,7 @@ export class QuestionController {
         });
       }
     } catch (err) {
-      console.error(err);
+      console.error('질문을 검색하는 도중 오류가 발생했습니다:', err);
       res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .send({ success: false, message: '오류가 발생하였습니다.' });
