@@ -8,6 +8,7 @@ import {
   Param,
   ParseIntPipe,
   NotFoundException,
+  Res,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -133,7 +134,22 @@ export class QuestionController {
   })
   async getAnswerByQuestionId(
     @Param('question_id') questionId: number,
-  ): Promise<Answer[]> {
-    return this.questionService.getAnswerByQuestionId(questionId);
+    @Res() res,
+  ): Promise<void> {
+    try {
+      const answers =
+        await this.questionService.getAnswerByQuestionId(questionId);
+      res.status(HttpStatus.OK).send({
+        success: true,
+        message: '성공적으로 답변을 조회하였습니다.',
+        data: answers,
+      });
+    } catch (err) {
+      console.error('질문을 검색하는 도중 오류가 발생했습니다:', err);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
+    }
   }
 }
