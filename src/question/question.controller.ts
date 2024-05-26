@@ -10,6 +10,7 @@ import {
   NotFoundException,
   Res,
   Query,
+  Res,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -175,7 +176,31 @@ export class QuestionController {
   })
   async getQuestionsByQuery(
     @Param('query') query: string,
-  ): Promise<Question[]> {
-    return this.questionService.getQuestionsByQuery(query);
+    @Res() res,
+  ): Promise<void> {
+    try {
+      let decodedQuery = decodeURIComponent(query);
+      if (decodedQuery.includes('%') || decodedQuery.includes('_')) {
+        decodedQuery = decodedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
+      }
+      if (!decodedQuery) {
+        res
+          .status(HttpStatus.BAD_REQUEST)
+          .send({ success: false, message: '잘못된 검색어입니다.' });
+      } else {
+        const questions =
+          await this.questionService.getQuestionsByQuery(decodedQuery);
+        res.status(HttpStatus.OK).send({
+          success: true,
+          message: '질문을 검색하였습니다',
+          data: questions,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send({ success: false, message: '오류가 발생하였습니다.' });
+    }
   }
 }
