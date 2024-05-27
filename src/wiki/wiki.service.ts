@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import { Repository } from 'typeorm';
+import { WikiDoc } from './entities/wikiDoc.entity';
 
 @Injectable()
 export class WikiService {
   constructor(
     @InjectRepository(WikiHistory)
     private wikiHistoryRepository: Repository<WikiHistory>,
+    @InjectRepository(WikiDoc)
+    private wikiDocRepository: Repository<WikiDoc>,
   ) {}
 
   async getWikiHistoryByUserId(userId: number): Promise<WikiHistory[]> {
@@ -18,4 +21,25 @@ export class WikiService {
     return wikiHistory;
   }
 
+  async getAllWikiDocs(): Promise<string[]> {
+    const allWikiDocs: WikiDoc[] = await this.wikiDocRepository.find({
+      where: { isDeleted: false },
+      select: ['title'],
+    });
+    return allWikiDocs.map((doc) => doc.title);
+  }
+
+  async getRandomWikiDoc(): Promise<{ [key: string]: string | boolean }> {
+    const randomWikiDoc: WikiDoc = await this.wikiDocRepository
+      .createQueryBuilder('wikiDoc')
+      .select('wikiDoc.title')
+      .where('wikiDoc.isDeleted = :isDeleted', { isDeleted: false })
+      .orderBy('RAND()')
+      .limit(1)
+      .getOne();
+    return {
+      '0': randomWikiDoc ? randomWikiDoc.title : 'No Document Found',
+      success: true,
+    };
+  }
 }
