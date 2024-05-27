@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from './entities/question.entity';
@@ -8,6 +13,8 @@ import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
+import { Pool } from 'mysql2/typings/mysql/lib/Pool';
+import { Action } from 'rxjs/internal/scheduler/Action';
 
 @Injectable()
 export class QuestionService {
@@ -217,5 +224,24 @@ export class QuestionService {
       throw new NotFoundException('No popular questions found');
     }
     return rows;
+  }
+
+  async updateQuestion(
+    questionId: number,
+    userId: number,
+    editQuestionDto: EditQuestionDto,
+  ): Promise<boolean> {
+    const { new_content } = editQuestionDto;
+
+    const question = await this.questionRepository.findOne({
+      where: { id: questionId },
+    });
+
+    // 답변이 이미 달린 질문이거나, 질문 작성자가 아닌 경우 수정 불가
+    if (question && !question.answerOrNot && question.userId === userId) {
+      question.content = new_content;
+      await this.questionRepository.save(question);
+      return true;
+    }
   }
 }
