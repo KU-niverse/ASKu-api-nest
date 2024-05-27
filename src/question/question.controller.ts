@@ -7,6 +7,8 @@ import {
   UseGuards,
   Param,
   ParseIntPipe,
+  NotFoundException,
+  Res,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -165,6 +167,48 @@ export class QuestionController {
       throw new BadRequestException('잘못된 검색어입니다.');
     } else {
       return await this.questionService.getQuestionsByQuery(decodedQuery);
+    }
+  }
+  @Get('popular')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '질문 좋아요가 많은 순서대로 인기 질문을 조회',
+    description: '인기 질문을 조회하였습니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '인기 질문을 조회하였습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 내부 에러가 발생했습니다.',
+  })
+  async getPopularQuestion(@Res() res): Promise<void> {
+    try {
+      const questions = await this.questionService.getPopularQuestion();
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message: '인기 질문을 조회하였습니다.',
+        data: questions,
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          success: false,
+          message: '서버 내부 에러가 발생했습니다.',
+        });
+      }
     }
   }
 }
