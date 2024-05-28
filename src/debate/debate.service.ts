@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -99,5 +98,24 @@ export class DebateService {
     });
 
     return debate;
+  }
+
+  async getIdByTitle(title: string): Promise<number> {
+    const wikidoc: WikiDoc = await this.wikiDoc.findOne({
+      where: { title: title },
+    });
+  
+    if (!wikidoc) {
+      throw new Error('WikiDoc not found');
+    }
+    const debate: Debate[] = await this.debate.find({
+      where: { wikiDoc: { id: wikidoc.id } },
+      order: { createdAt: 'DESC' },
+    });
+  
+    if (debate.length === 0) {
+      throw new Error('Debate not found');
+    }
+    return debate[0].docId;
   }
 }

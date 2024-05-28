@@ -1,10 +1,14 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Query,
+  Req,
+  Request,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -156,5 +160,32 @@ export class DebateController {
     @Param('query') query: string,
   ): Promise<Debate[]> {
     return this.debateService.getSearchAllDebateByQuery(query);
+  }
+
+  // debate/new/{title}
+  //@Post('new/:title')
+  @Get('new/:title')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '토론방 목록을 조회하였습니다.',
+    description: '토론방 목록 조회 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '토론방 목록 조회 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  async getIdByTitle(@Param('title') title: string): Promise<{ success: boolean, docId?: number }> {
+    try {
+      const docId = await this.debateService.getIdByTitle(title);
+      return { success: true, docId };
+    } catch (error) {
+      return { success: false, docId: null};
+    }
   }
 }
