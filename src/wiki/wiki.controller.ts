@@ -4,7 +4,9 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { WikiService } from './wiki.service';
@@ -50,8 +52,36 @@ export class WikiController {
   // // 위키 문서 수정하기 및 기여도 지급
   // @Post('contents/:title')
 
-  // // 위키 문서 삭제하기
-  // @Delete('contents/:title')
+  // 위키 문서 삭제하기
+  @Delete('contents/:title')
+  @UseGuards(AuthGuard())
+  // TODO: AdminGuard()
+  @ApiOperation({
+    summary: '위키 문서 삭제',
+    description: '위키 문서를 삭제합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 문서 삭제 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 문서 삭제 중 오류',
+  })
+  async deleteWikiDocument(@Param('title') title: string, @Res() res) {
+    try {
+      const docId = await this.wikiService.getWikiDocsIdByTitle(title);
+      await this.wikiService.deleteWikiDocsById(docId);
+      return res
+        .status(HttpStatus.OK)
+        .json({ success: true, message: '위키 문서 삭제 성공' });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 문서 삭제 중 오류' });
+    }
+  }
 
   // 모든 글 제목 조회
   @Get('titles')

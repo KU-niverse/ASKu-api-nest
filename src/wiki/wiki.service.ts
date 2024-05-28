@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import { Repository } from 'typeorm';
@@ -41,5 +45,23 @@ export class WikiService {
       '0': randomWikiDoc ? randomWikiDoc.title : 'No Document Found',
       success: true,
     };
+  }
+
+  async getWikiDocsIdByTitle(title: string): Promise<number> {
+    const wikiDoc = await this.wikiDocRepository.findOne({ where: { title } });
+
+    if (!wikiDoc) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return wikiDoc.id;
+  }
+
+  async deleteWikiDocsById(id: number): Promise<void> {
+    const result = await this.wikiDocRepository.update(id, { isDeleted: true });
+
+    if (result.affected === 0) {
+      throw new InternalServerErrorException('Failed to delete document');
+    }
   }
 }
