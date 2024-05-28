@@ -13,6 +13,9 @@ import {
   Body,
   ValidationPipe,
   Delete,
+  Post,
+  Body,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -22,6 +25,7 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
 import { Answer } from './entities/answer.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
+import { CreateQuestionDto } from 'src/user/dto/createQuestionDto.dto';
 
 @Controller('question')
 export class QuestionController {
@@ -235,6 +239,50 @@ export class QuestionController {
       throw new BadRequestException(
         '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
       );
+    }
+  }
+
+  @Post('/new/:title')
+  @UseGuards(AuthGuard())
+  @HttpCode(HttpStatus.CREATED)
+  async questionPost(
+    @GetUser() user: User,
+    @Param('title', ParseIntPipe) title: String,
+    @Body() createQuestionDto: CreateQuestionDto,
+  ) {
+    if (!createQuestionDto.content) {
+      throw new BadRequestException('내용을 작성해주세요.');
+    }
+    try {
+      const docId = await this.questionService.getIdByTitle(
+        createQuestionDto.title,
+      );
+      const newQuestion = await this.questionService.createQuestion(
+        user.id,
+        docId,
+        createQuestionDto,
+      );
+      const message = '질문을 등록하였습니다.';
+      const typesAndConditions = [[1, docId]];
+
+      return { success: true, message, data: newQuestion };
+    } catch (err) {
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
+    }
+  }
+
+  @Post('notice')
+  @UseGuards(AuthGuard())
+  async newNotice(@Body() body: any) {
+    try {
+      const typesAndConditions = body.types_and_conditions; // [[type_id, condition_id], ...]
+      return {
+        success: true,
+        message: body.message,
+        data: body.data ? body.data : undefined,
+      };
+    } catch (err) {
+      throw new InternalServerErrorException('알림 오류가 발생하였습니다.');
     }
   }
 }

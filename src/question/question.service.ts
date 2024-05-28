@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from './entities/question.entity';
@@ -11,6 +16,10 @@ import { Pool } from 'mysql2/typings/mysql/lib/Pool';
 import { Action } from 'rxjs/internal/scheduler/Action';
 import { Answer } from './entities/answer.entity';
 import { QuestionLike } from './entities/questionLike.entity';
+import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
+import { Pool } from 'mysql2/typings/mysql/lib/Pool';
+import { Action } from 'rxjs/internal/scheduler/Action';
+import { CreateQuestionDto } from 'src/user/dto/createQuestionDto.dto';
 
 @Injectable()
 export class QuestionService {
@@ -253,5 +262,31 @@ export class QuestionService {
     } else {
       return false;
     }
+  }
+
+  async getIdByTitle(title: string): Promise<number> {
+    const document = await this.wikiDocRepository.findOne({
+      select: ['id'], // 오직 id 필드만 선택
+      where: { title },
+    });
+
+    if (!document) {
+      throw new NotFoundException(`Document with title '${title}' not found.`);
+    }
+
+    return document.id; // 문서 ID 반환
+  }
+
+  async createQuestion(
+    userId: number,
+    docId: number,
+    createQuestionDto: CreateQuestionDto,
+  ): Promise<Question> {
+    const newQuestion = this.questionRepository.create({
+      ...createQuestionDto,
+      userId: userId,
+      docId: docId,
+    });
+    return this.questionRepository.save(newQuestion);
   }
 }
