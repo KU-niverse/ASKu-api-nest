@@ -110,25 +110,34 @@ export class DebateService {
     return docId;
   }
 
-  async createDebateNewTitle(newDebate: Partial<Debate>): Promise<Omit<Debate, 'wikiDoc'>> {
+  async createDebateNewTitle(
+    newDebate: Partial<Debate>,
+  ): Promise<Omit<Debate, 'wikiDoc'>> {
     const result = await this.debate.save(newDebate);
     return this.getDebateWithoutWikiDoc(result.id);
   }
-  
+
   async getDebateWithoutWikiDoc(id: number): Promise<Omit<Debate, 'wikiDoc'>> {
-    const debate = await this.debate.findOne({ where: { id }, relations: ['wikiDoc'] });
+    const debate = await this.debate.findOne({
+      where: { id },
+      relations: ['wikiDoc'],
+    });
     if (!debate) {
       throw new NotFoundException('토론을 찾을 수 없습니다.');
     }
     const { wikiDoc, ...debateWithoutWikiDoc } = debate;
     return debateWithoutWikiDoc as Omit<Debate, 'wikiDoc'>;
   }
-  
+
+  // TODO: api 정상 작동 확인 후 삭제 요망
   async getDebate(id: number): Promise<Debate> {
-    const debate = await this.debate.findOne({ where: { id }, relations: ['wikiDoc'] });
+    const debate = await this.debate.findOne({
+      where: { id },
+      relations: ['wikiDoc'],
+    });
     if (!debate) {
       throw new NotFoundException('토론을 찾을 수 없습니다.');
     }
     return debate;
-  }  
+  }
 }

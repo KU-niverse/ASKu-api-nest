@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
@@ -18,7 +19,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/get-user.decorator';
 // import { User } from 'src/user/entities/user.entity';
 import { User } from '../user/entities/user.entity';
-import { catchError } from 'rxjs';
+import { CreateDebateDto } from 'src/debate/dto/create-debate.dto';
 
 @Controller('debate')
 export class DebateController {
@@ -184,17 +185,19 @@ export class DebateController {
   @UseGuards(AuthGuard())
   async debateNewTitle(
     @Param('title') title: string,
-    @Body('subject') subject: string,
+    @Body(ValidationPipe) createDebateDto: CreateDebateDto,
     @GetUser() user: User,
   ): Promise<Omit<Debate, 'wikiDoc'>> {
-    if (!subject) {
+    if (!createDebateDto.subject) {
       throw new BadRequestException('토론 제목을 입력하세요.');
     }
-    const docId = await this.debateService.getIdByTitle(decodeURIComponent(title));
+    const docId = await this.debateService.getIdByTitle(
+      decodeURIComponent(title),
+    );
     const newDebate: Partial<Debate> = {
       docId,
       userId: user.id,
-      subject,
+      subject: createDebateDto.subject,
     };
     const result = await this.debateService.createDebateNewTitle(newDebate);
     return result;
