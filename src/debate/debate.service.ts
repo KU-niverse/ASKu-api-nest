@@ -101,21 +101,12 @@ export class DebateService {
   }
 
   async getIdByTitle(title: string): Promise<number> {
-    const wikidoc: WikiDoc = await this.wikiDoc.findOne({
-      where: { title: title },
+    const wikiDoc = await this.wikiDoc.findOne({
+      where: { title },
+      select: ['id'],
     });
-  
-    if (!wikidoc) {
-      throw new Error('WikiDoc not found');
-    }
-    const debate: Debate[] = await this.debate.find({
-      where: { wikiDoc: { id: wikidoc.id } },
-      order: { createdAt: 'DESC' },
-    });
-  
-    if (debate.length === 0) {
-      throw new Error('Debate not found');
-    }
-    return debate[0].docId;
+    const docId = wikiDoc?.id;
+    return docId;
   }
+
 }

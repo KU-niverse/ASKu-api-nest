@@ -180,12 +180,8 @@ export class DebateController {
     status: 500,
     description: '오류가 발생했습니다.',
   })
-  async getIdByTitle(@Param('title') title: string): Promise<{ success: boolean, docId?: number }> {
-    try {
-      const docId = await this.debateService.getIdByTitle(title);
-      return { success: true, docId };
-    } catch (error) {
-      return { success: false, docId: null};
-    }
+  async getIdByTitle(@Param('title') title: string): Promise<{ docId: number; success: boolean }> {
+    const docId = await this.debateService.getIdByTitle(title);
+    return { docId, success: true };
   }
 }
