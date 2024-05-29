@@ -1,8 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotAcceptableException,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
@@ -99,5 +97,20 @@ export class DebateService {
     });
 
     return debate;
+  }
+
+  async getHistory(id: number): Promise<DebateHistory> {
+    return this.debateRepository.findOne({where: {id}});
+  }
+
+  async createNewDebateByTitle(newHistory: Partial<DebateHistory>): Promise<DebateHistory> {
+    const result = await this.debateRepository.save(newHistory);
+    const date = new Date();
+    date.setHours(date.getHours() + 9);
+    await this.debate.update(
+      { id: newHistory.debateId },
+      { recentEditedAt: date.toISOString().slice(0, 19).replace('T', ' ') },
+    );
+    return this.getHistory(result.id);
   }
 }
