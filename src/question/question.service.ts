@@ -21,15 +21,12 @@ export class QuestionService {
     @InjectRepository(Answer)
     private readonly answerRepository: Repository<Answer>,
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
     @InjectRepository(Badge)
     private readonly badgeRepository: Repository<Badge>,
     @InjectRepository(WikiHistory)
     private readonly wikiHistoryRepository: Repository<WikiHistory>,
     @InjectRepository(QuestionLike)
     private readonly questionLikeRepository: Repository<QuestionLike>,
-    @InjectRepository(Answer)
-    private readonly answerRepository: Repository<Answer>,
   ) {}
   async getQuestionsByUserId(userId: number): Promise<Question[]> {
     const qusetions: Question[] = await this.questionRepository.find({
