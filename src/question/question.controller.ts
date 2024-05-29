@@ -115,7 +115,6 @@ export class QuestionController {
   }
 
   // TODO: 미완성, 사용불가, 위키 로직 작성된 뒤 수정 요함
-  // QuestionId로 Answer 가져오기
   @Get('/answer/:question_id')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
