@@ -9,6 +9,8 @@ import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { Pool } from 'mysql2/typings/mysql/lib/Pool';
 import { Action } from 'rxjs/internal/scheduler/Action';
+import { Answer } from './entities/answer.entity';
+import { QuestionLike } from './entities/questionLike.entity';
 
 @Injectable()
 export class QuestionService {
