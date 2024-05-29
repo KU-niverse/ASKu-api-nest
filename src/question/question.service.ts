@@ -1,18 +1,12 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from './entities/question.entity';
-import { Answer } from './entities/answer.entity';
-import { QuestionLike } from './entities/questionLike.entity';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
+import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { Pool } from 'mysql2/typings/mysql/lib/Pool';
 import { Action } from 'rxjs/internal/scheduler/Action';
 
