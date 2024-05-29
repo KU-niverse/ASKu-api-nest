@@ -4,6 +4,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Query,
   Res,
   UseGuards,
@@ -156,5 +157,39 @@ export class DebateController {
     @Param('query') query: string,
   ): Promise<Debate[]> {
     return this.debateService.getSearchAllDebateByQuery(query);
+  }
+
+  // TODO: 이 api 기존 api와 달라짐
+  // POST /debate/end/{title}/{debate} 토론방 종료
+  @Post('end/:subject/:debate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '토론방 검색에 성공하였습니다.',
+    description: '토론방 목록 검색 조회 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '토론방 목록 검색 조회 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 검색어입니다',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  async endDebate(
+    @Param('title') title: string,
+    @Param('debate') debateId: string,
+  ) {
+    const result = await this.debateService.endDebate(debateId);
+    if (!result) {
+      return { success: false, message: '이미 종료된 토론방입니다.' };
+    } else {
+      return { success: true, message: '토론방을 종료하였습니다.' };
+    }
   }
 }

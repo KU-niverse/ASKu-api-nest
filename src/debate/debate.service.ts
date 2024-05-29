@@ -100,4 +100,23 @@ export class DebateService {
 
     return debate;
   }
+
+  async endDebate(id: string) {
+    const [flag] = await this.debateRepository.query(
+      `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
+      [id],
+    );
+  
+    if (!flag || flag.doneOrNot) {
+      return 0;
+    } else {
+      const date = new Date();
+      date.setHours(date.getHours() + 9);
+      const result = await this.debateRepository.query(
+        `UPDATE debates SET done_or_not = true, done_at = ? WHERE id = ?`,
+        [date.toISOString().slice(0, 19).replace('T', ' '), id],
+      );
+      return result;
+    }
+  }
 }
