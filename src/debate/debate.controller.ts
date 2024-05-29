@@ -163,8 +163,8 @@ export class DebateController {
   }
 
   // debate/new/{title}
-  //@Post('new/:title')
-  @Get('new/:title')
+  @Post('new/:title')
+  //@Get('new/:title')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '토론방 목록을 조회하였습니다.',
@@ -180,8 +180,24 @@ export class DebateController {
     status: 500,
     description: '오류가 발생했습니다.',
   })
-  async getIdByTitle(@Param('title') title: string): Promise<{ docId: number; success: boolean }> {
-    const docId = await this.debateService.getIdByTitle(title);
-    return { docId, success: true };
+  // async getIdByTitle(@Param('title') title: string): Promise<{ docId: number; success: boolean }> {
+  //   const docId = await this.debateService.getIdByTitle(title);
+  //   return { docId, success: true };
+  // }
+  // async debatePost(
+  //   @Param('title') title: string,
+  //   @Body('subject') subject: string,
+  //   @Request() req,
+  // ) {
+  //   return this.debateService.debatePost(title, req.user[0].id, subject);
+  // }
+  async debatePostMid(
+    @Param('title') title: string, 
+    @Body() body: any, 
+    @GetUser() user: User,
+  ): Promise<any> {
+    const { subject } = body;
+    const result = await this.debateService.createDebate(title, subject, user.id);
+    return { success: true, message: '토론을 생성하였습니다.', data: result };
   }
 }

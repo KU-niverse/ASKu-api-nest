@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -100,6 +101,7 @@ export class DebateService {
     return debate;
   }
 
+  //정상
   async getIdByTitle(title: string): Promise<number> {
     const wikiDoc = await this.wikiDoc.findOne({
       where: { title },
@@ -109,4 +111,55 @@ export class DebateService {
     return docId;
   }
 
+  async getDebate(id: number): Promise<Debate> {
+    const debate = await this.debate.findOne({ where: { id } });
+    if (!debate) {
+      throw new NotFoundException(`Debate with ID ${id} not found`);
+    }
+    return debate;
+  }
+
+  async createDebate(title: string, subject: string, userId: number): Promise<Debate> {
+    if (!subject) {
+      throw new BadRequestException('토론 제목을 입력하세요.');
+    }
+
+    try {
+      const docId = await this.getIdByTitle(decodeURIComponent(title));
+      const newDebate = this.debate.create({
+        docId: docId,
+        userId: userId,
+        subject: subject,
+      });
+
+      const result = await this.debate.save(newDebate);
+      return this.getDebate(result.id);
+    } catch (err) {
+      console.error(err);
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
+    }
+  }
+
+  // async createDebate(newDebate: Partial<Debate>): Promise<Debate> {
+  //   const debate = this.debate.create(newDebate);
+  //   await this.debate.save(debate);
+  //   return this.getDebate(debate.id);
+  // }
+
+
+  
+  // async debatePost(title: string, userId: number, subject: string): Promise<Debate> {
+  //   if (!subject) {
+  //     throw new Error('토론 제목을 입력하세요.');
+  //   }
+
+  //   const docId = await this.getIdByTitle(decodeURIComponent(title));
+  //   const newDebate: Partial<Debate> = {
+  //     id: docId,
+  //     userId: userId,
+  //     subject,
+  //   };
+
+  //   return this.createDebate(newDebate);
+  // }
 }
