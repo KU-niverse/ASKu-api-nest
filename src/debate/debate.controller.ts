@@ -3,6 +3,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Param,
   Post,
   Query,
@@ -164,32 +165,30 @@ export class DebateController {
   @Post('end/:subject/:debate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '토론방 검색에 성공하였습니다.',
-    description: '토론방 목록 검색 조회 성공',
+    summary: '토론방 종료 성공',
+    description: '토론방을 종료하였습니다.',
   })
   @ApiResponse({
     status: 200,
-    description: '토론방 목록 검색 조회 성공',
+    description: '토론방을 종료하였습니다.',
     type: Debate,
     isArray: true,
   })
   @ApiResponse({
     status: 400,
-    description: '잘못된 검색어입니다',
+    description: '이미 종료된 토론방입니다.',
   })
   @ApiResponse({
     status: 500,
     description: '오류가 발생했습니다.',
   })
-  async endDebate(
-    @Param('title') title: string,
-    @Param('debate') debateId: string,
-  ) {
-    const result = await this.debateService.endDebate(debateId);
-    if (!result) {
-      return { success: false, message: '이미 종료된 토론방입니다.' };
-    } else {
-      return { success: true, message: '토론방을 종료하였습니다.' };
+  async endDebate(@Param('debate') debateId: string) {
+    try {
+      const result = await this.debateService.endDebate(debateId);
+      return result;
+    } catch (err) {
+      console.error(err);
+      throw new InternalServerErrorException('오류가 발생했습니다.');
     }
   }
 }
