@@ -217,11 +217,12 @@ export class QuestionService {
       ORDER BY like_count DESC
       LIMIT 5;`,
     );
-
+    console.log('1');
     if (!rows.length) {
+      console.log('2');
       throw new NotFoundException('No popular questions found');
     }
-
+    console.log('3');
     return rows;
   }
 }
