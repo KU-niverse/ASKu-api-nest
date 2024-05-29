@@ -1,12 +1,14 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Param,
-  Query,
-  Res,
+  Post,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
@@ -17,7 +19,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/get-user.decorator';
 // import { User } from 'src/user/entities/user.entity';
 import { User } from '../user/entities/user.entity';
-import { catchError } from 'rxjs';
+import { CreateDebateDto } from 'src/debate/dto/create-debate.dto';
 
 @Controller('debate')
 export class DebateController {
@@ -156,5 +158,48 @@ export class DebateController {
     @Param('query') query: string,
   ): Promise<Debate[]> {
     return this.debateService.getSearchAllDebateByQuery(query);
+  }
+
+  // TODO: 이 api 기존 api와 달라짐
+  // debate/new/{title}
+  @Post('new/:title')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '토론방 생성.',
+    description: '토론방 생성 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '토론방 생성 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '토론 제목을 입력하세요.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  @UseGuards(AuthGuard())
+  async debateNewTitle(
+    @Param('title') title: string,
+    @Body(ValidationPipe) createDebateDto: CreateDebateDto,
+    @GetUser() user: User,
+  ): Promise<Omit<Debate, 'wikiDoc'>> {
+    if (!createDebateDto.subject) {
+      throw new BadRequestException('토론 제목을 입력하세요.');
+    }
+    const docId = await this.debateService.getIdByTitle(
+      decodeURIComponent(title),
+    );
+    const newDebate: Partial<Debate> = {
+      docId,
+      userId: user.id,
+      subject: createDebateDto.subject,
+    };
+    const result = await this.debateService.createDebateNewTitle(newDebate);
+    return result;
   }
 }
