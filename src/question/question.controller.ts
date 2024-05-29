@@ -9,6 +9,9 @@ import {
   ParseIntPipe,
   NotFoundException,
   Res,
+  Post,
+  Body,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -17,6 +20,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
 import { Answer } from './entities/answer.entity';
+import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 
 @Controller('question')
 export class QuestionController {
@@ -191,5 +195,27 @@ export class QuestionController {
   })
   async getPopularQuestion(): Promise<Question[]> {
     return await this.questionService.getPopularQuestion();
+  }
+
+  @Post('edit/:question')
+  @UseGuards(AuthGuard())
+  async editQuestion(
+    @Param('question') questionId: number,
+    @Body(ValidationPipe) editQuestionDto: EditQuestionDto,
+    @GetUser() user: User,
+  ): Promise<void> {
+    const result = await this.questionService.updateQuestion(
+      questionId,
+      user.id,
+      editQuestionDto,
+    );
+
+    if (!result) {
+      throw new BadRequestException(
+        '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
+      );
+    } else {
+      return;
+    }
   }
 }
