@@ -18,12 +18,12 @@ export class SuccessInterceptor implements NestInterceptor {
         if (statusCode >= 200 && statusCode < 300) {
           return {
             success: true,
-            ...data,
+            data: [...data],
           };
         } else {
           return {
             success: false,
-            ...data,
+            data: [...data],
           };
         }
       }),
