@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -111,55 +110,25 @@ export class DebateService {
     return docId;
   }
 
-  async getDebate(id: number): Promise<Debate> {
-    const debate = await this.debate.findOne({ where: { id } });
+  async createDebateNewTitle(newDebate: Partial<Debate>): Promise<Omit<Debate, 'wikiDoc'>> {
+    const result = await this.debate.save(newDebate);
+    return this.getDebateWithoutWikiDoc(result.id);
+  }
+  
+  async getDebateWithoutWikiDoc(id: number): Promise<Omit<Debate, 'wikiDoc'>> {
+    const debate = await this.debate.findOne({ where: { id }, relations: ['wikiDoc'] });
     if (!debate) {
-      throw new NotFoundException(`Debate with ID ${id} not found`);
+      throw new NotFoundException('토론을 찾을 수 없습니다.');
+    }
+    const { wikiDoc, ...debateWithoutWikiDoc } = debate;
+    return debateWithoutWikiDoc as Omit<Debate, 'wikiDoc'>;
+  }
+  
+  async getDebate(id: number): Promise<Debate> {
+    const debate = await this.debate.findOne({ where: { id }, relations: ['wikiDoc'] });
+    if (!debate) {
+      throw new NotFoundException('토론을 찾을 수 없습니다.');
     }
     return debate;
-  }
-
-  async createDebate(title: string, subject: string, userId: number): Promise<Debate> {
-    if (!subject) {
-      throw new BadRequestException('토론 제목을 입력하세요.');
-    }
-
-    try {
-      const docId = await this.getIdByTitle(decodeURIComponent(title));
-      const newDebate = this.debate.create({
-        docId: docId,
-        userId: userId,
-        subject: subject,
-      });
-
-      const result = await this.debate.save(newDebate);
-      return this.getDebate(result.id);
-    } catch (err) {
-      console.error(err);
-      throw new InternalServerErrorException('오류가 발생하였습니다.');
-    }
-  }
-
-  // async createDebate(newDebate: Partial<Debate>): Promise<Debate> {
-  //   const debate = this.debate.create(newDebate);
-  //   await this.debate.save(debate);
-  //   return this.getDebate(debate.id);
-  // }
-
-
-  
-  // async debatePost(title: string, userId: number, subject: string): Promise<Debate> {
-  //   if (!subject) {
-  //     throw new Error('토론 제목을 입력하세요.');
-  //   }
-
-  //   const docId = await this.getIdByTitle(decodeURIComponent(title));
-  //   const newDebate: Partial<Debate> = {
-  //     id: docId,
-  //     userId: userId,
-  //     subject,
-  //   };
-
-  //   return this.createDebate(newDebate);
-  // }
+  }  
 }

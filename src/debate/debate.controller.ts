@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,10 +7,6 @@ import {
   HttpStatus,
   Param,
   Post,
-  Query,
-  Req,
-  Request,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -162,42 +159,44 @@ export class DebateController {
     return this.debateService.getSearchAllDebateByQuery(query);
   }
 
+  // TODO: 이 api 기존 api와 달라짐
   // debate/new/{title}
   @Post('new/:title')
-  //@Get('new/:title')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '토론방 목록을 조회하였습니다.',
-    description: '토론방 목록 조회 성공',
+    summary: '토론방 생성.',
+    description: '토론방 생성 성공',
   })
   @ApiResponse({
     status: 200,
-    description: '토론방 목록 조회 성공',
+    description: '토론방 생성 성공',
     type: Debate,
     isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '토론 제목을 입력하세요.',
   })
   @ApiResponse({
     status: 500,
     description: '오류가 발생했습니다.',
   })
-  // async getIdByTitle(@Param('title') title: string): Promise<{ docId: number; success: boolean }> {
-  //   const docId = await this.debateService.getIdByTitle(title);
-  //   return { docId, success: true };
-  // }
-  // async debatePost(
-  //   @Param('title') title: string,
-  //   @Body('subject') subject: string,
-  //   @Request() req,
-  // ) {
-  //   return this.debateService.debatePost(title, req.user[0].id, subject);
-  // }
-  async debatePostMid(
-    @Param('title') title: string, 
-    @Body() body: any, 
+  @UseGuards(AuthGuard())
+  async debateNewTitle(
+    @Param('title') title: string,
+    @Body('subject') subject: string,
     @GetUser() user: User,
-  ): Promise<any> {
-    const { subject } = body;
-    const result = await this.debateService.createDebate(title, subject, user.id);
-    return { success: true, message: '토론을 생성하였습니다.', data: result };
+  ): Promise<Omit<Debate, 'wikiDoc'>> {
+    if (!subject) {
+      throw new BadRequestException('토론 제목을 입력하세요.');
+    }
+    const docId = await this.debateService.getIdByTitle(decodeURIComponent(title));
+    const newDebate: Partial<Debate> = {
+      docId,
+      userId: user.id,
+      subject,
+    };
+    const result = await this.debateService.createDebateNewTitle(newDebate);
+    return result;
   }
 }
