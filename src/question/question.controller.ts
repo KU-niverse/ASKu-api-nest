@@ -169,7 +169,7 @@ export class QuestionController {
       return await this.questionService.getQuestionsByQuery(decodedQuery);
     }
   }
-  @Get('popular')
+  @Get('/popular')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '질문 좋아요가 많은 순서대로 인기 질문을 조회',
@@ -189,7 +189,7 @@ export class QuestionController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  async getPopularQuestion(@Res() res): Promise<Question[]> {
+  async getPopularQuestion(): Promise<Question[]> {
     return await this.questionService.getPopularQuestion();
   }
 }
