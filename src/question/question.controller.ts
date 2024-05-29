@@ -189,26 +189,7 @@ export class QuestionController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  async getPopularQuestion(@Res() res): Promise<void> {
-    try {
-      const questions = await this.questionService.getPopularQuestion();
-      res.status(HttpStatus.OK).json({
-        success: true,
-        message: '인기 질문을 조회하였습니다.',
-        data: questions,
-      });
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        res.status(HttpStatus.NOT_FOUND).json({
-          success: false,
-          message: error.message,
-        });
-      } else {
-        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-          success: false,
-          message: '서버 내부 에러가 발생했습니다.',
-        });
-      }
-    }
+  async getPopularQuestion(@Res() res): Promise<Question[]> {
+    return await this.questionService.getPopularQuestion();
   }
 }
