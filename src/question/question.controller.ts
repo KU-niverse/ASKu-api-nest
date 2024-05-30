@@ -16,6 +16,7 @@ import {
   Post,
   Body,
   InternalServerErrorException,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -26,6 +27,7 @@ import { User } from 'src/user/entities/user.entity';
 import { Answer } from './entities/answer.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { CreateQuestionDto } from 'src/user/dto/createQuestionDto.dto';
+import { CreateQuestionDto } from 'src/question/dto/createQuestionDto.dto';
 
 @Controller('question')
 export class QuestionController {
@@ -248,14 +250,14 @@ export class QuestionController {
   async questionPost(
     @GetUser() user: User,
     @Param('title', ParseIntPipe) title: String,
-    @Body() createQuestionDto: CreateQuestionDto,
+    @Body(ValidationPipe) createQuestionDto: CreateQuestionDto,
   ) {
     if (!createQuestionDto.content) {
       throw new BadRequestException('내용을 작성해주세요.');
     }
     try {
       const docId = await this.questionService.getIdByTitle(
-        createQuestionDto.title,
+        createQuestionDto.index_title,
       );
       const newQuestion = await this.questionService.createQuestion(
         user.id,
@@ -268,21 +270,6 @@ export class QuestionController {
       return { success: true, message, data: newQuestion };
     } catch (err) {
       throw new InternalServerErrorException('오류가 발생하였습니다.');
-    }
-  }
-
-  @Post('notice')
-  @UseGuards(AuthGuard())
-  async newNotice(@Body() body: any) {
-    try {
-      const typesAndConditions = body.types_and_conditions; // [[type_id, condition_id], ...]
-      return {
-        success: true,
-        message: body.message,
-        data: body.data ? body.data : undefined,
-      };
-    } catch (err) {
-      throw new InternalServerErrorException('알림 오류가 발생하였습니다.');
     }
   }
 }
