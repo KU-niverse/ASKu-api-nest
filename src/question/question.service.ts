@@ -2,6 +2,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,7 +20,7 @@ import { QuestionLike } from './entities/questionLike.entity';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { Pool } from 'mysql2/typings/mysql/lib/Pool';
 import { Action } from 'rxjs/internal/scheduler/Action';
-import { CreateQuestionDto } from 'src/user/dto/createQuestionDto.dto';
+import { CreateQuestionDto } from 'src/question/dto/create-questionDto.dto';
 
 @Injectable()
 export class QuestionService {
@@ -278,15 +279,23 @@ export class QuestionService {
   }
 
   async createQuestion(
+    newQuestion: CreateQuestionDto,
     userId: number,
-    docId: number,
-    createQuestionDto: CreateQuestionDto,
+    title: string,
   ): Promise<Question> {
-    const newQuestion = this.questionRepository.create({
-      ...createQuestionDto,
+    const { content } = CreateQuestionDto;
+    const title = this.questionRepository.create({
+      ...newQuestion,
       userId: userId,
-      docId: docId,
     });
-    return this.questionRepository.save(newQuestion);
+
+    try {
+      const result = await this.questionRepository.save(question);
+      return this.getQuestionById(result.id);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        '질문 생성 중 오류가 발생하였습니다.',
+      );
+    }
   }
 }

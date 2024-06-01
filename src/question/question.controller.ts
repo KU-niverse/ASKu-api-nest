@@ -17,6 +17,7 @@ import {
   Body,
   InternalServerErrorException,
   ValidationPipe,
+  Next,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -28,6 +29,7 @@ import { Answer } from './entities/answer.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { CreateQuestionDto } from 'src/user/dto/createQuestionDto.dto';
 import { CreateQuestionDto } from 'src/question/dto/createQuestionDto.dto';
+import { CreateQuestionDto } from 'src/question/dto/create-questionDto.dto';
 
 @Controller('question')
 export class QuestionController {
@@ -247,29 +249,43 @@ export class QuestionController {
   @Post('/new/:title')
   @UseGuards(AuthGuard())
   @HttpCode(HttpStatus.CREATED)
-  async questionPost(
-    @GetUser() user: User,
-    @Param('title', ParseIntPipe) title: String,
+  async createQuestion(
+    @Param('title') title: string,
     @Body(ValidationPipe) createQuestionDto: CreateQuestionDto,
-  ) {
+    @GetUser() user: User,
+  ): Promise<void> {
+    const result = await this.questionService.createQuestion(
+      title,
+      user.id,
+      createQuestionDto,
+    );
     if (!createQuestionDto.content) {
-      throw new BadRequestException('내용을 작성해주세요.');
-    }
-    try {
-      const docId = await this.questionService.getIdByTitle(
-        createQuestionDto.index_title,
-      );
-      const newQuestion = await this.questionService.createQuestion(
-        user.id,
-        docId,
-        createQuestionDto,
-      );
-      const message = '질문을 등록하였습니다.';
-      const typesAndConditions = [[1, docId]];
+        throw new BadRequestException('내용을 작성해주세요.');
+      }
 
-      return { success: true, message, data: newQuestion };
+      const docId = await this.questionService.getIdByTitle(title);
+      createQuestionDto.content = content;
+      createQuestionDto.index_title = title;
+
+      const newQuestion = await this.questionService.createQuestion(
+        createQuestionDto,
+        user.id,
+      );
+
+      next({
+        data: newQuestion,
+        message: '질문을 등록하였습니다.',
+        body: {
+          user_id: user.id,
+          types_and_conditions: [[1, docId]],
+        },
+      });
     } catch (err) {
-      throw new InternalServerErrorException('오류가 발생하였습니다.');
+      console.error(err);
+      return {
+        success: false,
+        message: '오류가 발생하였습니다.',
+      };
     }
   }
 }
