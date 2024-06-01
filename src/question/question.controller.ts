@@ -14,6 +14,9 @@ import {
   ValidationPipe,
   Delete,
   InternalServerErrorException,
+  Post,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -257,5 +260,34 @@ export class QuestionController {
       createQuestionDto,
       user.id,
     );
+  }
+
+  @Post('like/:questionId')
+  @UseGuards(AuthGuard())
+  async likeQuestion(
+    @Param('questionId') questionId: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    try {
+      const result = await this.questionService.likeQuestion(
+        questionId,
+        user.id,
+      );
+
+      if (result === 0) {
+        throw new BadRequestException('이미 좋아요를 눌렀습니다.');
+      } else if (result === -1) {
+        throw new BadRequestException(
+          '본인의 질문에는 좋아요를 누를 수 없습니다.',
+        );
+      }
+    } catch (err) {
+      //console.error('Error in likeQuestion controller:', err);
+      if (err instanceof NotFoundException) {
+        throw new NotFoundException('질문을 찾을 수 없습니다.');
+      } else {
+        throw new InternalServerErrorException('오류가 발생하였습니다.');
+      }
+    }
   }
 }
