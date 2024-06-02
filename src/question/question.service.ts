@@ -240,4 +240,18 @@ export class QuestionService {
       return true;
     }
   }
+
+  async deleteQuestion(questionId: number, userId: number): Promise<boolean> {
+    const question = await this.questionRepository.findOne({
+      where: { id: questionId },
+    });
+
+    // 답변이 이미 달린 질문이거나, 질문 작성자가 아닌 경우 삭제 불가
+    if (question && !question.answerOrNot && question.userId === userId) {
+      await this.questionRepository.remove(question);
+      return true;
+    } else {
+      return false;
+    }
+  }
 }
