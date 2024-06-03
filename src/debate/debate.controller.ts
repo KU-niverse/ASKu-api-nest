@@ -183,12 +183,7 @@ export class DebateController {
     description: '오류가 발생했습니다.',
   })
   async endDebate(@Param('debate') debateId: string) {
-    try {
-      const result = await this.debateService.endDebate(debateId);
-      return result;
-    } catch (err) {
-      console.error(err);
-      throw new InternalServerErrorException('오류가 발생했습니다.');
-    }
+    const result = await this.debateService.endDebate(debateId);
+    return result;
   }
 }
