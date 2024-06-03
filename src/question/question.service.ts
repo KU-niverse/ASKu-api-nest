@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -20,7 +21,7 @@ import { QuestionLike } from './entities/questionLike.entity';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { Pool } from 'mysql2/typings/mysql/lib/Pool';
 import { Action } from 'rxjs/internal/scheduler/Action';
-import { CreateQuestionDto } from 'src/question/dto/create-questionDto.dto';
+import { CreateQuestionDto } from 'src/question/dto/create-question.dto';
 
 @Injectable()
 export class QuestionService {
@@ -279,20 +280,40 @@ export class QuestionService {
   }
 
   async createQuestion(
-    newQuestion: CreateQuestionDto,
+    createQuestionDto: CreateQuestionDto,
     userId: number,
-    title: string,
-  ): Promise<Question> {
-    const { content } = CreateQuestionDto;
-    const title = this.questionRepository.create({
-      ...newQuestion,
-      userId: userId,
+  ): Promise<{
+    data: Question;
+    message: string;
+    body: { user_id: number; types_and_conditions: number[][] };
+  }> {
+    const { content, index_title, title } = createQuestionDto;
+
+    if (!content) {
+      throw new BadRequestException('내용을 작성해주세요.');
+    }
+
+    const doc_id = await this.getIdByTitle(title);
+
+    const newQuestion = this.questionRepository.create({
+      content,
+      user: { id: userId } as any, // 관계 설정을 위해 user를 객체로 생성
     });
 
     try {
-      const result = await this.questionRepository.save(question);
-      return this.getQuestionById(result.id);
+      const result = await this.questionRepository.save(newQuestion);
+      const savedQuestion = await this.getQuestionById(result.id);
+
+      return {
+        data: savedQuestion,
+        message: '질문을 등록하였습니다.',
+        body: {
+          user_id: userId,
+          types_and_conditions: [[1, doc_id]],
+        },
+      };
     } catch (error) {
+      console.error(error);
       throw new InternalServerErrorException(
         '질문 생성 중 오류가 발생하였습니다.',
       );

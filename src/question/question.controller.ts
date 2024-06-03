@@ -13,11 +13,9 @@ import {
   Body,
   ValidationPipe,
   Delete,
+  InternalServerErrorException,
   Post,
   Body,
-  InternalServerErrorException,
-  ValidationPipe,
-  Next,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -30,6 +28,7 @@ import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { CreateQuestionDto } from 'src/user/dto/createQuestionDto.dto';
 import { CreateQuestionDto } from 'src/question/dto/createQuestionDto.dto';
 import { CreateQuestionDto } from 'src/question/dto/create-questionDto.dto';
+import { CreateQuestionDto } from './dto/create-question.dto';
 
 @Controller('question')
 export class QuestionController {
@@ -251,41 +250,17 @@ export class QuestionController {
   @HttpCode(HttpStatus.CREATED)
   async createQuestion(
     @Param('title') title: string,
-    @Body(ValidationPipe) createQuestionDto: CreateQuestionDto,
+    @Body() createQuestionDto: CreateQuestionDto,
     @GetUser() user: User,
-  ): Promise<void> {
-    const result = await this.questionService.createQuestion(
-      title,
-      user.id,
+  ): Promise<{
+    data: Question;
+    message: string;
+    body: { user_id: number; types_and_conditions: number[][] };
+  }> {
+    createQuestionDto.title = title;
+    return await this.questionService.createQuestion(
       createQuestionDto,
+      user.id,
     );
-    if (!createQuestionDto.content) {
-        throw new BadRequestException('내용을 작성해주세요.');
-      }
-
-      const docId = await this.questionService.getIdByTitle(title);
-      createQuestionDto.content = content;
-      createQuestionDto.index_title = title;
-
-      const newQuestion = await this.questionService.createQuestion(
-        createQuestionDto,
-        user.id,
-      );
-
-      next({
-        data: newQuestion,
-        message: '질문을 등록하였습니다.',
-        body: {
-          user_id: user.id,
-          types_and_conditions: [[1, docId]],
-        },
-      });
-    } catch (err) {
-      console.error(err);
-      return {
-        success: false,
-        message: '오류가 발생하였습니다.',
-      };
-    }
   }
 }
