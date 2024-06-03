@@ -9,6 +9,7 @@ import {
   Post,
   UnauthorizedException,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
@@ -21,6 +22,8 @@ import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../user/entities/user.entity';
 import { catchError } from 'rxjs';
 import { use } from 'passport';
+import { create } from 'domain';
+import { CreateDebateDto } from './dto/create-debate.dto';
 
 @Controller('debate')
 export class DebateController {
@@ -166,18 +169,18 @@ export class DebateController {
   @Post(':title/new/:debate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '토론방 검색에 성공하였습니다.',
-    description: '토론방 목록 검색 조회 성공',
+    summary: '토론 메시지 생성 성공',
+    description: '토론 메시지를 생성하였습니다.',
   })
   @ApiResponse({
     status: 200,
-    description: '토론방 목록 검색 조회 성공',
+    description: '토론 메시지를 생성하였습니다.',
     type: Debate,
     isArray: true,
   })
   @ApiResponse({
     status: 400,
-    description: '잘못된 검색어입니다',
+    description: '메시지 내용을 입력하세요',
   })
   @ApiResponse({
     status: 500,
@@ -186,19 +189,16 @@ export class DebateController {
   @UseGuards(AuthGuard())
   async createNewContent(
     @Param('debate') debateId: number,
-    @Body('content') content: string,
+    @Body(ValidationPipe) createDebateDto: CreateDebateDto,
     @GetUser() user: User,
   ): Promise<DebateHistory> {
-    if (!content) {
+    if (!createDebateDto.content) {
       throw new BadRequestException('메시지 내용을 입력하세요.');
-    }
-    if (!user || !user.id) {
-      throw new UnauthorizedException('인증되지 않은 사용자입니다.');
     }
     const newHistory: Partial<DebateHistory> = {
       debateId,
       userId: user.id,
-      content: decodeURIComponent(content),
+      content: createDebateDto.content,
     };
     return this.debateService.createNewDebateByTitle(newHistory);
   }
