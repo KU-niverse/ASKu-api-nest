@@ -7,7 +7,7 @@ export class CreateReportDto {
 
   @IsNumber()
   @IsOptional()
-  reasonId?: number;
+  reason_id?: number;
 
   @IsString()
   @IsNotEmpty()

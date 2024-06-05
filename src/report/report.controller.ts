@@ -35,7 +35,7 @@ export class ReportController {
         newReport.userId = user.id;
         newReport.typeId = typeId;
         newReport.target = createReportDto.target;
-        newReport.reasonId = createReportDto.reasonId ?? 1;
+        newReport.reasonId = createReportDto.reason_id ?? 1;
         newReport.comment = createReportDto.comment;
     
         const result = await this.reportService.createReport(newReport);
