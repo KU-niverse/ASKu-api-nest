@@ -273,7 +273,10 @@ export class QuestionService {
     });
 
     if (!document) {
-      throw new NotFoundException(`Document with title '${title}' not found.`);
+      // 문서가 없으면 새로운 문서 생성
+      const newDocument = this.wikiDocRepository.create({ title });
+      const savedDocument = await this.wikiDocRepository.save(newDocument);
+      return savedDocument.id;
     }
 
     return document.id; // 문서 ID 반환
