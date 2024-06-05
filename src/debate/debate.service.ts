@@ -129,15 +129,21 @@ export class DebateService {
     return debateWithoutWikiDoc as Omit<Debate, 'wikiDoc'>;
   }
 
-  // TODO: api 정상 작동 확인 후 삭제 요망
-  async getDebate(id: number): Promise<Debate> {
-    const debate = await this.debate.findOne({
-      where: { id },
-      relations: ['wikiDoc'],
-    });
-    if (!debate) {
-      throw new NotFoundException('토론을 찾을 수 없습니다.');
+  async getAllHistory(title: string, debateId: string): Promise<DebateHistory[]> {
+    const wikiDoc = await this.wikiDoc.findOne({ where: { title } });
+
+    if (!wikiDoc) {
+      throw new Error('WikiDoc not found');
     }
-    return debate;
+
+    const result = await this.debateRepository
+      .createQueryBuilder('debateHistory')
+      .innerJoinAndSelect('debateHistory.user', 'user')
+      .leftJoinAndSelect('user.repBadge', 'repBadge')
+      .where('debateHistory.debateId = :debateId', { debateId })
+      .orderBy('debateHistory.createdAt')
+      .getMany();
+
+    return result;
   }
 }
