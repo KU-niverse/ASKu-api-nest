@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Param,
   Post,
   UseGuards,
@@ -222,10 +223,11 @@ export class DebateController {
     description: '오류가 발생했습니다.',
   })
   @UseGuards(AuthGuard())
-  async historyGetMid(
+  async getDebateTitleHistory(
     @Param('title') title: string,
     @Param('debate') debateId: string,
-  ): Promise<void> {
-    const histories = await this.debateService.getAllHistory(title, debateId);
+  ): Promise<DebateHistory[]> {
+    const histories = await this.debateService.getAllDebateHistoryByDebateId(+debateId);
+    return histories;
   }
 }

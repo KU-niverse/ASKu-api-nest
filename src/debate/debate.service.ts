@@ -129,21 +129,15 @@ export class DebateService {
     return debateWithoutWikiDoc as Omit<Debate, 'wikiDoc'>;
   }
 
-  async getAllHistory(title: string, debateId: string): Promise<DebateHistory[]> {
-    const wikiDoc = await this.wikiDoc.findOne({ where: { title } });
-
-    if (!wikiDoc) {
-      throw new Error('WikiDoc not found');
-    }
-
+  async getAllDebateHistoryByDebateId(debateId: number): Promise<DebateHistory[]> {
     const result = await this.debateRepository
       .createQueryBuilder('debateHistory')
       .innerJoinAndSelect('debateHistory.user', 'user')
-      .leftJoinAndSelect('user.repBadge', 'repBadge')
+      .innerJoinAndSelect('user.badge', 'badge')
       .where('debateHistory.debateId = :debateId', { debateId })
       .orderBy('debateHistory.createdAt')
       .getMany();
-
+  
     return result;
   }
 }
