@@ -329,8 +329,9 @@ export class QuestionService {
       const question = await this.questionRepository.findOne({
         where: { id: questionId },
       });
-
+      console.log(question);
       if (!question) {
+        console.log('오류?');
         throw new NotFoundException('질문을 찾을 수 없습니다.');
       }
 
@@ -342,6 +343,7 @@ export class QuestionService {
         where: { questionId, userId },
       });
 
+      console.log(like);
       if (like) {
         return 0; // 이미 좋아요를 누름
       }
@@ -355,7 +357,6 @@ export class QuestionService {
 
       return 1; // 좋아요 성공
     } catch (error) {
-      //console.error('Error in likeQuestion:', error);
       throw new InternalServerErrorException('오류가 발생하였습니다.');
     }
   }

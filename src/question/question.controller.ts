@@ -282,7 +282,6 @@ export class QuestionController {
         );
       }
     } catch (err) {
-      //console.error('Error in likeQuestion controller:', err);
       if (err instanceof NotFoundException) {
         throw new NotFoundException('질문을 찾을 수 없습니다.');
       } else {
