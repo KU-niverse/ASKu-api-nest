@@ -220,10 +220,10 @@ export class QuestionController {
     }
   }
 
-  @Delete('delete/:question')
+  @Delete('delete/:questionId')
   @UseGuards(AuthGuard())
   async deleteQuestion(
-    @Param('question') questionId: number,
+    @Param('questionId') questionId: number,
     @GetUser() user: User,
   ): Promise<void> {
     const result = await this.questionService.deleteQuestion(
