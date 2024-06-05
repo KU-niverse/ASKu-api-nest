@@ -14,5 +14,6 @@ import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
   ],
   controllers: [DebateController],
   providers: [DebateService],
+  exports: [TypeOrmModule, DebateService],
 })
 export class DebateModule {}

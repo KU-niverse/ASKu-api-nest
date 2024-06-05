@@ -28,5 +28,6 @@ import { User } from 'src/user/entities/user.entity';
   ],
   controllers: [QuestionController],
   providers: [QuestionService],
+  exports: [TypeOrmModule, QuestionService],
 })
 export class QuestionModule {}

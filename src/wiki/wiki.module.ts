@@ -16,11 +16,12 @@ import { UserModule } from 'src/user/user.module';
       WikiDocsView,
       WikiFavorites,
       WikiHistory,
-      UserModule,
     ]),
     AuthModule,
+    UserModule,
   ],
   controllers: [WikiController],
   providers: [WikiService],
+  exports: [TypeOrmModule, WikiService],
 })
 export class WikiModule {}
