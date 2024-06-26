@@ -17,6 +17,8 @@ import {
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
+import { Question } from 'aws-sdk/clients/wellarchitected';
+import { QuestionService } from 'src/question/question.service';
 
 const edp = 'https://kr.object.ncloudstorage.com/';
 const region = 'kr-standard';
@@ -34,6 +36,7 @@ export class WikiService {
     private readonly wikiFavoriteRepository: Repository<WikiFavorites>,
     @InjectRepository(WikiDocsView)
     private readonly wikiDocsViewRepository: Repository<WikiDocsView>,
+    private readonly questionService: QuestionService,
   ) {
     this.s3Client = new S3Client({
       region,
@@ -44,6 +47,34 @@ export class WikiService {
       },
     });
   }
+
+  // -------------------------이 아래로 영섭 작업물 -------------------------//
+  async getRecentWikiHistoryByDocId(doc_id: number): Promise<WikiHistory> {
+    const wikiHistory: WikiHistory = await this.wikiHistoryRepository.findOne({
+      where: { wikiDoc: { id: doc_id } },
+      order: { createdAt: 'DESC' },
+    });
+    return wikiHistory;
+  }
+
+  async checkIndexExist(user: User, question_id: number) {
+    //질문 가져오기
+    const question: Question =
+      await this.questionService.getQuestionById(question_id);
+    // 질문에 해당하는 문서를 가져와서 목차를 가져온다
+    const recentWikiHistory: WikiHistory =
+      await this.getRecentWikiHistoryByDocId(question.docId);
+
+    const wikiDoc: WikiDoc = await this.getWikiDocsById(question.docId);
+
+    const title: string = wikiDoc.title.replace(/\/+/g, '_');
+    const version = recentWikiHistory.version;
+    let text = '';
+    let jsonData = {};
+
+    text = await this.getWikiConst;
+  }
+  // -------------------------이 위로 영섭 작업물 -------------------------//
 
   async getWikiHistoryByUserId(userId: number): Promise<WikiHistory[]> {
     const wikiHistory: WikiHistory[] = await this.wikiHistoryRepository.find({

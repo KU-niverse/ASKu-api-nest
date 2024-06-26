@@ -266,4 +266,40 @@ export class WikiController {
       });
     }
   }
+
+  //--------------이 아래부터 영섭 작업 --------------//
+
+  @Get('content/question/:questionId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '같은 목차가 존재하는지 확인',
+    description:
+      'Get방식으로 같은 목차가 존재하는지 확인합니다. ex) based_on_section: true, section:3',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      '같은 목차 정보 가져오기 성공(based_on_section:true면 찾은거고 false면 없다는 뜻',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그인이 필요한 서비스입니다.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 위키 문서',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+  })
+  @UseGuards(AuthGuard())
+  checkIndexExist(
+    @GetUser() user: User,
+    questionId: number,
+  ): Promise<{ based_on_section: boolean; section: number }> {
+    return this.wikiService.checkIndexExist(user, questionId);
+  }
+
+  // --------------이 위까지 영섭 작업 --------------//
 }

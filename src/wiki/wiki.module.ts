@@ -7,6 +7,7 @@ import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
 import { WikiController } from './wiki.controller';
 import { WikiService } from './wiki.service';
 import { AuthModule } from 'src/auth/auth.module';
+import { QuestionModule } from 'src/question/question.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AuthModule } from 'src/auth/auth.module';
       WikiFavorites,
       WikiHistory,
     ]),
+    QuestionModule,
     AuthModule,
   ],
   controllers: [WikiController],
