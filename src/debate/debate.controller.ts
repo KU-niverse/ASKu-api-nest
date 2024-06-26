@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Param,
   Post,
   UseGuards,
@@ -201,5 +202,32 @@ export class DebateController {
     };
     const result = await this.debateService.createDebateNewTitle(newDebate);
     return result;
+  }
+  
+  // TODO: 이 api 기존 api와 달라짐
+  // GET /debate/view/{title}/{debate} 토론방 조회
+  @Get('view/:title/:debate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '토론방 메시지 조회 성공',
+    description: '토론 메시지를 조회하였습니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '토론 메시지를 조회하였습니다.',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  @UseGuards(AuthGuard())
+  async getDebateTitleHistory(
+    @Param('title') title: string,
+    @Param('debate') debateId: string,
+  ): Promise<DebateHistory[]> {
+    const histories = await this.debateService.getAllDebateHistoryByDebateId(+debateId);
+    return histories;
   }
 }
