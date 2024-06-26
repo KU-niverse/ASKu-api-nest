@@ -12,6 +12,7 @@ import {
   Post,
   Body,
   ValidationPipe,
+  Delete,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -216,6 +217,24 @@ export class QuestionController {
       );
     } else {
       return;
+    }
+  }
+
+  @Delete('delete/:questionId')
+  @UseGuards(AuthGuard())
+  async deleteQuestion(
+    @Param('questionId') questionId: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    const result = await this.questionService.deleteQuestion(
+      questionId,
+      user.id,
+    );
+
+    if (!result) {
+      throw new BadRequestException(
+        '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
+      );
     }
   }
 }
