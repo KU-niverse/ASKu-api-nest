@@ -14,8 +14,6 @@ import {
   ValidationPipe,
   Delete,
   InternalServerErrorException,
-  Post,
-  Body,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -25,9 +23,6 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
 import { Answer } from './entities/answer.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
-import { CreateQuestionDto } from 'src/user/dto/createQuestionDto.dto';
-import { CreateQuestionDto } from 'src/question/dto/createQuestionDto.dto';
-import { CreateQuestionDto } from 'src/question/dto/create-questionDto.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
 @Controller('question')
