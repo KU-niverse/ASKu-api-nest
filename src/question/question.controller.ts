@@ -13,6 +13,7 @@ import {
   Body,
   ValidationPipe,
   Delete,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -22,6 +23,7 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
 import { Answer } from './entities/answer.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
+import { CreateQuestionDto } from './dto/create-question.dto';
 
 @Controller('question')
 export class QuestionController {
@@ -236,5 +238,24 @@ export class QuestionController {
         '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
       );
     }
+  }
+
+  @Post('/new/:title')
+  @UseGuards(AuthGuard())
+  @HttpCode(HttpStatus.CREATED)
+  async createQuestion(
+    @Param('title') title: string,
+    @Body() createQuestionDto: CreateQuestionDto,
+    @GetUser() user: User,
+  ): Promise<{
+    data: Question;
+    message: string;
+    body: { user_id: number; types_and_conditions: number[][] };
+  }> {
+    createQuestionDto.title = title;
+    return await this.questionService.createQuestion(
+      createQuestionDto,
+      user.id,
+    );
   }
 }

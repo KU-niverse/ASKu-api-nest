@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from './entities/question.entity';
@@ -7,10 +14,11 @@ import { User } from 'src/user/entities/user.entity';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
-import { Pool } from 'mysql2/typings/mysql/lib/Pool';
-import { Action } from 'rxjs/internal/scheduler/Action';
 import { Answer } from './entities/answer.entity';
 import { QuestionLike } from './entities/questionLike.entity';
+import { Pool } from 'mysql2/typings/mysql/lib/Pool';
+import { Action } from 'rxjs/internal/scheduler/Action';
+import { CreateQuestionDto } from 'src/question/dto/create-question.dto';
 
 @Injectable()
 export class QuestionService {
@@ -252,6 +260,63 @@ export class QuestionService {
       return true;
     } else {
       return false;
+    }
+  }
+
+  async getIdByTitle(title: string): Promise<number> {
+    const document = await this.wikiDocRepository.findOne({
+      select: ['id'], // 오직 id 필드만 선택
+      where: { title },
+    });
+
+    if (!document) {
+      // 문서가 없으면 새로운 문서 생성
+      const newDocument = this.wikiDocRepository.create({ title });
+      const savedDocument = await this.wikiDocRepository.save(newDocument);
+      return savedDocument.id;
+    }
+
+    return document.id; // 문서 ID 반환
+  }
+
+  async createQuestion(
+    createQuestionDto: CreateQuestionDto,
+    userId: number,
+  ): Promise<{
+    data: Question;
+    message: string;
+    body: { user_id: number; types_and_conditions: number[][] };
+  }> {
+    const { content, index_title, title } = createQuestionDto;
+
+    if (!content) {
+      throw new BadRequestException('내용을 작성해주세요.');
+    }
+
+    const doc_id = await this.getIdByTitle(title);
+
+    const newQuestion = this.questionRepository.create({
+      content,
+      user: { id: userId } as any, // 관계 설정을 위해 user를 객체로 생성
+    });
+
+    try {
+      const result = await this.questionRepository.save(newQuestion);
+      const savedQuestion = await this.getQuestionById(result.id);
+
+      return {
+        data: savedQuestion,
+        message: '질문을 등록하였습니다.',
+        body: {
+          user_id: userId,
+          types_and_conditions: [[1, doc_id]],
+        },
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        '질문 생성 중 오류가 발생하였습니다.',
+      );
     }
   }
 }
