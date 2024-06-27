@@ -5,9 +5,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -25,7 +22,6 @@ import { CreateQuestionDto } from 'src/question/dto/create-question.dto';
 
 @Injectable()
 export class QuestionService {
-  questionLikeRepository: any;
   constructor(
     @InjectRepository(Question)
     private readonly questionRepository: Repository<Question>,
@@ -325,39 +321,33 @@ export class QuestionService {
   }
 
   async likeQuestion(questionId: number, userId: number): Promise<number> {
-    try {
-      const question = await this.questionRepository.findOne({
-        where: { id: questionId },
-      });
-      console.log(question);
-      if (!question) {
-        console.log('오류?');
-        throw new NotFoundException('질문을 찾을 수 없습니다.');
-      }
+    const question = await this.questionRepository.findOne({
+      where: { id: questionId },
+    });
 
-      if (question.userId === userId) {
-        return -1; // 본인의 질문에 좋아요를 누를 수 없음
-      }
-
-      const like = await this.questionLikeRepository.findOne({
-        where: { questionId, userId },
-      });
-
-      console.log(like);
-      if (like) {
-        return 0; // 이미 좋아요를 누름
-      }
-
-      const newLike = this.questionLikeRepository.create({
-        questionId,
-        userId,
-      });
-
-      await this.questionLikeRepository.save(newLike);
-
-      return 1; // 좋아요 성공
-    } catch (error) {
-      throw new InternalServerErrorException('오류가 발생하였습니다.');
+    if (!question) {
+      throw new NotFoundException('질문을 찾을 수 없습니다.');
     }
+
+    if (question.userId === userId) {
+      return -1; // 본인의 질문에 좋아요를 누를 수 없음
+    }
+
+    const like = await this.questionLikeRepository.findOne({
+      where: { id: questionId, userId },
+    });
+
+    if (like) {
+      return 0; // 이미 좋아요를 누름
+    }
+
+    const newLike = this.questionLikeRepository.create({
+      id: questionId,
+      userId,
+    });
+
+    await this.questionLikeRepository.save(newLike);
+
+    return 1; // 좋아요 성공
   }
 }
