@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { getRepository } from 'typeorm';
@@ -43,17 +47,10 @@ export class QuestionService {
       ) a ON q.id = a.question_id
       WHERE q.id = ${id};`,
     );
-    return result;
+    if (result.length == 0) {
+      throw new BadRequestException('잘못된 id 값입니다.');
+    } else {
+      return result;
+    }
   }
-
-  // async getQuestionById(id: number): Promise<Question> {
-  //   const result = await this.questionRepository.findOne({
-  //     where: { id },
-  //     relations: ['user', 'user.repBadge'],
-  //   });
-  //   if (!result) {
-  //     throw new NotFoundException('해당 ID의 질문이 존재하지 않습니다.');
-  //   }
-  //   return result;
-  // }
 }
