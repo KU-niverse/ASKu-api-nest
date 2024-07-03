@@ -84,7 +84,7 @@ export class QuestionController {
   }
 
   @Get('view/:flag/:title')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '질문 목록 조회',
     description: '질문 목록을 조회하였습니다.',
