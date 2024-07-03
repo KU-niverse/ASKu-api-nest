@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiHistory } from './entities/wikiHistory.entity';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from 'src/user/entities/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
@@ -49,7 +49,7 @@ export class WikiController {
     return this.wikiService.getWikiHistoryByUserId(user.id);
   }
 
-  // 위키 문서 정보 가져오기
+  // 위키 문서 텍스트 가져오기
   @Get('contents/:title')
   @ApiOperation({
     summary: '위키 문서 텍스트 가져오기',
@@ -71,8 +71,8 @@ export class WikiController {
     status: 500,
     description: '위키 문서 텍스트 조회 중 오류',
   })
-  async getWikiContent(@Param('title') title: string, @Req() req: Request) {
-    return await this.wikiService.getContents(title, req);
+  async getWikiContent(@Param('title') title: string) {
+    return await this.wikiService.getContents(title);
   }
 
   // 위키 문서 수정하기 및 기여도 지급
@@ -116,7 +116,6 @@ export class WikiController {
     summary: '위키 문서 삭제',
     description: '위키 문서를 삭제합니다.',
   })
-  @ApiBody({})
   @ApiResponse({
     status: 200,
     description: '위키 문서 삭제 성공',

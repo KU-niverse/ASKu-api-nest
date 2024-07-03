@@ -76,7 +76,7 @@ export class WikiService {
   }
 
   // 전체 글 불러오기 / 특정 버전 전체 글 불러오기 때 둘다 쓰임, req.calltype으로 구분
-  async getContents(title: string, req: Request) {
+  async getContents(title: string) {
     try {
       const doc = await this.wikiDocRepository.findOne({ where: { title } });
 
@@ -113,10 +113,10 @@ export class WikiService {
         };
       }
 
-      // version 선언
-      const version =
-        req['calltype'] === 1 ? recentHistory.version : req['version']; // 1: 글 불러오거나 수정 2: 버전별 글 불러오기
-
+      // version 선언 - 수정 필요
+      // const version =
+      //   req['calltype'] === 1 ? recentHistory.version : req['version']; // 1: 글 불러오거나 수정 2: 버전별 글 불러오기
+      const version = recentHistory.version;
       let text = await this.getWikiContent(title, version);
 
       const lines = text.split(/\r?\n/);
@@ -236,7 +236,7 @@ export class WikiService {
   // 이전 위키 내용 가져오기
   private async getWikiContent(
     title: string,
-    version: string,
+    version: number,
   ): Promise<string> {
     const replacedTitle = title.replace(/\/+/g, '_');
     const getObjectCommand = new GetObjectCommand({
