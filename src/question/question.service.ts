@@ -248,6 +248,7 @@ export class QuestionService {
     if (!rows.length) {
       throw new NotFoundException('No popular questions found');
     } else {
+      console.log('3');
       return rows;
     }
     return rows;

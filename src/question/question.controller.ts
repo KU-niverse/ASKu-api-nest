@@ -26,7 +26,6 @@ import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
-
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
@@ -217,7 +216,8 @@ export class QuestionController {
     description: '서버 내부 에러가 발생했습니다.',
   })
   async getPopularQuestion(): Promise<Question[]> {
-    return await this.questionService.getPopularQuestion();
+    const result = await this.questionService.getPopularQuestion();
+    return result;
   }
 
   @Post('edit/:question')
