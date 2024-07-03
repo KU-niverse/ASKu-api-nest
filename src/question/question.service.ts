@@ -8,6 +8,7 @@ import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
+import e from 'express';
 
 @Injectable()
 export class QuestionService {
@@ -217,12 +218,12 @@ export class QuestionService {
       ORDER BY like_count DESC
       LIMIT 5;`,
     );
-    console.log('1');
+
     if (!rows.length) {
-      console.log('2');
+      //console.log('2');
       throw new NotFoundException('No popular questions found');
+    } else {
+      return rows;
     }
-    console.log('3');
-    return rows;
   }
 }
