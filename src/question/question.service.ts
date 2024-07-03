@@ -219,10 +219,12 @@ export class QuestionService {
       LIMIT 5;`,
     );
 
+    console.log('1');
     if (!rows.length) {
-      //console.log('2');
+      console.log('2');
       throw new NotFoundException('No popular questions found');
     } else {
+      console.log('3');
       return rows;
     }
   }

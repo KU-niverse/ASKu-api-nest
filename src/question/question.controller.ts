@@ -189,7 +189,8 @@ export class QuestionController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  async getPopularQuestion(@Res() res): Promise<Question[]> {
-    return await this.questionService.getPopularQuestion();
+  async getPopularQuestion(): Promise<Question[]> {
+    const result = await this.questionService.getPopularQuestion();
+    return result;
   }
 }
