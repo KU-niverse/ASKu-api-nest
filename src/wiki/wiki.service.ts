@@ -333,13 +333,7 @@ export class WikiService {
     return wikiDoc;
   }
 
-  async editWikiDoc(
-    title: string,
-    req: Request,
-    res: Response,
-    editWikiDto: EditWikiDto,
-    user: User,
-  ) {
+  async editWikiDoc(title: string, editWikiDto: EditWikiDto, user: User) {
     try {
       const doc = await this.wikiDocRepository.findOne({ where: { title } });
       if (!doc) {
@@ -368,7 +362,7 @@ export class WikiService {
           success: false,
           message: 'Version is not matched',
           statusCode: 426,
-          new_content: editWikiDto.new_content, // 사용자가 입력했던 새로운 위키 문서 내용
+          new_content: editWikiDto.new_content,
         };
       }
 

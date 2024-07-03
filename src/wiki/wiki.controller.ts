@@ -7,7 +7,6 @@ import {
   HttpStatus,
   Param,
   Post,
-  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -100,12 +99,10 @@ export class WikiController {
   })
   async editWikiDocument(
     @Param('title') title: string,
-    @Req() req,
-    @Res() res,
     @Body() editWikiDto: EditWikiDto,
     @GetUser() user: User,
   ) {
-    return this.wikiService.editWikiDoc(title, req, res, editWikiDto, user);
+    return this.wikiService.editWikiDoc(title, editWikiDto, user);
   }
 
   // 위키 문서 삭제하기
