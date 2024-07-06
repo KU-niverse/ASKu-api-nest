@@ -81,13 +81,11 @@ export class QuestionService {
       WHERE q.doc_id = ${id}
       ORDER BY like_count DESC, q.created_at DESC`,
       );
-    }
-    if (flag === '0') {
+    } else if (flag === '0') {
       questions = await this.questionRepository.query(
-        `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
+        `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
       FROM questions q
       INNER JOIN users ON q.user_id = users.id
-      INNER JOIN badges ON users.rep_badge = badges.id
       LEFT JOIN (
           SELECT id, COUNT(*) as like_count 
           FROM question_like 
