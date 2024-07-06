@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { getRepository } from 'typeorm';
@@ -152,20 +156,17 @@ export class QuestionService {
     WHERE q.content LIKE ?
     ORDER BY q.created_at DESC`;
 
-    try {
-      const questions = await this.questionRepository.query(rawQuery, [
-        `%${query}%`,
-      ]);
+    const questions = await this.questionRepository.query(rawQuery, [
+      `%${query}%`,
+    ]);
 
-      // 반환된 결과가 배열이 아닌 경우 처리
-      if (!Array.isArray(questions)) {
-        return [questions];
-      }
-
+    // 반환된 결과가 배열이 아닌 경우 처리
+    if (!Array.isArray(questions)) {
+      throw new BadRequestException('잘못된 검색어입니다.');
+    } else {
       return questions;
-    } catch (error) {
-      console.error('Error occurred while searching for questions:', error);
-      throw error;
     }
+
+    return questions;
   }
 }
