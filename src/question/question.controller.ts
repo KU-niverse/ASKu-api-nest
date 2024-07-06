@@ -113,11 +113,19 @@ export class QuestionController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  getQuestionByTitle(
+  async getQuestionByTitle(
     @Param('flag') flag: string,
     @Param('title') title: string,
-  ): Promise<Question[]> {
-    return this.questionService.getQuestionByTitle(title, flag);
+  ): Promise<any> {
+    const questions = await this.questionService.getQuestionByTitle(
+      title,
+      flag,
+    );
+    return {
+      success: true,
+      message: '질문 목록을 조회하였습니다.',
+      data: questions,
+    };
   }
 
   // TODO: 미완성, 사용불가, 위키 로직 작성된 뒤 수정 요함
