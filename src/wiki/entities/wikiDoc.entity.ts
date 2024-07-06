@@ -22,11 +22,11 @@ export class WikiDoc extends BaseEntity {
   @ApiProperty({ description: '문서 제목', maxLength: 100 })
   title: string;
 
-  @Column('text', { nullable: true })
+  @Column('text', { nullable: false })
   @ApiProperty({ description: '텍스트 포인터' })
   textPointer: string;
 
-  @Column('text', { nullable: true })
+  @Column('text', { nullable: false })
   @ApiProperty({ description: '최근 필터링된 내용' })
   recentFilteredContent: string;
 

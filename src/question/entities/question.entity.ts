@@ -17,7 +17,7 @@ export class Question extends BaseEntity {
   @ApiProperty({ description: '질문의 고유 식별자' })
   id: number;
 
-  @Column({ type: 'int', nullable: false, default: 1 })
+  @Column({ type: 'int', nullable: false })
   @ApiProperty({ description: '질문이 속한 문서 ID' })
   docId: number;
 
@@ -33,7 +33,7 @@ export class Question extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column('text', { nullable: true })
+  @Column('text', { nullable: false })
   @ApiProperty({ description: '목차 제목 (예: 1. 개요)' })
   indexTitle: string;
 
