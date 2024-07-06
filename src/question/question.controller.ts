@@ -12,6 +12,7 @@ import {
   Post,
   Body,
   ValidationPipe,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -197,13 +198,13 @@ export class QuestionController {
     return await this.questionService.getPopularQuestion();
   }
 
-  @Post('edit/:question')
+  @Post('edit/:questionId')
   @UseGuards(AuthGuard())
   async editQuestion(
-    @Param('question') questionId: number,
+    @Param('questionId') questionId: number,
     @Body(ValidationPipe) editQuestionDto: EditQuestionDto,
     @GetUser() user: User,
-  ): Promise<void> {
+  ): Promise<{ success: boolean; message: string }> {
     const result = await this.questionService.updateQuestion(
       questionId,
       user.id,
@@ -215,7 +216,7 @@ export class QuestionController {
         '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
       );
     } else {
-      return;
+      return { success: true, message: '질문을 수정하였습니다.' };
     }
   }
 }
