@@ -50,7 +50,6 @@ export class QuestionService {
     return qusetions;
   }
 
-  // TODO TYPORM 으로 변경 가능여부 재고
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
   async getQuestionById(id: number): Promise<Question> {
     const result = await this.questionRepository.query(
@@ -287,36 +286,33 @@ export class QuestionService {
     message: string;
     body: { user_id: number; types_and_conditions: number[][] };
   }> {
-    const { content, index_title, title } = createQuestionDto;
+    const { content, indexTitle, title } = createQuestionDto;
 
     if (!content) {
       throw new BadRequestException('내용을 작성해주세요.');
     }
 
     const doc_id = await this.getIdByTitle(title);
-
+    console.log(doc_id);
     const newQuestion = this.questionRepository.create({
       content,
+      indexTitle,
       user: { id: userId } as any, // 관계 설정을 위해 user를 객체로 생성
     });
 
-    try {
-      const result = await this.questionRepository.save(newQuestion);
-      const savedQuestion = await this.getQuestionById(result.id);
+    const result = await this.questionRepository.save(newQuestion);
+    console.log(result);
+    //const savedQuestion = await this.getQuestionById(result.id);
+    //console.log(savedQuestion);
 
-      return {
-        data: savedQuestion,
-        message: '질문을 등록하였습니다.',
-        body: {
-          user_id: userId,
-          types_and_conditions: [[1, doc_id]],
-        },
-      };
-    } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException(
-        '질문 생성 중 오류가 발생하였습니다.',
-      );
-    }
+    //return result;
+    return {
+      data: result,
+      message: '질문을 등록하였습니다.',
+      body: {
+        user_id: userId,
+        types_and_conditions: [[1, doc_id]],
+      },
+    };
   }
 }
