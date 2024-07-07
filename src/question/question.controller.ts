@@ -134,30 +134,15 @@ export class QuestionController {
   })
   async getQuestionsByQuery(
     @Param('query') query: string,
-    @Res() res,
-  ): Promise<void> {
+  ): Promise<Question[]> {
     let decodedQuery = decodeURIComponent(query);
     if (decodedQuery.includes('%') || decodedQuery.includes('_')) {
       decodedQuery = decodedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
     }
     if (!decodedQuery) {
-      res
-        .status(HttpStatus.BAD_REQUEST)
-        .send({ success: false, message: '잘못된 검색어입니다.' });
+      throw new BadRequestException('잘못된 검색어입니다.');
     } else {
-      const questions =
-        await this.questionService.getQuestionsByQuery(decodedQuery);
-
-      // 반환된 결과가 배열인지 확인합니다.
-      if (!Array.isArray(questions)) {
-        throw new Error('잘못된 검색어입니다.');
-      }
-
-      res.status(HttpStatus.OK).send({
-        success: true,
-        message: '질문을 검색하였습니다',
-        data: questions,
-      });
+      return await this.questionService.getQuestionsByQuery(decodedQuery);
     }
   }
 }
