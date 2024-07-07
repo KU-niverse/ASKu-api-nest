@@ -6,11 +6,7 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   @IsString()
   content: string;
-
-  @ApiProperty({ description: '인덱스 제목', default: '' })
-  @IsNotEmpty()
-  @IsString()
-  indexTitle: string;
+  index_title: string;
 
   @ApiProperty({ description: '문서 제목', default: '' })
   @IsNotEmpty()

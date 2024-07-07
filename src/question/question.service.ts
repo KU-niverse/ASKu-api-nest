@@ -286,33 +286,36 @@ export class QuestionService {
     message: string;
     body: { user_id: number; types_and_conditions: number[][] };
   }> {
-    const { content, indexTitle, title } = createQuestionDto;
+    const { content, index_title, title } = createQuestionDto;
 
     if (!content) {
       throw new BadRequestException('내용을 작성해주세요.');
     }
 
     const doc_id = await this.getIdByTitle(title);
-    console.log(doc_id);
+
     const newQuestion = this.questionRepository.create({
       content,
-      indexTitle,
       user: { id: userId } as any, // 관계 설정을 위해 user를 객체로 생성
     });
 
-    const result = await this.questionRepository.save(newQuestion);
-    console.log(result);
-    //const savedQuestion = await this.getQuestionById(result.id);
-    //console.log(savedQuestion);
+    try {
+      const result = await this.questionRepository.save(newQuestion);
+      const savedQuestion = await this.getQuestionById(result.id);
 
-    //return result;
-    return {
-      data: result,
-      message: '질문을 등록하였습니다.',
-      body: {
-        user_id: userId,
-        types_and_conditions: [[1, doc_id]],
-      },
-    };
+      return {
+        data: savedQuestion,
+        message: '질문을 등록하였습니다.',
+        body: {
+          user_id: userId,
+          types_and_conditions: [[1, doc_id]],
+        },
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        '질문 생성 중 오류가 발생하였습니다.',
+      );
+    }
   }
 }

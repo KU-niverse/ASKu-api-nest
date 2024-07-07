@@ -242,7 +242,7 @@ export class QuestionController {
 
   @Post('/new/:title')
   @UseGuards(AuthGuard())
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   async createQuestion(
     @Param('title') title: string,
     @Body() createQuestionDto: CreateQuestionDto,
