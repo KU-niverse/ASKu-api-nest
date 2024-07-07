@@ -150,7 +150,7 @@ export class QuestionController {
 
       // 반환된 결과가 배열인지 확인합니다.
       if (!Array.isArray(questions)) {
-        throw new Error('The result from the service is not an array.');
+        throw new Error('잘못된 검색어입니다.');
       }
 
       res.status(HttpStatus.OK).send({
