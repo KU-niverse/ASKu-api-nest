@@ -14,6 +14,9 @@ import {
   ValidationPipe,
   Delete,
   InternalServerErrorException,
+  UnauthorizedException,
+  HttpException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -24,6 +27,7 @@ import { User } from 'src/user/entities/user.entity';
 import { Answer } from './entities/answer.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 
 @Controller('question')
 export class QuestionController {
@@ -261,19 +265,20 @@ export class QuestionController {
 
   @Post('like/:questionId')
   @UseGuards(AuthGuard())
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   async likeQuestion(
     @Param('questionId') questionId: number,
     @GetUser() user: User,
-  ): Promise<void> {
+  ): Promise<any> {
     const result = await this.questionService.likeQuestion(questionId, user.id);
 
     if (result === 0) {
       throw new BadRequestException('이미 좋아요를 눌렀습니다.');
     } else if (result === -1) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         '본인의 질문에는 좋아요를 누를 수 없습니다.',
       );
+    } else if (result === 1) {
     } else {
       throw new InternalServerErrorException('오류가 발생하였습니다.');
     }

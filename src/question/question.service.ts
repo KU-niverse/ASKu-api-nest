@@ -325,8 +325,9 @@ export class QuestionService {
       where: { id: questionId },
     });
 
-    if (!question) {
-      throw new NotFoundException('질문을 찾을 수 없습니다.');
+    console.log(question);
+    if (question == null) {
+      return 2;
     }
 
     if (question.userId === userId) {
@@ -337,6 +338,7 @@ export class QuestionService {
       where: { id: questionId, userId },
     });
 
+    console.log(like);
     if (like) {
       return 0; // 이미 좋아요를 누름
     }
@@ -345,9 +347,9 @@ export class QuestionService {
       id: questionId,
       userId,
     });
+    console.log(newLike);
 
     await this.questionLikeRepository.save(newLike);
-
     return 1; // 좋아요 성공
   }
 }
