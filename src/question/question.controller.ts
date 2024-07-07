@@ -235,6 +235,8 @@ export class QuestionController {
       throw new BadRequestException(
         '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
       );
+    } else {
+      return;
     }
   }
 }
