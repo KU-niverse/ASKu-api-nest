@@ -198,27 +198,30 @@ export class QuestionController {
     return await this.questionService.getPopularQuestion();
   }
 
-  @Post('/edit/:questionId')
+  @Post('edit/:questionId')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard())
   async editQuestion(
     @Param('questionId') questionId: number,
     @Body(ValidationPipe) editQuestionDto: EditQuestionDto,
     @GetUser() user: User,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: String }> {
     const result = await this.questionService.updateQuestion(
       questionId,
       user.id,
       editQuestionDto,
     );
-    console.log(result);
+
     if (!result) {
       throw new BadRequestException({
         success: false,
         message: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
       });
     } else {
-      return { success: true, message: '질문을 수정하였습니다.' };
+      return {
+        success: true,
+        message: '질문을 수정하였습니다.',
+      };
     }
   }
 }
