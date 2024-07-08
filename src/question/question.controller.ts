@@ -12,6 +12,7 @@ import {
   Post,
   Body,
   ValidationPipe,
+  InternalServerErrorException,
   Delete,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -198,39 +199,16 @@ export class QuestionController {
     return await this.questionService.getPopularQuestion();
   }
 
-  @Post('edit/:question')
-  @UseGuards(AuthGuard())
-  async editQuestion(
-    @Param('question') questionId: number,
-    @Body(ValidationPipe) editQuestionDto: EditQuestionDto,
-    @GetUser() user: User,
-  ): Promise<void> {
-    const result = await this.questionService.updateQuestion(
-      questionId,
-      user.id,
-      editQuestionDto,
-    );
-
-    if (!result) {
-      throw new BadRequestException(
-        '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
-      );
-    } else {
-      return;
-    }
-  }
-
   @Delete('delete/:questionId')
   @UseGuards(AuthGuard())
   async deleteQuestion(
     @Param('questionId') questionId: number,
     @GetUser() user: User,
-  ): Promise<void> {
+  ): Promise<{ success: boolean; message: string }> {
     const result = await this.questionService.deleteQuestion(
       questionId,
       user.id,
     );
-
     if (!result) {
       throw new BadRequestException(
         '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
