@@ -1,8 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotAcceptableException,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';

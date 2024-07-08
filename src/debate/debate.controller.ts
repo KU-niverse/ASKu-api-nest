@@ -3,11 +3,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  InternalServerErrorException,
   Param,
   Post,
-  Query,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -15,12 +12,8 @@ import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
 import { AuthGuard } from '@nestjs/passport';
-// import { GetUser } from 'src/auth/get-user.decorator';
 import { GetUser } from '../auth/get-user.decorator';
-// import { User } from 'src/user/entities/user.entity';
 import { User } from '../user/entities/user.entity';
-import { catchError } from 'rxjs';
-
 @Controller('debate')
 export class DebateController {
   constructor(private readonly debateService: DebateService) {}
