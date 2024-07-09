@@ -8,15 +8,25 @@ import {
   Param,
   Post,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiHistory } from './entities/wikiHistory.entity';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { User } from 'src/user/entities/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { EditWikiDto } from './dto/editWiki.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerOptions } from 'src/config/multer.config';
 
 @ApiTags('wiki')
 @Controller('wiki')
@@ -170,5 +180,90 @@ export class WikiController {
   })
   async getRandomTitle(): Promise<{ [key: string]: string | boolean }> {
     return this.wikiService.getRandomWikiDoc();
+  }
+
+  // 이미지 업로드
+  @Post('image')
+  @UseInterceptors(FileInterceptor('image', multerOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiOperation({
+    summary: '이미지 업로드',
+    description: '이미지를 업로드하고 이미지의 링크를 반환합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '이미지 업로드 성공',
+    schema: {
+      example: {
+        status: 200,
+        success: true,
+        url: 'https://image-bucket.kr.object.ncloudstorage.com/8ae0d3c0-35de-4801-9a3b-31d934b90e49.png',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '이미지 파일이 아니거나 파일 크기가 큼',
+    schema: {
+      example: {
+        status: 400,
+        success: false,
+        message:
+          '지원하지 않는 확장자입니다. or 파일 크기가 너무 큽니다. 5MB 이하의 파일을 올려주세요.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '이미지 업로드 중 오류 발생',
+    schema: {
+      example: {
+        status: 500,
+        success: false,
+        message: '서버에서 예상치 못한 오류가 발생했습니다.',
+      },
+    },
+  })
+  async uploadImage(@UploadedFile() file, @Res() res) {
+    try {
+      console.log(file);
+      return res.status(HttpStatus.OK).json({
+        status: 200,
+        success: true,
+        url: file.location,
+      });
+    } catch (err) {
+      if (err.message === 'Wrong extension') {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: 400,
+          success: false,
+          message: '지원하지 않는 확장자입니다.',
+        });
+      }
+      if (err.message === 'File too large') {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: 400,
+          success: false,
+          message: '파일 크기가 너무 큽니다. 5MB 이하의 파일을 올려주세요.',
+        });
+      }
+      console.log(err);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: '서버에서 예상치 못한 오류가 발생했습니다.',
+      });
+    }
   }
 }
