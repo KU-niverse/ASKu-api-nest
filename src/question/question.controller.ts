@@ -247,11 +247,7 @@ export class QuestionController {
     @Param('title') title: string,
     @Body() createQuestionDto: CreateQuestionDto,
     @GetUser() user: User,
-  ): Promise<{
-    data: Question;
-    message: string;
-    body: { user_id: number; types_and_conditions: number[][] };
-  }> {
+  ): Promise<Question> {
     createQuestionDto.title = title;
     return await this.questionService.createQuestion(
       createQuestionDto,
