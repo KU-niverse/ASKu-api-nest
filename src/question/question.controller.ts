@@ -213,7 +213,7 @@ export class QuestionController {
     @Param('questionId') questionId: number,
     @Body(ValidationPipe) editQuestionDto: EditQuestionDto,
     @GetUser() user: User,
-  ): Promise<{ message: String }> {
+  ): Promise<{ success: boolean; message: String }> {
     const result = await this.questionService.updateQuestion(
       questionId,
       user.id,
@@ -222,10 +222,12 @@ export class QuestionController {
 
     if (!result) {
       throw new BadRequestException({
+        success: false,
         message: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
       });
     } else {
       return {
+        success: true,
         message: '질문을 수정하였습니다.',
       };
     }
