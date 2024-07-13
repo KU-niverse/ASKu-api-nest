@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
@@ -162,6 +163,7 @@ export class QuestionService {
       const questions = await this.questionRepository.query(rawQuery, [
         `%${query}%`,
       ]);
+      console.log(questions);
 
       // 반환된 결과가 배열이 아닌 경우 처리
       if (!Array.isArray(questions)) {
@@ -170,8 +172,7 @@ export class QuestionService {
 
       return questions;
     } catch (error) {
-      console.error('Error occurred while searching for questions:', error);
-      throw error;
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
     }
   }
 }

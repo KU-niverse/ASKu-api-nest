@@ -132,15 +132,16 @@ export class QuestionController {
     status: 500,
     description: '오류가 발생하였습니다.',
   })
-  async getQuestionsByQuery(
-    @Param('query') query: string,
-  ): Promise<Question[]> {
+  async getQuestionsByQuery(@Param('query') query: string): Promise<any> {
     let decodedQuery = decodeURIComponent(query);
     if (decodedQuery.includes('%') || decodedQuery.includes('_')) {
       decodedQuery = decodedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
     }
     if (!decodedQuery) {
-      throw new BadRequestException('잘못된 검색어입니다.');
+      throw new BadRequestException({
+        success: false,
+        message: '잘못된 검색어입니다.',
+      });
     } else {
       return await this.questionService.getQuestionsByQuery(decodedQuery);
     }
