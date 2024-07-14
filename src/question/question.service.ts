@@ -116,7 +116,10 @@ export class QuestionService {
       ORDER BY q.created_at DESC`,
       );
     } else {
-      throw new BadRequestException('잘못된 flag 값입니다.');
+      throw new BadRequestException({
+        success: false,
+        message: '잘못된 flag 값입니다.',
+      });
     }
 
     return questions;
@@ -129,7 +132,10 @@ export class QuestionService {
     });
 
     if (!document) {
-      throw new InternalServerErrorException(`오류가 발생하였습니다.`);
+      throw new InternalServerErrorException({
+        success: false,
+        message: `오류가 발생하였습니다.`,
+      });
     }
 
     return document.id; // 문서 ID 반환
