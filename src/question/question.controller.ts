@@ -16,6 +16,7 @@ import { Question } from './entities/question.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
+import { IsNull } from 'typeorm';
 
 @Controller('question')
 export class QuestionController {
@@ -137,6 +138,9 @@ export class QuestionController {
     if (decodedQuery.includes('%') || decodedQuery.includes('_')) {
       decodedQuery = decodedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
     }
+    // const questions =
+    //   await this.questionService.getQuestionsByQuery(decodedQuery);
+    // console.log(decodedQuery);
     if (!decodedQuery) {
       throw new BadRequestException({
         success: false,

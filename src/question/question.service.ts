@@ -158,20 +158,16 @@ export class QuestionService {
       WHERE q.content LIKE ?
       ORDER BY q.created_at DESC
     `;
-
     try {
       const questions = await this.questionRepository.query(rawQuery, [
         `%${query}%`,
       ]);
-      console.log(questions);
-
-      // 반환된 결과가 배열이 아닌 경우 처리
       if (!Array.isArray(questions)) {
         return [questions];
       }
-
       return questions;
     } catch (error) {
+      // 반환된 결과가 배열이 아닌 경우 처리
       throw new InternalServerErrorException('오류가 발생하였습니다.');
     }
   }
