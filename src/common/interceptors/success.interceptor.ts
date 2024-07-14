@@ -21,6 +21,12 @@ export class SuccessInterceptor implements NestInterceptor {
               success: true,
             };
           }
+          if (typeof data == typeof []) {
+            return {
+              success: true,
+              data,
+            };
+          }
           return {
             success: true,
             data: [...data],

@@ -23,6 +23,7 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
 import { Answer } from './entities/answer.entity';
 import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
+import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 
 @Controller('question')
 export class QuestionController {
@@ -92,129 +93,31 @@ export class QuestionController {
     return this.questionService.getQuestionById(id);
   }
 
-  @Get('view/:flag/:title')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: '질문 목록 조회',
-    description: '질문 목록을 조회하였습니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '질문 목록을 조회하였습니다.',
-    type: Question,
-    isArray: true,
-  })
-  @ApiResponse({
-    status: 400,
-    description: '잘못된 flag 값입니다.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: '서버 내부 에러가 발생했습니다.',
-  })
-  getQuestionByTitle(
-    @Param('flag') flag: string,
-    @Param('title') title: string,
-  ): Promise<Question[]> {
-    return this.questionService.getQuestionByTitle(title, flag);
-  }
-
-  // TODO: 미완성, 사용불가, 위키 로직 작성된 뒤 수정 요함
-  @Get('/answer/:question_id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: '답변 리스트 조회',
-    description: '답변 리스트를 조회하였습니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '답변 리스트를 조회하였습니다.',
-    type: Question,
-    isArray: true,
-  })
-  @ApiResponse({
-    status: 500,
-    description: '서버 내부 에러가 발생했습니다.',
-  })
-  async getAnswerByQuestionId(
-    @Param('question_id') questionId: number,
-  ): Promise<Answer[]> {
-    return await this.questionService.getAnswerByQuestionId(questionId);
-  }
-
-  @Get('query/:query')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: '질문 검색',
-    description: '질문을 검색하였습니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '질문을 검색하였습니다.',
-    type: Question,
-    isArray: true,
-  })
-  @ApiResponse({
-    status: 400,
-    description: '잘못된 검색어입니다.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: '오류가 발생하였습니다.',
-  })
-  async getQuestionsByQuery(
-    @Param('query') query: string,
-  ): Promise<Question[]> {
-    let decodedQuery = decodeURIComponent(query);
-    if (decodedQuery.includes('%') || decodedQuery.includes('_')) {
-      decodedQuery = decodedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
-    }
-    if (!decodedQuery) {
-      throw new BadRequestException('잘못된 검색어입니다.');
-    } else {
-      return await this.questionService.getQuestionsByQuery(decodedQuery);
-    }
-  }
-  @Get('/popular')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: '질문 좋아요가 많은 순서대로 인기 질문을 조회',
-    description: '인기 질문을 조회하였습니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '인기 질문을 조회하였습니다.',
-    type: Question,
-    isArray: true,
-  })
-  @ApiResponse({
-    status: 400,
-    description: '잘못된 요청입니다.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: '서버 내부 에러가 발생했습니다.',
-  })
-  async getPopularQuestion(): Promise<Question[]> {
-    return await this.questionService.getPopularQuestion();
-  }
-
   @Delete('delete/:questionId')
   @UseGuards(AuthGuard())
   async deleteQuestion(
     @Param('questionId') questionId: number,
     @GetUser() user: User,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<any> {
     const result = await this.questionService.deleteQuestion(
       questionId,
       user.id,
     );
-    if (!result) {
-      throw new BadRequestException(
-        '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
-      );
+    if (result == 0) {
+      throw new BadRequestException({
+        success: false,
+        message: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
+      });
+    } else if (result == 1) {
+      return {
+        success: true,
+        message: '질문을 삭제하였습니다.',
+      };
     } else {
-      return;
+      throw new InternalServerErrorException({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
     }
   }
 }
