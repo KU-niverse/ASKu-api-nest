@@ -222,36 +222,45 @@ export class QuestionController {
     }
   }
 
-  @Delete('delete/:questionId')
-  @UseGuards(AuthGuard())
-  async deleteQuestion(
-    @Param('questionId') questionId: number,
-    @GetUser() user: User,
-  ): Promise<void> {
-    const result = await this.questionService.deleteQuestion(
-      questionId,
-      user.id,
-    );
-
-    if (!result) {
-      throw new BadRequestException(
-        '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
-      );
-    }
-  }
-
   @Post('/new/:title')
   @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '질문 좋아요가 많은 순서대로 인기 질문을 조회',
+    description: '등록 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '인기 질문을 조회하였습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 내부 에러가 발생했습니다.',
+  })
   @HttpCode(HttpStatus.OK)
   async createQuestion(
     @Param('title') title: string,
     @Body() createQuestionDto: CreateQuestionDto,
     @GetUser() user: User,
-  ): Promise<Question> {
+  ): Promise<any> {
     createQuestionDto.title = title;
-    return await this.questionService.createQuestion(
+    const result = await this.questionService.createQuestion(
       createQuestionDto,
       user.id,
     );
+
+    if (!result) {
+      throw new BadRequestException({
+        suceess: false,
+        message: '내용을 작성해주세요.',
+      });
+    } else {
+      return result;
+    }
   }
 }

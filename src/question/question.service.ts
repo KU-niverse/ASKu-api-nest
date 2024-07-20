@@ -250,20 +250,6 @@ export class QuestionService {
     }
   }
 
-  async deleteQuestion(questionId: number, userId: number): Promise<boolean> {
-    const question = await this.questionRepository.findOne({
-      where: { id: questionId },
-    });
-
-    // 답변이 이미 달린 질문이거나, 질문 작성자가 아닌 경우 삭제 불가
-    if (question && !question.answerOrNot && question.userId === userId) {
-      await this.questionRepository.remove(question);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   async getIdByTitle(title: string): Promise<number> {
     const document = await this.wikiDocRepository.findOne({
       select: ['id'], // 오직 id 필드만 선택
@@ -282,15 +268,8 @@ export class QuestionService {
   async createQuestion(
     createQuestionDto: CreateQuestionDto,
     userId: number,
-  ): Promise<Question> {
+  ): Promise<any> {
     const { content, index_title, title } = createQuestionDto;
-
-    if (!content) {
-      throw new BadRequestException({
-        suceess: false,
-        message: '내용을 작성해주세요.',
-      });
-    }
 
     const doc_id = await this.getIdByTitle(title);
     const newQuestion = this.questionRepository.create({
@@ -300,7 +279,9 @@ export class QuestionService {
       indexTitle: index_title,
     });
     const result = await this.questionRepository.save(newQuestion);
-    const savedQuestion: Question = await this.getQuestionById(result.id);
-    return savedQuestion;
+    const savedQuestion = await this.getQuestionById(result.id);
+    return {
+      savedQuestion,
+    };
   }
 }
