@@ -341,7 +341,7 @@ export class QuestionService {
       await this.questionRepository.remove(question);
       return 1;
     } else {
-      return 0;
+      return { success: true, message: '질문 목록을 조회하였습니다.', data };
     }
   }
 }
