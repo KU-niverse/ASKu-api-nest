@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   NotFoundException,
   Res,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -191,6 +192,13 @@ export class QuestionController {
   })
   async getPopularQuestion(): Promise<Question[]> {
     const result = await this.questionService.getPopularQuestion();
-    return result;
+    if (result) {
+      return result;
+    } else {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
+    }
   }
 }
