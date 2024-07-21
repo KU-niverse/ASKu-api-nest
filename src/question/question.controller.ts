@@ -144,7 +144,6 @@ export class QuestionController {
         data: answers,
       });
     } catch (err) {
-      console.error('질문을 검색하는 도중 오류가 발생했습니다:', err);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
         success: false,
         message: '오류가 발생하였습니다.',
