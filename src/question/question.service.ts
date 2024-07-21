@@ -270,8 +270,16 @@ export class QuestionService {
     userId: number,
   ): Promise<any> {
     const { content, index_title, title } = createQuestionDto;
+    
+    if (!content) {
+      throw new BadRequestException({
+        suceess: false,
+        message: '내용을 작성해주세요.',
+      });
+    }
 
     const doc_id = await this.getIdByTitle(title);
+
     const newQuestion = this.questionRepository.create({
       content,
       user: { id: userId }, // 관계 설정을 위해 user를 객체로 생성
@@ -279,9 +287,7 @@ export class QuestionService {
       indexTitle: index_title,
     });
     const result = await this.questionRepository.save(newQuestion);
-    const savedQuestion = await this.getQuestionById(result.id);
-    return {
-      savedQuestion,
-    };
+    const savedQuestion: Question = await this.getQuestionById(result.id);
+    return savedQuestion;
   }
 }

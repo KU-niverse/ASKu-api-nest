@@ -247,20 +247,11 @@ export class QuestionController {
     @Param('title') title: string,
     @Body() createQuestionDto: CreateQuestionDto,
     @GetUser() user: User,
-  ): Promise<any> {
+  ): Promise<Question> {
     createQuestionDto.title = title;
-    const result = await this.questionService.createQuestion(
+    return await this.questionService.createQuestion(
       createQuestionDto,
       user.id,
     );
-
-    if (!result) {
-      throw new BadRequestException({
-        suceess: false,
-        message: '내용을 작성해주세요.',
-      });
-    } else {
-      return result;
-    }
   }
 }
