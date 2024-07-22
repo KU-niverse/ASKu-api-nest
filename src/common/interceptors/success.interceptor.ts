@@ -16,6 +16,17 @@ export class SuccessInterceptor implements NestInterceptor {
         const statusCode = response.statusCode;
 
         if (statusCode >= 200 && statusCode < 300) {
+          if (data == undefined) {
+            return {
+              success: true,
+            };
+          }
+          if (typeof data == typeof []) {
+            return {
+              success: true,
+              data,
+            };
+          }
           return {
             success: true,
             data: [...data],

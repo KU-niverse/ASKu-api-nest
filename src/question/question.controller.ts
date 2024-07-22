@@ -117,29 +117,27 @@ export class QuestionController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '질문 검색',
-    description: '질문을 검색하였습니다.',
+    description: '질문 제목 기반 검색',
   })
   @ApiResponse({
     status: 200,
-    description: '질문을 검색하였습니다.',
+    description: '질문 검색 성공',
     type: Question,
     isArray: true,
   })
   @ApiResponse({
     status: 400,
-    description: '잘못된 검색어입니다.',
+    description: '잘못된 입력',
   })
   @ApiResponse({
     status: 500,
-    description: '오류가 발생하였습니다.',
+    description: '오류 발생',
   })
   async getQuestionsByQuery(@Param('query') query: string): Promise<any> {
     let decodedQuery = decodeURIComponent(query);
     if (decodedQuery.includes('%') || decodedQuery.includes('_')) {
       decodedQuery = decodedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
     }
-    // const questions =
-    //   await this.questionService.getQuestionsByQuery(decodedQuery);
     // console.log(decodedQuery);
     if (!decodedQuery) {
       throw new BadRequestException({
