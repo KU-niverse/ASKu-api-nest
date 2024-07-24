@@ -112,6 +112,7 @@ export class QuestionController {
       return {
         success: true,
         message: '질문을 삭제하였습니다.',
+        revised: 1,
       };
     } else {
       throw new InternalServerErrorException({
