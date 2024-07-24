@@ -17,8 +17,8 @@ export class SuccessInterceptor implements NestInterceptor {
         if (!isArray(data) && data?.revised === 1) {
           return {
             success: data.success,
-            data: data.data,
             message: data.message,
+            data: data.data,
           };
         }
         if (data?.success) {
