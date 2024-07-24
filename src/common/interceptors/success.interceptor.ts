@@ -39,12 +39,12 @@ export class SuccessInterceptor implements NestInterceptor {
           }
           return {
             success: true,
-            data: [...data],
+            ...data,
           };
         } else {
           return {
             success: false,
-            data: [...data],
+            ...data,
           };
         }
       }),

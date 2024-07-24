@@ -100,6 +100,24 @@ export class DebateService {
     return debate;
   }
 
+  async endDebate(id: string): Promise<void> {
+    const [flag] = await this.debateRepository.query(
+      `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
+      [id],
+    );
+  
+    if (!flag || flag.doneOrNot) {
+      throw new Error('이미 종료된 토론방입니다.'); 
+    } else {
+      const date = new Date();
+      date.setHours(date.getHours() + 9);
+      await this.debateRepository.query(
+        `UPDATE debates SET done_or_not = true, done_at = ? WHERE id = ?`,
+        [date.toISOString().slice(0, 19).replace('T', ' '), id],
+      );
+    }
+  }
+
   //정상
   async getIdByTitle(title: string): Promise<number> {
     const wikiDoc = await this.wikiDoc.findOne({
