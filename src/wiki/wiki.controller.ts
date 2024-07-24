@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Post,
   Res,
   UploadedFile,
@@ -269,7 +271,7 @@ export class WikiController {
 
   //--------------이 아래부터 영섭 작업 --------------//
 
-  @Get('content/question/:questionId')
+  @Get('contents/question/:questionId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '같은 목차가 존재하는지 확인',
@@ -294,11 +296,15 @@ export class WikiController {
     description: '서버 에러',
   })
   @UseGuards(AuthGuard())
-  checkIndexExist(
+  async checkIndexExist(
     @GetUser() user: User,
+    @Param('questionId', ParseIntPipe)
     questionId: number,
-  ): Promise<{ based_on_section: boolean; section: number }> {
-    return this.wikiService.checkIndexExist(user, questionId);
+  ) {
+    console.log('🚀 ~ WikiController ~ questionId:', questionId);
+    const result = await this.wikiService.checkIndexExist(user, questionId);
+    console.log('🚀 ~ WikiController ~ result:', result);
+    return result;
   }
 
   // --------------이 위까지 영섭 작업 --------------//

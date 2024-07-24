@@ -8,6 +8,7 @@ import { WikiController } from './wiki.controller';
 import { WikiService } from './wiki.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { QuestionModule } from 'src/question/question.module';
+import { Question } from 'src/question/entities/question.entity';
 
 @Module({
   imports: [
@@ -22,5 +23,6 @@ import { QuestionModule } from 'src/question/question.module';
   ],
   controllers: [WikiController],
   providers: [WikiService],
+  exports: [WikiService, TypeOrmModule],
 })
 export class WikiModule {}

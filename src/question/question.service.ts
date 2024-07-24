@@ -23,7 +23,6 @@ export class QuestionService {
     private wikiDocRepository: Repository<WikiDoc>,
     @InjectRepository(Answer)
     private readonly answerRepository: Repository<Answer>,
-    @InjectRepository(User)
     @InjectRepository(Badge)
     private readonly badgeRepository: Repository<Badge>,
     @InjectRepository(WikiHistory)
@@ -45,7 +44,8 @@ export class QuestionService {
   // TODO TYPORM 으로 변경 가능여부 재고
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
   async getQuestionById(id: number): Promise<Question> {
-    const result = await this.questionRepository.query(
+    console.log('🚀 ~ QuestionService ~ getQuestionById ~ id:', id);
+    const result: Question = await this.questionRepository.query(
       `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
       FROM questions q
       INNER JOIN users ON q.user_id = users.id
@@ -62,6 +62,7 @@ export class QuestionService {
       ) a ON q.id = a.question_id
       WHERE q.id = ${id};`,
     );
+
     return result;
   }
 
