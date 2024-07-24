@@ -158,19 +158,23 @@ export class QuestionService {
       WHERE q.content LIKE ?
       ORDER BY q.created_at DESC
     `;
-    try {
-      const questions = await this.questionRepository.query(rawQuery, [
-        `%${query}%`,
-      ]);
-      if (query.includes('%') || query.includes('_')) {
-        throw new BadRequestException({
-          success: false,
-          message: '잘못된 검색어입니다.',
-        });
-      }
-      return { success: true, message: '질문을 검색하였습니다.', questions };
-    } catch (error) {
-      throw new InternalServerErrorException('오류가 발생하였습니다.');
-    }
+
+    // try {
+    const questions = await this.questionRepository.query(rawQuery, [
+      `%${query}%`,
+    ]);
+    // if (query.includes('%') || query.includes('_')) {
+    //   throw new BadRequestException({
+    //     success: false,
+    //     message: '잘못된 검색어입니다.',
+    //   });
+    // }
+    return { message: '질문을 검색하였습니다.', data: questions, revised: 1 };
+    // return { message: '질문을 검색하였습니다.', questions };
+    return { success: true, message: '질문을 검색하였습니다.', questions };
+    // }
+    // catch (error) {
+    //   throw new InternalServerErrorException('오류가 발생하였습니다.');
+    // }
   }
 }
