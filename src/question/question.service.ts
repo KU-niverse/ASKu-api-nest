@@ -31,7 +31,6 @@ export class QuestionService {
     private wikiDocRepository: Repository<WikiDoc>,
     @InjectRepository(Answer)
     private readonly answerRepository: Repository<Answer>,
-    @InjectRepository(User)
     @InjectRepository(Badge)
     private readonly badgeRepository: Repository<Badge>,
     @InjectRepository(WikiHistory)
@@ -39,10 +38,17 @@ export class QuestionService {
     @InjectRepository(QuestionLike)
     private readonly questionLikeRepository: Repository<QuestionLike>,
   ) {}
-  async getQuestionsByUserId(userId: number): Promise<Question[]> {
+  async getQuestionsByUserId(userId: number, arrange: string ): Promise<Question[]> {
+    let order: any;
+    if (arrange === 'latest') {
+      order = { createdAt: 'DESC' };
+    } else if (arrange === 'popularity') {
+      order = { popularity: 'DESC' };
+    }
     const qusetions: Question[] = await this.questionRepository.find({
       where: { userId },
-      relations: ['user', 'wikiDoc'],
+      relations: ['user', 'wikiDoc','userActions'],
+      order,
     });
     if (qusetions.length === 0) {
       throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다');
