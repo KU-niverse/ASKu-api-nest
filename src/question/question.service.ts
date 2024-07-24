@@ -50,27 +50,28 @@ export class QuestionService {
     return qusetions;
   }
 
-  // TODO TYPORM 으로 변경 가능여부 재고
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
   async getQuestionById(id: number): Promise<Question> {
-    const result = await this.questionRepository.query(
-      `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
-      FROM questions q
-      INNER JOIN users ON q.user_id = users.id
-      INNER JOIN badges ON users.rep_badge = badges.id
-      LEFT JOIN (
-          SELECT id, COUNT(*) as like_count 
-          FROM question_like 
-          GROUP BY id
-      ) ql ON q.id = ql.id
-      LEFT JOIN (
-          SELECT question_id, COUNT(*) as answer_count 
-          FROM answers 
-          GROUP BY question_id
-      ) a ON q.id = a.question_id
-      WHERE q.id = ${id};`,
+    const result: Question[] = await this.questionRepository.query(
+      // `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
+      // FROM questions q
+      // INNER JOIN users ON q.user_id = users.id
+      // INNER JOIN badges ON users.rep_badge = badges.id
+      // LEFT JOIN (
+      //     SELECT id, COUNT(*) as like_count
+      //     FROM question_like
+      //     GROUP BY id
+      // ) ql ON q.id = ql.id
+      // LEFT JOIN (
+      //     SELECT question_id, COUNT(*) as answer_count
+      //     FROM answers
+      //     GROUP BY question_id
+      // ) a ON q.id = a.question_id
+      // WHERE q.id = ${id};`,
+      `SELECT * FROM questions WHERE id = ?`,
+      [id],
     );
-    return result;
+    return result[0];
   }
 
   // 인기순 정렬
@@ -249,26 +250,11 @@ export class QuestionService {
     }
   }
 
-  async deleteQuestion(questionId: number, userId: number): Promise<boolean> {
-    const question = await this.questionRepository.findOne({
-      where: { id: questionId },
-    });
-
-    // 답변이 이미 달린 질문이거나, 질문 작성자가 아닌 경우 삭제 불가
-    if (question && !question.answerOrNot && question.userId === userId) {
-      await this.questionRepository.remove(question);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   async getIdByTitle(title: string): Promise<number> {
     const document = await this.wikiDocRepository.findOne({
       select: ['id'], // 오직 id 필드만 선택
       where: { title },
     });
-
     if (!document) {
       // 문서가 없으면 새로운 문서 생성
       const newDocument = this.wikiDocRepository.create({ title });
@@ -282,42 +268,32 @@ export class QuestionService {
   async createQuestion(
     createQuestionDto: CreateQuestionDto,
     userId: number,
-  ): Promise<{
-    data: Question;
-    message: string;
-    body: { user_id: number; types_and_conditions: number[][] };
-  }> {
+  ): Promise<any> {
     const { content, index_title, title } = createQuestionDto;
 
     if (!content) {
-      throw new BadRequestException('내용을 작성해주세요.');
+      throw new BadRequestException({
+        suceess: false,
+        message: '내용을 작성해주세요.',
+      });
     }
 
     const doc_id = await this.getIdByTitle(title);
 
     const newQuestion = this.questionRepository.create({
       content,
-      user: { id: userId } as any, // 관계 설정을 위해 user를 객체로 생성
+      user: { id: userId }, // 관계 설정을 위해 user를 객체로 생성
+      wikiDoc: { id: doc_id },
+      indexTitle: index_title,
     });
-
-    try {
-      const result = await this.questionRepository.save(newQuestion);
-      const savedQuestion = await this.getQuestionById(result.id);
-
-      return {
-        data: savedQuestion,
-        message: '질문을 등록하였습니다.',
-        body: {
-          user_id: userId,
-          types_and_conditions: [[1, doc_id]],
-        },
-      };
-    } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException(
-        '질문 생성 중 오류가 발생하였습니다.',
-      );
-    }
+    const result = await this.questionRepository.save(newQuestion);
+    const savedQuestion: Question = await this.getQuestionById(result.id);
+    return {
+      success: true,
+      message: '질문을 등록하였습니다.',
+      data: savedQuestion,
+      revised: 1,
+    };
   }
 
   async likeQuestion(questionId: number, userId: number): Promise<number> {
