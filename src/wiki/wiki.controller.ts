@@ -307,5 +307,40 @@ export class WikiController {
     return result;
   }
 
+  @Get('contents/:title(*)/version/:version')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '위키 문서 버전 미리보기 정보 가져오기',
+    description: 'GET 방식으로 위키 문서 버전 미리보기 정보를 가져옵니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '	위키 문서 정보 가져오기 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 위키 문서',
+  })
+  @ApiResponse({
+    status: 410,
+    description: '삭제된 위키 문서',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 문서 정보 가져오기 중 오류',
+  })
+  async getWikiContentByVersion(
+    @Param('title') title: string,
+    @Param('version', ParseIntPipe) version: number,
+    @GetUser() user: User,
+  ) {
+    return await this.wikiService.getTotalContentsByVersion(
+      title,
+      version,
+      2,
+      user,
+    );
+  }
+
   // --------------이 위까지 영섭 작업 --------------//
 }

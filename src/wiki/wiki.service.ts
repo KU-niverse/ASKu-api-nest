@@ -1,4 +1,5 @@
 import {
+  GoneException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -160,6 +161,167 @@ export class WikiService {
     jsonData['success'] = true;
     console.log('6');
     return jsonData;
+  }
+
+  async getTotalContentsByVersion(
+    title: string,
+    version: number,
+    calltype: number,
+    user?: User,
+  ) {
+    const doc: WikiDoc = await this.getWikiDocsByTitle(title);
+    console.log('🚀 ~ WikiService ~ doc:', doc);
+    const docId = doc.id;
+    const recentHistory: WikiHistory =
+      await this.getRecentWikiHistoryByDocId(docId);
+    const parsedTitle: string = title.replace(/\/+/g, '_');
+
+    // 로그인 시에만, 조회수 증가
+    if (user?.id) {
+      const wikiDocsView: WikiDocsView = new WikiDocsView();
+      wikiDocsView.docId = docId;
+      wikiDocsView.userId = user.id;
+      await this.wikiDocsViewRepository.save(wikiDocsView);
+    }
+
+    // TODO: 아래 케이스 테스트 요함
+    if (!recentHistory) {
+      throw new NotFoundException('존재하지 않는 문서입니다.');
+    }
+    let using_version;
+    if (calltype === 1) {
+      // 글 불러오거나 수정용
+      using_version = recentHistory.version;
+    } else if (calltype === 2) {
+      // 버전별 글 불러오기용
+      using_version = version;
+    }
+
+    let text = '';
+    const jsonData: {
+      contents: any[];
+    } = { contents: [] };
+    jsonData['is_managed'] = doc.isManaged;
+
+    // 삭제된 문서인지 확인
+    if (!this.checkWikiIsRemoved(docId)) {
+      // 410반환
+      throw new GoneException('삭제된 문서입니다.');
+    }
+
+    // 가장 최근 버전의 파일 읽어서 jsonData에 저장
+    //S3에서 파일 읽어오는 코드
+    text = await this.getWikiContent(parsedTitle, using_version);
+
+    // 원래 통으로 가져오는 코드
+    const lines = text.split(/\r?\n/);
+    text = lines.join('\n');
+
+    jsonData['version'] = using_version;
+    jsonData['text'] = text;
+    jsonData['contents'] = [];
+    console.log('🚀 ~ WikiService ~ jsonData:', jsonData);
+
+    const sections = [];
+    let current_section = null;
+    let current_content = '';
+    let is_started = false;
+    const numbers = [];
+
+    // 파일 읽고 section 나누기
+    for (let line of lines) {
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
+      if (matches !== null) {
+        // 해당 라인이 섹션 타이틀인 경우
+        numbers.push(matches[1].length - 1);
+        if (current_section !== null) {
+          current_section.content.push(current_content);
+          sections.push(current_section);
+        } else {
+          // 목차 없이 그냥 글만 있는 경우
+          is_started = true;
+          if (current_content.trim() !== '') {
+            jsonData.contents.push({
+              section: '0',
+              index: '0',
+              title: '들어가며',
+              content: current_content,
+            });
+          }
+        }
+        current_section = {
+          title: matches[2],
+          content: [],
+        };
+        current_content = '';
+      } else {
+        // 해당 라인이 섹션 내용인 경우
+        if (current_content !== '') {
+          // 빈 줄이면
+          current_content += '\n';
+        }
+        current_content += line;
+      }
+    }
+
+    if (current_section !== null) {
+      // 마지막 섹션 push
+      current_section.content.push(current_content);
+      sections.push(current_section);
+    } else if (current_content !== null && !is_started) {
+      // 목차가 아예 없는 경우
+      jsonData.contents.push({
+        section: '0',
+        index: '0',
+        title: '들어가며',
+        content: current_content,
+      });
+    }
+
+    this.indexing(numbers, sections).forEach((obj) => {
+      jsonData.contents.push(obj);
+    });
+
+    jsonData['success'] = true;
+    if (user?.id) {
+      const rows = await this.getWikiFavoriteByUserIdAndDocId(user.id, docId);
+      if (rows.length === 0) {
+        jsonData['is_favorite'] = false;
+      } else {
+        jsonData['is_favorite'] = true;
+      }
+    } else {
+      jsonData['is_favorite'] = false;
+    }
+    return jsonData;
+  }
+  async getWikiDocsByTitle(title: string): Promise<WikiDoc> {
+    const wikiDoc: WikiDoc = await this.wikiDocRepository.findOne({
+      where: { title },
+    });
+    return wikiDoc;
+  }
+
+  async checkWikiIsRemoved(docId: number): Promise<boolean> {
+    const wikiDoc: WikiDoc = await this.wikiDocRepository.findOne({
+      where: { id: docId },
+    });
+    return wikiDoc.isDeleted;
+  }
+
+  async getWikiFavoriteByUserIdAndDocId(
+    userId: number,
+    docId: number,
+  ): Promise<WikiDoc[]> {
+    const favoriteDocs: WikiDoc[] = await this.wikiDocRepository
+      .createQueryBuilder('wd')
+      .innerJoin(WikiFavorites, 'wf', 'wf.doc_id = wd.id')
+      .where('wf.userId = :user_id', { userId })
+      .andWhere('wf.docId = :doc_id', { docId })
+      .orderBy('wf.createdAt', 'DESC')
+      .getMany();
+
+    return favoriteDocs;
   }
 
   // -------------------------이 위로 영섭 작업물 -------------------------//
