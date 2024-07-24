@@ -117,7 +117,7 @@ export class QuestionController {
         message: '본인의 질문에는 좋아요를 누를 수 없습니다.',
       });
     } else if (result === 1) {
-      return { message: '좋아요를 등록했습니다.' };
+      return { message: '좋아요를 등록했습니다.', revised: 1 };
     } else {
       throw new InternalServerErrorException({
         success: false,
