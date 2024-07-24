@@ -12,7 +12,6 @@ import {
   Post,
   Body,
   ValidationPipe,
-  InternalServerErrorException,
   Delete,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -98,6 +97,24 @@ export class QuestionController {
 
   @Delete('delete/:questionId')
   @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '질문 삭제',
+    description: '질문 삭제',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '삭제 완료',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 입력',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류 발생',
+  })
   async deleteQuestion(
     @Param('questionId') questionId: number,
     @GetUser() user: User,
