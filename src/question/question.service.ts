@@ -270,7 +270,7 @@ export class QuestionService {
     userId: number,
   ): Promise<any> {
     const { content, index_title, title } = createQuestionDto;
-    
+
     if (!content) {
       throw new BadRequestException({
         suceess: false,
@@ -288,6 +288,11 @@ export class QuestionService {
     });
     const result = await this.questionRepository.save(newQuestion);
     const savedQuestion: Question = await this.getQuestionById(result.id);
-    return savedQuestion;
+    return {
+      success: true,
+      message: '질문을 등록하였습니다.',
+      data: savedQuestion,
+      revised: 1,
+    };
   }
 }
