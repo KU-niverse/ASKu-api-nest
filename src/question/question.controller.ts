@@ -72,4 +72,56 @@ export class QuestionController {
   }
 
   // API QA MERGE 수정
+  // TODO: 이 api 기존 api와 달라짐
+  @Get('/lookup/:id')
+  @ApiOperation({
+    summary: 'id로 질문 조회하기',
+    description: '질문 목록을 조회하였습니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '질문 목록을 조회하였습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 id 값입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생하였습니다.',
+  })
+  getQuestionById(@Param('id', ParseIntPipe) id: number): Promise<Question> {
+    return this.questionService.getQuestionById(id);
+  }
+
+  @Delete('delete/:questionId')
+  @UseGuards(AuthGuard())
+  async deleteQuestion(
+    @Param('questionId') questionId: number,
+    @GetUser() user: User,
+  ): Promise<any> {
+    const result = await this.questionService.deleteQuestion(
+      questionId,
+      user.id,
+    );
+    if (result == 0) {
+      throw new BadRequestException({
+        success: false,
+        message: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
+      });
+    } else if (result == 1) {
+      return {
+        success: true,
+        message: '질문을 삭제하였습니다.',
+        revised: 1,
+      };
+    } else {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
+    }
+  }
 }
