@@ -83,7 +83,7 @@ export class WikiService {
     console.log('🚀 ~ WikiService ~ checkIndexExist ~ wikiDoc:', wikiDoc);
 
     const title: string = wikiDoc.title.replace(/\/+/g, '_');
-    const version: string = recentWikiHistory.version.toString();
+    const version: number = Number(recentWikiHistory.version);
     let text: string = '';
     const jsonData = {};
 
