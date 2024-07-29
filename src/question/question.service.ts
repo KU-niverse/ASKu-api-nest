@@ -51,27 +51,35 @@ export class QuestionService {
   }
 
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
-  async getQuestionById(id: number): Promise<Question> {
-    const result: Question[] = await this.questionRepository.query(
-      // `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
-      // FROM questions q
-      // INNER JOIN users ON q.user_id = users.id
-      // INNER JOIN badges ON users.rep_badge = badges.id
-      // LEFT JOIN (
-      //     SELECT id, COUNT(*) as like_count
-      //     FROM question_like
-      //     GROUP BY id
-      // ) ql ON q.id = ql.id
-      // LEFT JOIN (
-      //     SELECT question_id, COUNT(*) as answer_count
-      //     FROM answers
-      //     GROUP BY question_id
-      // ) a ON q.id = a.question_id
-      // WHERE q.id = ${id};`,
-      `SELECT * FROM questions WHERE id = ?`,
+  async getQuestionById(id: number): Promise<any> {
+    const data = await this.questionRepository.query(
+      `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
+      FROM questions q
+      INNER JOIN users ON q.user_id = users.id
+      INNER JOIN badges ON users.rep_badge = badges.id
+      LEFT JOIN (
+          SELECT id, COUNT(*) as like_count
+          FROM question_like
+          GROUP BY id
+      ) ql ON q.id = ql.id
+      LEFT JOIN (
+          SELECT question_id, COUNT(*) as answer_count
+          FROM answers
+          GROUP BY question_id
+      ) a ON q.id = a.question_id
+      WHERE q.id = ?;`,
       [id],
+      // WHERE q.id = ${id};`,
+      // `SELECT * FROM questions WHERE id = ?`,
     );
-    return result[0];
+    if (data.length == 0) {
+      throw new BadRequestException({
+        success: false,
+        message: '잘못된 id 값입니다.',
+      });
+    } else {
+      return { success: true, message: '질문 목록을 조회하였습니다.', data };
+    }
   }
 
   // 인기순 정렬
