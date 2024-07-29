@@ -326,4 +326,28 @@ export class QuestionService {
 
     return 1; // 좋아요 성공
   }
+
+  async deleteQuestion(questionId: number, userId: number): Promise<number> {
+    const question = await this.questionRepository.findOne({
+      where: { id: questionId },
+    });
+
+    const questionLike = await this.questionLikeRepository.findOne({
+      where: { id: questionId },
+    });
+
+    if (!question) {
+      return -1;
+    }
+
+    if (!question.answerOrNot && question.userId === userId) {
+      if (questionLike) {
+        await this.questionLikeRepository.remove(questionLike);
+      }
+      await this.questionRepository.remove(question);
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 }
