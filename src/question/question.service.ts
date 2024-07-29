@@ -78,7 +78,6 @@ export class QuestionService {
   async getQuestionByTitle(title: string, flag: string): Promise<Question[]> {
     const id = await this.getDocumentIdByTitle(title);
 
-    const order = this.getOrderBy(flag);
     let questions: Question[];
     if (flag === '1') {
       questions = await this.questionRepository.query(
@@ -98,13 +97,11 @@ export class QuestionService {
       WHERE q.doc_id = ${id}
       ORDER BY like_count DESC, q.created_at DESC`,
       );
-    }
-    if (flag === '0') {
+    } else if (flag === '0') {
       questions = await this.questionRepository.query(
-        `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
+        `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
       FROM questions q
       INNER JOIN users ON q.user_id = users.id
-      INNER JOIN badges ON users.rep_badge = badges.id
       LEFT JOIN (
           SELECT id, COUNT(*) as like_count 
           FROM question_like 
@@ -118,21 +115,16 @@ export class QuestionService {
       WHERE q.doc_id = ${id}
       ORDER BY q.created_at DESC`,
       );
+    } else {
+      throw new BadRequestException({
+        success: false,
+        message: '잘못된 flag 값입니다.',
+      });
     }
 
     return questions;
   }
 
-  private getOrderBy(flag: string): { [key: string]: 'ASC' | 'DESC' } {
-    switch (flag) {
-      case '1':
-        return { like_count: 'DESC' }; // 인기순 정렬
-      case '0':
-        return { createdAt: 'DESC' }; // 최신순 정렬
-      default:
-        throw new NotFoundException('잘못된 flag 값입니다.');
-    }
-  }
   async getDocumentIdByTitle(title: string): Promise<number> {
     const document = await this.wikiDocRepository.findOne({
       select: ['id'], // 오직 id 필드만 선택
@@ -140,7 +132,10 @@ export class QuestionService {
     });
 
     if (!document) {
-      throw new NotFoundException(`Document with title '${title}' not found.`);
+      throw new InternalServerErrorException({
+        success: false,
+        message: `오류가 발생하였습니다.`,
+      });
     }
 
     return document.id; // 문서 ID 반환
@@ -264,7 +259,6 @@ export class QuestionService {
 
     return document.id; // 문서 ID 반환
   }
-
   async createQuestion(
     createQuestionDto: CreateQuestionDto,
     userId: number,
