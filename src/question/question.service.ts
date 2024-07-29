@@ -50,6 +50,14 @@ export class QuestionService {
     return qusetions;
   }
 
+  async getQuestionById1(id: number): Promise<Question> {
+    const result: Question[] = await this.questionRepository.query(
+      `SELECT * FROM questions WHERE id = ?`,
+      [id],
+    );
+    return result[0];
+  }
+
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
   async getQuestionById(id: number): Promise<any> {
     const data = await this.questionRepository.query(
@@ -69,8 +77,6 @@ export class QuestionService {
       ) a ON q.id = a.question_id
       WHERE q.id = ?;`,
       [id],
-      // WHERE q.id = ${id};`,
-      // `SELECT * FROM questions WHERE id = ?`,
     );
     if (data.length == 0) {
       throw new BadRequestException({
@@ -289,7 +295,7 @@ export class QuestionService {
       indexTitle: index_title,
     });
     const result = await this.questionRepository.save(newQuestion);
-    const savedQuestion: Question = await this.getQuestionById(result.id);
+    const savedQuestion: Question = await this.getQuestionById1(result.id);
     return {
       success: true,
       message: '질문을 등록하였습니다.',
