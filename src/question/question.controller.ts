@@ -70,8 +70,6 @@ export class QuestionController {
     return this.questionService.getQuestionsByUserId(user.id);
   }
 
-  // API QA MERGE 수정
-  // TODO: 이 api 기존 api와 달라짐
   @Get('/lookup/:id')
   @ApiOperation({
     summary: 'id로 질문 조회하기',
