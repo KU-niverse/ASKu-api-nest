@@ -159,13 +159,14 @@ export class QuestionService {
   async getAnswerByQuestionId(questionId: number): Promise<Answer[]> {
     const answers = await this.answerRepository.query(
       `SELECT answers.*, wiki_history.user_id, wiki_history.version, wiki_history.index_title,
-      users.nickname, users.rep_badge, wiki_docs.title,
-      badges.image AS badge_image
+      users.nickname, users.rep_badge, wiki_docs.title, 
+      badges.image AS badge_image, content
       FROM wiki_history
       INNER JOIN answers ON wiki_history.id = answers.wiki_history_id
       INNER JOIN users ON wiki_history.user_id = users.id
       INNER JOIN badges ON users.rep_badge = badges.id
       INNER JOIN wiki_docs on wiki_history.doc_id = wiki_docs.id
+      INNER JOIN questions on questions.id = answers.question_id
       WHERE answers.question_id = ?
       ORDER BY answers.created_at ASC;`,
       [questionId],
