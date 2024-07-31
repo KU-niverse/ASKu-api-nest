@@ -45,15 +45,16 @@ export class QuestionService {
     } else if (arrange === 'popularity') {
       order = { popularity: 'DESC' };
     }
-    const qusetions: Question[] = await this.questionRepository.find({
+    const questions: Question[] = await this.questionRepository.find({
       where: { userId },
       relations: ['user', 'wikiDoc','userActions'],
       order,
     });
-    if (qusetions.length === 0) {
+
+    if (questions.length === 0) {
       throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다');
     }
-    return qusetions;
+    return questions;
   }
 
   // TODO TYPORM 으로 변경 가능여부 재고
