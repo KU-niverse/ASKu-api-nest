@@ -407,4 +407,64 @@ export class WikiService {
       throw new InternalServerErrorException('Failed to delete document');
     }
   }
+
+  async getWikiFavoriteByUserId(userId: number): Promise<WikiDoc[]> {
+    try {
+      const favorites = await this.wikiFavoriteRepository.find({
+        where: { userId },
+        relations: ['doc'],
+      });
+      return favorites.map((favorite) => favorite.doc);
+    } catch (error) {
+      console.error('위키 즐겨찾기 조회 중 오류:', error);
+      throw new InternalServerErrorException('위키 즐겨찾기 조회 중 오류');
+    }
+  }
+
+  async addWikiFavorite(
+    userId: number,
+    title: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const doc = await this.wikiDocRepository.findOne({ where: { title } });
+      if (!doc) {
+        throw new NotFoundException('존재하지 않는 문서입니다.');
+      }
+      const existingFavorite = await this.wikiFavoriteRepository.findOne({
+        where: { userId, docId: doc.id },
+      });
+      if (existingFavorite) {
+        return {
+          success: false,
+          message: '이미 즐겨찾기에 추가된 문서입니다.',
+        };
+      }
+      const newFavorite = this.wikiFavoriteRepository.create({
+        userId,
+        docId: doc.id,
+      });
+      await this.wikiFavoriteRepository.save(newFavorite);
+      return { success: true, message: '위키 즐겨찾기 추가 성공' };
+    } catch (error) {
+      console.error('위키 즐겨찾기 추가 중 오류:', error);
+      throw new InternalServerErrorException('위키 즐겨찾기 추가 중 오류');
+    }
+  }
+
+  async deleteWikiFavorite(userId: number, title: string): Promise<boolean> {
+    try {
+      const doc = await this.wikiDocRepository.findOne({ where: { title } });
+      if (!doc) {
+        throw new NotFoundException('존재하지 않는 문서입니다.');
+      }
+      const result = await this.wikiFavoriteRepository.delete({
+        userId,
+        docId: doc.id,
+      });
+      return result.affected > 0;
+    } catch (error) {
+      console.error('위키 즐겨찾기 삭제 중 오류:', error);
+      throw new InternalServerErrorException('위키 즐겨찾기 삭제 중 오류');
+    }
+  }
 }

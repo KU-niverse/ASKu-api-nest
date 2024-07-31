@@ -266,4 +266,86 @@ export class WikiController {
       });
     }
   }
+
+  // 위키 즐겨찾기 조회
+  @Get('favorite')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 즐겨찾기 조회',
+    description: 'GET 방식으로 위키 즐겨찾기를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 즐겨찾기 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 즐겨찾기 조회 중 오류',
+  })
+  async getFavorite(@GetUser() user: User) {
+    return this.wikiService.getWikiFavoriteByUserId(user.id);
+  }
+
+  // 위키 즐겨찾기 추가
+  @Post('favorite/:title')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 즐겨찾기 추가',
+    description: 'POST 방식으로 위키 즐겨찾기를 추가합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 즐겨찾기 추가 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 즐겨찾기 추가 중 오류',
+  })
+  async addFavorite(@Param('title') title: string, @GetUser() user: User) {
+    return this.wikiService.addWikiFavorite(user.id, title);
+  }
+
+  // 위키 즐겨찾기 삭제
+  @Delete('favorite/:title')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 즐겨찾기 삭제',
+    description: 'DELETE 방식으로 위키 즐겨찾기를 삭제합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 즐겨찾기 삭제 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '즐겨찾기에 없는 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 즐겨찾기 삭제 중 오류',
+  })
+  async deleteFavorite(
+    @Param('title') title: string,
+    @GetUser() user: User,
+    @Res() res,
+  ) {
+    try {
+      const result = await this.wikiService.deleteWikiFavorite(user.id, title);
+      if (result) {
+        return res
+          .status(HttpStatus.OK)
+          .json({ success: true, message: '위키 즐겨찾기 삭제 성공' });
+      } else {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: '위키 즐겨찾기에 없는 문서입니다.',
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 즐겨찾기 삭제 중 오류' });
+    }
+  }
 }
