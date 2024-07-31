@@ -33,6 +33,7 @@ export class WikiDoc extends BaseEntity {
   @Column({
     type: 'int',
     nullable: false,
+    default: 0,
   })
   @ApiProperty({ description: '최신 버전 번호' })
   latestVer: number;

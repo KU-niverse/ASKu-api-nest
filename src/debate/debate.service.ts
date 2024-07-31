@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -99,5 +98,64 @@ export class DebateService {
     });
 
     return debate;
+  }
+
+  async endDebate(id: string): Promise<void> {
+    const [flag] = await this.debateRepository.query(
+      `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
+      [id],
+    );
+  
+    if (!flag || flag.doneOrNot) {
+      throw new Error('이미 종료된 토론방입니다.'); 
+    } else {
+      const date = new Date();
+      date.setHours(date.getHours() + 9);
+      await this.debateRepository.query(
+        `UPDATE debates SET done_or_not = true, done_at = ? WHERE id = ?`,
+        [date.toISOString().slice(0, 19).replace('T', ' '), id],
+      );
+    }
+  }
+
+  //정상
+  async getIdByTitle(title: string): Promise<number> {
+    const wikiDoc = await this.wikiDoc.findOne({
+      where: { title },
+      select: ['id'],
+    });
+    const docId = wikiDoc?.id;
+    return docId;
+  }
+
+  async createDebateNewTitle(
+    newDebate: Partial<Debate>,
+  ): Promise<Omit<Debate, 'wikiDoc'>> {
+    const result = await this.debate.save(newDebate);
+    return this.getDebateWithoutWikiDoc(result.id);
+  }
+
+  async getDebateWithoutWikiDoc(id: number): Promise<Omit<Debate, 'wikiDoc'>> {
+    const debate = await this.debate.findOne({
+      where: { id },
+      relations: ['wikiDoc'],
+    });
+    if (!debate) {
+      throw new NotFoundException('토론을 찾을 수 없습니다.');
+    }
+    const { wikiDoc, ...debateWithoutWikiDoc } = debate;
+    return debateWithoutWikiDoc as Omit<Debate, 'wikiDoc'>;
+  }
+
+  async getAllDebateHistoryByDebateId(debateId: number): Promise<DebateHistory[]> {
+    const result = await this.debateRepository
+      .createQueryBuilder('debateHistory')
+      .innerJoinAndSelect('debateHistory.user', 'user')
+      .innerJoinAndSelect('user.badge', 'badge')
+      .where('debateHistory.debateId = :debateId', { debateId })
+      .orderBy('debateHistory.createdAt')
+      .getMany();
+  
+    return result;
   }
 }
