@@ -250,7 +250,6 @@ export class QuestionService {
     } else {
       return rows;
     }
-    return rows;
   }
 
   async updateQuestion(
