@@ -246,7 +246,7 @@ export class QuestionService {
       LIMIT 5;`,
     );
     if (!rows.length) {
-      throw new NotFoundException('No popular questions found');
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
     } else {
       return rows;
     }
