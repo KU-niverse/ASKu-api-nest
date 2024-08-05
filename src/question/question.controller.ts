@@ -138,15 +138,15 @@ export class QuestionController {
     if (decodedQuery.includes('%') || decodedQuery.includes('_')) {
       decodedQuery = decodedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
     }
-    // console.log(decodedQuery);
+
     const result = this.questionService.getQuestionsByQuery(decodedQuery);
+
     if (!result) {
       throw new BadRequestException({
         success: false,
         message: '잘못된 검색어입니다.',
       });
     } else {
-      // return await this.questionService.getQuestionsByQuery(decodedQuery);
       return result;
     }
   }
