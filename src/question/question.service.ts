@@ -38,7 +38,10 @@ export class QuestionService {
     @InjectRepository(QuestionLike)
     private readonly questionLikeRepository: Repository<QuestionLike>,
   ) {}
-  async getQuestionsByUserId(userId: number, arrange: string ): Promise<Question[]> {
+  async getQuestionsByUserId(
+    userId: number,
+    arrange: string,
+  ): Promise<Question[]> {
     let order: any;
     if (arrange === 'latest') {
       order = { createdAt: 'DESC' };
@@ -47,7 +50,7 @@ export class QuestionService {
     }
     const questions: Question[] = await this.questionRepository.find({
       where: { userId },
-      relations: ['user', 'wikiDoc','userActions'],
+      relations: ['user', 'wikiDoc', 'userActions'],
       order,
     });
 
@@ -243,9 +246,10 @@ export class QuestionService {
       LIMIT 5;`,
     );
     if (!rows.length) {
-      throw new NotFoundException('No popular questions found');
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
+    } else {
+      return rows;
     }
-    return rows;
   }
 
   async updateQuestion(
