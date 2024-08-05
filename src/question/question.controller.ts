@@ -190,10 +190,10 @@ export class QuestionController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  async getPopularQuestion(): Promise<Question[]> {
+  async getPopularQuestion(): Promise<any> {
     const result = await this.questionService.getPopularQuestion();
     if (result) {
-      return result;
+      return { success: true, message: '인기 질문을 조회하였습니다.', result };
     } else {
       throw new InternalServerErrorException({
         success: false,

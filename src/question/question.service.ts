@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from './entities/question.entity';
@@ -220,7 +224,7 @@ export class QuestionService {
     );
 
     if (!rows.length) {
-      throw new NotFoundException('No popular questions found');
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
     } else {
       return rows;
     }
