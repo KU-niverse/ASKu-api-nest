@@ -23,7 +23,7 @@ export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
 
   // TODO: 이 api 기존 api와 달라짐
-  @Get('me/history')
+  @Get('me/history/:arrange')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard())
   @ApiOperation({
@@ -37,11 +37,6 @@ export class QuestionController {
     isArray: true,
   })
   @ApiResponse({
-    status: 404,
-    description:
-      '해당 ID를 가진 유저가 존재하지 않습니다. 유효한 유저 ID를 입력해주세요.',
-  })
-  @ApiResponse({
     status: 400,
     description: '잘못된 요청입니다. 질문 히스토리 불러오기에 실패하였습니다.',
   })
@@ -50,16 +45,19 @@ export class QuestionController {
     description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
-    status: 403,
+    status: 402,
     description:
-      '권한이 없습니다. 해당 유저의 질문 히스토리를 조회할 수 있는 권한이 없습니다.',
+      '잘못된 요청입니다. arrange위치에 latest 혹은 popularity가 들어가야합니다.',
   })
   @ApiResponse({
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  getQuestionHistory(@GetUser() user: User): Promise<Question[]> {
-    return this.questionService.getQuestionsByUserId(user.id);
+  getQuestionHistory(
+    @GetUser() user: User,
+    @Param('arrange') arrange: string,
+  ): Promise<Question[]> {
+    return this.questionService.getQuestionsByUserId(user.id, arrange);
   }
 
   // TODO: 이 api 기존 api와 달라짐
@@ -87,7 +85,7 @@ export class QuestionController {
   }
 
   @Get('view/:flag/:title')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '질문 목록 조회',
     description: '질문 목록을 조회하였습니다.',
@@ -106,11 +104,19 @@ export class QuestionController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  getQuestionByTitle(
+  async getQuestionByTitle(
     @Param('flag') flag: string,
     @Param('title') title: string,
-  ): Promise<Question[]> {
-    return this.questionService.getQuestionByTitle(title, flag);
+  ): Promise<any> {
+    const questions = await this.questionService.getQuestionByTitle(
+      title,
+      flag,
+    );
+    return {
+      success: true,
+      message: '질문 목록을 조회하였습니다.',
+      data: questions,
+    };
   }
 
   @Get('query/:query')
