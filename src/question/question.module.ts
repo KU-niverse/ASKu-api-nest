@@ -8,10 +8,22 @@ import { QuestionService } from './question.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { User } from 'src/user/entities/user.entity';
+import { UserModule } from 'src/user/user.module';
+import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
+import { Badge } from 'src/badge/entities/badge.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Question, User, WikiDoc, QuestionLike, Answer]),
+    TypeOrmModule.forFeature([
+      Question,
+      Answer,
+      QuestionLike,
+      WikiDoc,
+      Badge,
+      WikiHistory,
+      User,
+    ]),
+    UserModule,
     AuthModule,
   ],
   controllers: [QuestionController],
