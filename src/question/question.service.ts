@@ -188,7 +188,7 @@ export class QuestionService {
   }
 
   // 쿼리 문자열을 포함하는 질문들을 데이터베이스에서 검색
-  async getQuestionsByQuery(query: string): Promise<Question[]> {
+  async getQuestionsByQuery(query: string): Promise<any> {
     // TODO: full-text search 적용하는 쿼리로 수정
     const rawQuery = `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count, wiki_docs.title
     FROM questions q
@@ -208,21 +208,16 @@ export class QuestionService {
       ORDER BY q.created_at DESC
     `;
 
-    try {
-      const questions = await this.questionRepository.query(rawQuery, [
-        `%${query}%`,
-      ]);
+    const questions = await this.questionRepository.query(rawQuery, [
+      `%${query}%`,
+    ]);
 
-      // 반환된 결과가 배열이 아닌 경우 처리
-      if (!Array.isArray(questions)) {
-        return [questions];
-      }
-
-      return questions;
-    } catch (error) {
-      console.error('Error occurred while searching for questions:', error);
-      throw error;
-    }
+    return {
+      success: true,
+      message: '질문을 검색하였습니다.',
+      data: questions,
+      revised: 1,
+    };
   }
   async getPopularQuestion(): Promise<Question[]> {
     const rows = await this.questionRepository.query(
