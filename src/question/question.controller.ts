@@ -14,6 +14,7 @@ import {
   ValidationPipe,
   Delete,
   InternalServerErrorException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
@@ -190,14 +191,7 @@ export class QuestionController {
 
     const result = this.questionService.getQuestionsByQuery(decodedQuery);
 
-    if (!result) {
-      throw new BadRequestException({
-        success: false,
-        message: '잘못된 검색어입니다.',
-      });
-    } else {
-      return result;
-    }
+    return result;
   }
 
   @Post('edit/:questionId')
@@ -353,6 +347,56 @@ export class QuestionController {
     const result = await this.questionService.getPopularQuestion();
     if (result) {
       return { success: true, message: '인기 질문을 조회하였습니다.', result };
+    } else {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
+    }
+  }
+  @Post('like/:questionId')
+  @UseGuards(AuthGuard())
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '질문 좋아요',
+    description: '질문에 좋아요를 등록합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '좋아요 성공',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '중복된 입력',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '잘못된 입력',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류 발생',
+  })
+  async likeQuestion(
+    @Param('questionId') questionId: number,
+    @GetUser() user: User,
+  ): Promise<any> {
+    const result = await this.questionService.likeQuestion(questionId, user.id);
+
+    if (result === 0) {
+      throw new BadRequestException({
+        success: false,
+        message: '이미 좋아요를 눌렀습니다.',
+      });
+    } else if (result === -1) {
+      throw new ForbiddenException({
+        success: false,
+        message: '본인의 질문에는 좋아요를 누를 수 없습니다.',
+      });
+    } else if (result === 1) {
+      return { success: true, message: '좋아요를 등록했습니다.', revised: 1 };
     } else {
       throw new InternalServerErrorException({
         success: false,

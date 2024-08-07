@@ -212,12 +212,19 @@ export class QuestionService {
       `%${query}%`,
     ]);
 
-    return {
-      success: true,
-      message: '질문을 검색하였습니다.',
-      data: questions,
-      revised: 1,
-    };
+    if (questions.length < 1) {
+      throw new BadRequestException({
+        success: false,
+        message: '잘못된 검색어입니다.',
+      });
+    } else {
+      return {
+        success: true,
+        message: '질문을 검색하였습니다.',
+        data: questions,
+        revised: 1,
+      };
+    }
   }
   async getPopularQuestion(): Promise<Question[]> {
     const rows = await this.questionRepository.query(
@@ -320,8 +327,8 @@ export class QuestionService {
       where: { id: questionId },
     });
 
-    if (!question) {
-      throw new NotFoundException('질문을 찾을 수 없습니다.');
+    if (question == null) {
+      return 2;
     }
 
     if (question.userId === userId) {
@@ -342,7 +349,6 @@ export class QuestionService {
     });
 
     await this.questionLikeRepository.save(newLike);
-
     return 1; // 좋아요 성공
   }
 
