@@ -94,7 +94,7 @@ export class QuestionController {
     description: '오류가 발생하였습니다.',
   })
   getQuestionById(@Param('id', ParseIntPipe) id: number): Promise<Question> {
-    return this.questionService.getQuestionById(id);
+    return this.questionService.getQuestionById1(id);
   }
 
   @Post('like/:questionId')

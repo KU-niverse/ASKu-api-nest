@@ -52,23 +52,8 @@ export class QuestionService {
 
   // TODO TYPORM 으로 변경 가능여부 재고
   // 질문 ID로 질문, 작성자의 닉네임과 뱃지 이미지, 질문에 대한 좋아요 수와 답변 수를 출력하는 SQL문 입니다.
-  async getQuestionById(id: number): Promise<Question> {
+  async getQuestionById1(id: number): Promise<Question> {
     const result = await this.questionRepository.query(
-      // `SELECT q.*, users.nickname, badges.image AS badge_image, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
-      // FROM questions q
-      // INNER JOIN users ON q.user_id = users.id
-      // INNER JOIN badges ON users.rep_badge = badges.id
-      // LEFT JOIN (
-      //     SELECT id, COUNT(*) as like_count
-      //     FROM question_like
-      //     GROUP BY id
-      // ) ql ON q.id = ql.id
-      // LEFT JOIN (
-      //     SELECT question_id, COUNT(*) as answer_count
-      //     FROM answers
-      //     GROUP BY question_id
-      // ) a ON q.id = a.question_id
-      // WHERE q.id = ${id};`,
       `SELECT * FROM questions WHERE id = ?`,
       [id],
     );
