@@ -251,7 +251,7 @@ export class QuestionService {
     questionId: number,
     userId: number,
     editQuestionDto: EditQuestionDto,
-  ): Promise<boolean> {
+  ): Promise<number> {
     const { new_content } = editQuestionDto;
 
     const question = await this.questionRepository.findOne({
@@ -259,10 +259,14 @@ export class QuestionService {
     });
 
     // 답변이 이미 달린 질문이거나, 질문 작성자가 아닌 경우 수정 불가
-    if (question && !question.answerOrNot && question.userId === userId) {
+    if (!question) {
+      return -1;
+    } else if (!question.answerOrNot && question.userId === userId) {
       question.content = new_content;
       await this.questionRepository.save(question);
-      return true;
+      return 1;
+    } else {
+      return 0;
     }
   }
 

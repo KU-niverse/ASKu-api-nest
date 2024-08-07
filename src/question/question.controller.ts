@@ -200,25 +200,53 @@ export class QuestionController {
     }
   }
 
-  @Post('edit/:question')
+  @Post('edit/:questionId')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '질문 수정',
+    description: '질문을 수정하였습니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '질문을 수정하였습니다.',
+    type: Question,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생하였습니다.',
+  })
   async editQuestion(
-    @Param('question') questionId: number,
+    @Param('questionId') questionId: number,
     @Body(ValidationPipe) editQuestionDto: EditQuestionDto,
     @GetUser() user: User,
-  ): Promise<void> {
+  ): Promise<any> {
     const result = await this.questionService.updateQuestion(
       questionId,
       user.id,
       editQuestionDto,
     );
 
-    if (!result) {
-      throw new BadRequestException(
-        '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
-      );
+    if (result == 0) {
+      throw new BadRequestException({
+        success: false,
+        message: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
+      });
+    } else if (result == 1) {
+      return {
+        success: true,
+        message: '질문을 수정하였습니다.',
+      };
     } else {
-      return;
+      throw new InternalServerErrorException({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
     }
   }
 
