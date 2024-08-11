@@ -22,9 +22,9 @@ export class Debate extends BaseEntity {
   @ApiProperty({ description: '관련 문서 ID' })
   docId: number;
 
-  @ManyToOne(() => WikiDoc, { nullable: false })
+  @ManyToOne(() => WikiDoc, { nullable: false, eager: true })
   @JoinColumn({ name: 'doc_id' })
-  doc: WikiDoc;
+  wikiDoc: WikiDoc;
 
   @Column({ type: 'int', nullable: false })
   @ApiProperty({ description: '토론을 시작한 사용자 ID' })

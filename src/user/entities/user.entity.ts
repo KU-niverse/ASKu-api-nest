@@ -7,7 +7,7 @@ import {
   JoinColumn,
   BaseEntity,
 } from 'typeorm';
-import { Badge } from 'src/badges/entities/badges.entity';
+import { Badge } from 'src/badge/entities/badge.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('users')
@@ -25,6 +25,13 @@ export class User extends BaseEntity {
   @ApiProperty({ description: '유저 닉네임', maxLength: 30 })
   nickname: string;
 
+  @Column({
+    type: 'int',
+    nullable: true,
+  })
+  @ApiProperty({ description: '유저의 대표 배지 ID', nullable: true })
+  repBadge: number | null;
+
   @ManyToOne(() => Badge, { nullable: true })
   @JoinColumn({ name: 'rep_badge' })
   @ApiProperty({
@@ -32,7 +39,7 @@ export class User extends BaseEntity {
     nullable: true,
     default: 16,
   })
-  repBadge: Badge | null;
+  badge: Badge | null;
 
   @CreateDateColumn({
     nullable: false,

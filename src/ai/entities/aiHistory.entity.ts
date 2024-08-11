@@ -47,6 +47,18 @@ export class AiHistory extends BaseEntity {
   })
   isDeleted: boolean;
 
+  @Column({ type: 'timestamp', nullable: true })
+  @ApiProperty({ description: '질문이 요청된 시각', nullable: true })
+  requestedAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  @ApiProperty({ description: '질문이 처리된 시각', nullable: true })
+  respondedAt: Date | null;
+
+  @Column({ type: 'int', nullable: true })
+  @ApiProperty({ description: '총 대기 시간', nullable: true })
+  latencyTime: number | null;
+
   @Column({ type: 'bool', default: false, nullable: false })
   @ApiProperty({ description: '피드백 여부', default: false })
   hasFeedback: boolean;

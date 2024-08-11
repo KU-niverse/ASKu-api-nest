@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { BadgesModule } from './badges/badges.module';
+import { BadgeModule } from './badge/badge.module';
 import { UserModule } from './user/user.module';
 import { WikiModule } from './wiki/wiki.module';
 import { QuestionModule } from './question/question.module';
@@ -13,6 +13,11 @@ import { ReportModule } from './report/report.module';
 import { AdminModule } from './admin/admin.module';
 import { SearchModule } from './search/search.module';
 import { AiModule } from './ai/ai.module';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { AuthModule } from './auth/auth.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
+import { QuestionService } from './question/question.service';
 
 @Module({
   imports: [
@@ -30,8 +35,9 @@ import { AiModule } from './ai/ai.module';
       autoLoadEntities: true,
       synchronize: true,
       multipleStatements: true,
+      namingStrategy: new SnakeNamingStrategy(),
     }),
-    BadgesModule,
+    BadgeModule,
     UserModule,
     WikiModule,
     QuestionModule,
@@ -41,8 +47,12 @@ import { AiModule } from './ai/ai.module';
     AdminModule,
     SearchModule,
     AiModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_INTERCEPTOR, useClass: SuccessInterceptor },
+  ],
 })
 export class AppModule {}

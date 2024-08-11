@@ -6,10 +6,12 @@ import {
   ManyToOne,
   JoinColumn,
   BaseEntity,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { User } from 'src/user/entities/user.entity';
+import { UserAction } from 'src/user/entities/userAction.entity';
 
 @Entity('questions')
 export class Question extends BaseEntity {
@@ -23,7 +25,7 @@ export class Question extends BaseEntity {
 
   @ManyToOne(() => WikiDoc, { nullable: false })
   @JoinColumn({ name: 'doc_id' })
-  doc: WikiDoc;
+  wikiDoc: WikiDoc;
 
   @Column({ type: 'int', nullable: false })
   @ApiProperty({ description: '질문을 작성한 사용자 ID' })
@@ -32,6 +34,9 @@ export class Question extends BaseEntity {
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @OneToMany(() => UserAction, userAction => userAction.question)//
+  userActions: UserAction[];
 
   @Column('text', { nullable: false })
   @ApiProperty({ description: '목차 제목 (예: 1. 개요)' })

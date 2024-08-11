@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/user/entities/user.entity';
-import { Badge } from 'src/badges/entities/badges.entity';
+import { Badge } from 'src/badge/entities/badge.entity';
 
 @Entity('badge_history')
 export class BadgeHistory extends BaseEntity {

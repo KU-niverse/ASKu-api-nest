@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/user/entities/user.entity';
+import { Question } from 'src/question/entities/question.entity';
 
 @Entity('user_action')
 export class UserAction extends BaseEntity {
@@ -18,6 +19,10 @@ export class UserAction extends BaseEntity {
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'user_id' })
   user: User;
+  
+  @ManyToOne(() => Question, question => question.userActions)//
+  @JoinColumn({ name: 'question_id' })
+  question: Question;
 
   @Column({ type: 'int', default: 0, nullable: false })
   @ApiProperty({ description: '일반 기록 글자수', default: 0 })
