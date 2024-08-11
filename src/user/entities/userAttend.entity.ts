@@ -7,7 +7,7 @@ export class UserAttend extends BaseEntity {
   @ApiProperty({ description: '사용자 ID' })
   userId: number;
 
-  @Column({ type: 'bool', default: false, nullable: false })
+  @Column({ type: 'boolean', default: false, nullable: false })
   @ApiProperty({
     description: '[일일 출석 여부] false: 오늘 출석 안 함, true: 오늘 출석함',
     default: false,

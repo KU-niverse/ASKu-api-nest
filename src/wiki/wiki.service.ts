@@ -324,6 +324,65 @@ export class WikiService {
     return favoriteDocs;
   }
 
+  // 수정 시 기존 섹션 텍스트 불러오기
+  async getContentsBySection(title: string, section: number, user: User) {
+    const doc: WikiDoc = await this.getWikiDocsByTitle(title);
+    const docId = doc.id;
+    const recentHistory: WikiHistory =
+      await this.getRecentWikiHistoryByDocId(docId);
+    const parsedTitle: string = title.replace(/\/+/g, '_');
+    const version = recentHistory.version;
+
+    let text = '';
+    let sections = [];
+    let jsonData = {};
+    let section = null;
+
+    // S3에서 파일 읽어오는 코드
+    text = await this.getWikiContent(parsedTitle, version);
+
+    // 정규화로 섹션 분리
+    const lines = text.split(/\r?\n/);
+    let current_section = null;
+    let current_content = null;
+
+    for (let line of lines) {
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
+      if (matches !== null) {
+        // 해당 라인이 섹션 타이틀인 경우
+        if (current_section !== null) {
+          current_section.content.push(current_content);
+          sections.push(current_section);
+        }
+        current_section = {
+          title: line,
+          content: [],
+        };
+        current_content = '';
+      } else {
+        // 해당 라인이 섹션 내용인 경우
+        if (current_content !== '') {
+          current_content += '\n';
+        }
+        current_content += line;
+      }
+    }
+    if (current_section !== null) {
+      current_section.content.push(current_content);
+      sections.push(current_section);
+    }
+
+    // 섹션 번호에 맞는 섹션 불러오기
+    section = sections[section - 1];
+    jsonData = {};
+    jsonData['doc_id'] = docId;
+    jsonData['version'] = version;
+    jsonData['title'] = title;
+    jsonData['content'] = section.content.join('\n');
+    jsonData['is_managed'] = doc.isManaged;
+    jsonData['success'] = true;
+  }
+
   // -------------------------이 위로 영섭 작업물 -------------------------//
 
   async getWikiHistoryByUserId(userId: number): Promise<WikiHistory[]> {

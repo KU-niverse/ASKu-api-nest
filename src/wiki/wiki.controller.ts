@@ -342,5 +342,44 @@ export class WikiController {
     );
   }
 
+  @Get('contents/:title(*)/section/:section')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '위키 문서의 특정 섹션 정보 가져오기',
+    description: 'GET 방식으로 위키 문서의 특정 섹션 정보를 가져옵니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 문서의 특정 섹션 정보 가져오기 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그인이 필요한 서비스입니다.',
+  })
+  @ApiResponse({
+    status: 422,
+    description: '잘못된 섹션 번호',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 위키 문서',
+  })
+  @ApiResponse({
+    status: 410,
+    description: '삭제된 위키 문서',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 문서의 특정 섹션 정보 가져오기 중 오류',
+  })
+  @UseGuards(AuthGuard())
+  async getWikiContentBySection(
+    @Param('title') title: string,
+    @Param('section', ParseIntPipe) section: number,
+    @GetUser() user: User,
+  ) {
+    return await this.wikiService.getContentsBySection(title, section, user);
+  }
+
   // --------------이 위까지 영섭 작업 --------------//
 }
