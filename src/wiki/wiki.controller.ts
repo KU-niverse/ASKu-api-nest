@@ -85,6 +85,7 @@ export class WikiController {
   }
 
   // 위키 문서 수정하기 및 기여도 지급
+  // TODO: 기여도 로직 추가 요함
   @Post('contents/:title')
   @UseGuards(AuthGuard())
   @ApiOperation({

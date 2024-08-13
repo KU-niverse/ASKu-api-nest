@@ -383,6 +383,7 @@ export class WikiService {
       });
       await this.wikiHistoryRepository.save(newHistory);
 
+      // TODO: 기여도 로직 추가 요함
       // TODO: createHistoryMid, wikiPointMid, newActionRecord, newActionRevise, newActionAnswer, newNotice
 
       return {
