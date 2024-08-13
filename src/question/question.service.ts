@@ -38,7 +38,10 @@ export class QuestionService {
     @InjectRepository(QuestionLike)
     private readonly questionLikeRepository: Repository<QuestionLike>,
   ) {}
-  async getQuestionsByUserId(userId: number, arrange: string ): Promise<Question[]> {
+  async getQuestionsByUserId(
+    userId: number,
+    arrange: string,
+  ): Promise<Question[]> {
     let order: any;
     if (arrange === 'latest') {
       order = { createdAt: 'DESC' };
@@ -47,7 +50,7 @@ export class QuestionService {
     }
     const questions: Question[] = await this.questionRepository.find({
       where: { userId },
-      relations: ['user', 'wikiDoc','userActions'],
+      relations: ['user', 'wikiDoc', 'userActions'],
       order,
     });
 
@@ -185,7 +188,7 @@ export class QuestionService {
   }
 
   // 쿼리 문자열을 포함하는 질문들을 데이터베이스에서 검색
-  async getQuestionsByQuery(query: string): Promise<Question[]> {
+  async getQuestionsByQuery(query: string): Promise<any> {
     // TODO: full-text search 적용하는 쿼리로 수정
     const rawQuery = `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count, wiki_docs.title
     FROM questions q
@@ -205,20 +208,22 @@ export class QuestionService {
       ORDER BY q.created_at DESC
     `;
 
-    try {
-      const questions = await this.questionRepository.query(rawQuery, [
-        `%${query}%`,
-      ]);
+    const questions = await this.questionRepository.query(rawQuery, [
+      `%${query}%`,
+    ]);
 
-      // 반환된 결과가 배열이 아닌 경우 처리
-      if (!Array.isArray(questions)) {
-        return [questions];
-      }
-
-      return questions;
-    } catch (error) {
-      console.error('Error occurred while searching for questions:', error);
-      throw error;
+    if (questions.length < 1) {
+      throw new BadRequestException({
+        success: false,
+        message: '잘못된 검색어입니다.',
+      });
+    } else {
+      return {
+        success: true,
+        message: '질문을 검색하였습니다.',
+        data: questions,
+        revised: 1,
+      };
     }
   }
   async getPopularQuestion(): Promise<Question[]> {
@@ -243,16 +248,17 @@ export class QuestionService {
       LIMIT 5;`,
     );
     if (!rows.length) {
-      throw new NotFoundException('No popular questions found');
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
+    } else {
+      return rows;
     }
-    return rows;
   }
 
   async updateQuestion(
     questionId: number,
     userId: number,
     editQuestionDto: EditQuestionDto,
-  ): Promise<boolean> {
+  ): Promise<number> {
     const { new_content } = editQuestionDto;
 
     const question = await this.questionRepository.findOne({
@@ -260,10 +266,14 @@ export class QuestionService {
     });
 
     // 답변이 이미 달린 질문이거나, 질문 작성자가 아닌 경우 수정 불가
-    if (question && !question.answerOrNot && question.userId === userId) {
+    if (!question) {
+      return -1;
+    } else if (!question.answerOrNot && question.userId === userId) {
       question.content = new_content;
       await this.questionRepository.save(question);
-      return true;
+      return 1;
+    } else {
+      return 0;
     }
   }
 
@@ -317,8 +327,8 @@ export class QuestionService {
       where: { id: questionId },
     });
 
-    if (!question) {
-      throw new NotFoundException('질문을 찾을 수 없습니다.');
+    if (question == null) {
+      return 2;
     }
 
     if (question.userId === userId) {
@@ -339,7 +349,6 @@ export class QuestionService {
     });
 
     await this.questionLikeRepository.save(newLike);
-
     return 1; // 좋아요 성공
   }
 
