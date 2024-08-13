@@ -298,11 +298,31 @@ export class WikiController {
     description: '위키 즐겨찾기 추가 성공',
   })
   @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 문서입니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '위키 즐겨찾기 추가 중 오류',
   })
-  async addFavorite(@Param('title') title: string, @GetUser() user: User) {
-    return this.wikiService.addWikiFavorite(user.id, title);
+  async addFavorite(
+    @Param('title') title: string,
+    @GetUser() user: User,
+    @Res() res,
+  ) {
+    try {
+      const result = await this.wikiService.addWikiFavorite(user.id, title);
+      return res.status(HttpStatus.OK).json(result);
+    } catch (error) {
+      if (error.status === 404) {
+        return res
+          .status(HttpStatus.NOT_FOUND)
+          .json({ success: false, message: '존재하지 않는 문서입니다.' });
+      }
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 즐겨찾기 추가 중 오류' });
+    }
   }
 
   // 위키 즐겨찾기 삭제
@@ -342,7 +362,6 @@ export class WikiController {
         });
       }
     } catch (error) {
-      console.error(error);
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: '위키 즐겨찾기 삭제 중 오류' });
