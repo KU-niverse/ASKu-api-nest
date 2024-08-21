@@ -74,8 +74,7 @@ export class UserController {
   async updateMyRepBadge(
     @GetUser() user: User,
     @Body(ValidationPipe) updateUserRepBadgeDto: UpdateUserRepBadgeDto,
-    
-  ): Promise<void>{
+  ): Promise<void> {
     await this.userService.updateRepBadge(user, updateUserRepBadgeDto.badgeId);
   }
 }
