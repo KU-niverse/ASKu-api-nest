@@ -2,7 +2,6 @@ import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Report } from "./entities/report.entity";
-import { report } from "process";
 
 @Injectable()
 export class ReportService {
@@ -22,12 +21,28 @@ export class ReportService {
         return this.reportRepository.findOne({ where: { id } });
     }
 
+    async handleCheckReport(id: number, isChecked: number, user: { isAdmin: boolean }): Promise<any> {
+        if (!user || !user.isAdmin) {
+            throw new HttpException('관리자가 아닙니다.', HttpStatus.FORBIDDEN);
+        }
+
+        if (isChecked !== 1) {
+            throw new HttpException('잘못된 확인값입니다.', HttpStatus.NOT_ACCEPTABLE);
+        }
+        const result = await this.checkReport(id, isChecked);
+
+        if (result && result.changedRows === 1) {
+            const report = await this.getReport(id);
+            await this.updateAction(report.userId, 3, 0);
+            return { success: true, message: '신고를 확인했습니다.' };
+        } else {
+            throw new HttpException('이미 확인한 신고입니다.', HttpStatus.BAD_REQUEST);
+        }
+    }
+
     async checkReport(id: number, isChecked: number): Promise<any> {
-        console.log('isChecked', isChecked);
-        console.log('id', id);
         if (isChecked === 1) {
           const report = await this.getReport(id);
-          console.log('report', report);
           if (!report) {
             this.logger.error(`Report with id ${id} not found`);
             throw new HttpException('Report not found', HttpStatus.NOT_FOUND);
@@ -41,24 +56,23 @@ export class ReportService {
             case 1: {
               await this.reportRepository.query(`UPDATE wiki_history SET is_bad = 1 WHERE id = ?`, [target]);
               const [rows] = await this.reportRepository.query(`SELECT user_id FROM wiki_history WHERE id = ?`, [target]);
-              console.log('rows', rows);
-              //console.log('this:',this);
-              console.log(this.recalculatePoint)
-              //await this.recalculatePoint(rows[0].user_id);
-              await this.recalculatePoint(1445);
+              await this.recalculatePoint(rows.user_id);
+              await this.updateAction(rows.user_id, 3, 1);
               break;
             }
             case 2: {
               await this.reportRepository.query(`UPDATE questions SET is_bad = 1 WHERE id = ?`, [target]);
-              console.log('target', target);
+              await this.updateAction(userId, 5, 1);
               break;
             }
             case 3: {
               await this.reportRepository.query(`UPDATE debates SET is_bad = 1 WHERE id = ?`, [target]);
+              await this.updateAction(userId, 4, 1);
               break;
             }
             case 4: {
               await this.reportRepository.query(`UPDATE debate_history SET is_bad = 1 WHERE id = ?`, [target]);
+              await this.updateAction(userId, 4, 1);
               break;
             }
             default:
@@ -93,14 +107,14 @@ export class ReportService {
           }
     
           const [result] = await this.reportRepository.query(`SELECT badge_id FROM badge_history WHERE user_id = ? AND is_bad = 0`, [userId]);
-          const badgeIds = result.map((row) => row.badge_id);
+          const badgeIds = [result.badge_id];
     
           const [userActionResult] = await this.reportRepository.query(`SELECT * FROM user_action WHERE user_id = ?`, [userId]);
           const userAction = userActionResult[0];
     
           for (const badgeId of badgeIds) {
             switch (typeId) {
-              case 1:
+                case 1:
                 if (
                   (badgeId === 3 && userAction.record_count < 100) ||
                   (badgeId === 4 && userAction.record_count < 1000) ||
@@ -195,28 +209,15 @@ export class ReportService {
           default:
             return -1;
         }
-      }
-    //   async recalculatePoint(userId: number) {
-    //     const [result] = await this.reportRepository.query(
-    //       "UPDATE users SET point = (SELECT SUM(CASE WHEN diff > 0 AND is_q_based = 1 THEN diff * 5 WHEN diff > 0 THEN diff * 4 ELSE 0 END) FROM wiki_history WHERE user_id = ? AND is_bad = 0 AND is_rollback = 0) WHERE id = ?",
-    //       [userId, userId]
-    //     );
-    //     console.log('result', result);
-    //     return result.affectedRows;
-    //   }
+    }
     async recalculatePoint(userId: number) {
-        console.log('entered recalculatePoint');
-        console.log('Entered recalculatePoint with userId:', userId);
         try {
             const result = await this.reportRepository.query(
                 "UPDATE users SET point = (SELECT SUM(CASE WHEN diff > 0 AND is_q_based = 1 THEN diff * 5 WHEN diff > 0 THEN diff * 4 ELSE 0 END) FROM wiki_history WHERE user_id = ? AND is_bad = 0 AND is_rollback = 0) WHERE id = ?",
                 [userId, userId]
-            );
-            console.log('result', result);
-    
+            );    
             return result.affectedRows;
         } catch (error) {
-            console.error('Error in recalculatePoint:', error);
             throw new HttpException('Error recalculating points', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

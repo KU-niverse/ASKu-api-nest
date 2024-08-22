@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res, UseGuards, Param, InternalServerErrorException, UnauthorizedException, HttpCode, HttpStatus, ValidationPipe, Put, HttpException } from "@nestjs/common";
+import { Body, Controller, Post, Req, Res, UseGuards, Param, InternalServerErrorException, UnauthorizedException, HttpCode, HttpStatus, ValidationPipe, Put, HttpException, Request } from "@nestjs/common";
 import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { ReportService } from "./report.service";
 import { AuthGuard } from "@nestjs/passport";
@@ -43,6 +43,7 @@ export class ReportController {
     }
 
     @Put('/check')
+    @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard())
     @ApiOperation({
       summary: '신고 확인하기',
@@ -65,24 +66,11 @@ export class ReportController {
       description: '오류가 발생했습니다.',
     })
     async checkReport(
-      @Body('id') id: number,
-      @Body('is_checked') isChecked: number,
-      @Res() res: Response,
+    @Body('id') id: number,
+    @Body('is_checked') isChecked: number,
+    @Request() req,
     ) {
-    if (isChecked != 1) {
-        throw new HttpException('잘못된 확인값입니다.', HttpStatus.NOT_ACCEPTABLE);
-        }
-        try {
-        const result = await this.reportService.checkReport(id, isChecked);
-        if (result.changedRows) {
-            const report = await this.reportService.getReport(id);
-            await this.reportService.updateAction(report.userId, 3, 0);
-            return { success: true, message: '신고를 확인했습니다.' };
-        } else {
-            throw new HttpException('이미 확인한 신고입니다.', HttpStatus.BAD_REQUEST);
-        }
-        } catch (err) {
-        throw new HttpException('오류가 발생했습니다.', HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        const user = req.user; 
+        return this.reportService.handleCheckReport(id, isChecked, user);
     }
 }
