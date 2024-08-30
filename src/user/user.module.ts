@@ -8,6 +8,7 @@ import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { Badge } from 'src/badge/entities/badge.entity';
+import { UserRepository } from './user.repository';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { Badge } from 'src/badge/entities/badge.entity';
     forwardRef(() => AuthModule),
   ],
   controllers: [UserController],
-  providers: [UserService],
-  exports: [TypeOrmModule, UserService],
+  providers: [UserService, UserRepository],
+  exports: [TypeOrmModule, UserService, UserRepository],
 })
 export class UserModule {}
