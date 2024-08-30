@@ -17,7 +17,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AuthModule } from './auth/auth.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
-import { QuestionService } from './question/question.service';
+// import { QuestionService } from './question/question.service';
 
 @Module({
   imports: [
