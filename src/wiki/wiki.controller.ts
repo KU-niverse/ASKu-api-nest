@@ -21,6 +21,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ContributionsResponseDto } from './dto/contributions-response.dto';
 import { User } from 'src/user/entities/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
@@ -367,5 +368,30 @@ export class WikiController {
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: '위키 즐겨찾기 삭제 중 오류' });
     }
+  }
+
+  @Get('contributions')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '유저의 문서별 기여도',
+    description: '로그인한 유저의 문서별 기여도를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '기여도 조회 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '유저 로그인 되어있지 않은 상태',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+  })
+  getUserContributions(
+    @GetUser() user: User,
+  ): Promise<ContributionsResponseDto> {
+    return this.wikiService.getUserContributions(user.id);
   }
 }
