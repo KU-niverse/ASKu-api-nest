@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -29,7 +29,6 @@ export class WikiService {
     }
     return wikiDoc.id;
   }
-
 
   async getRandomWikiDoc(): Promise<{ [key: string]: string | boolean }> {
     const randomWikiDoc = await this.wikiRepository.getRandomDoc();
@@ -137,18 +136,18 @@ export class WikiService {
       );
 
       // TODO: newHistory를 활용하는 로직 구현 (예: 기여도 계산, 알림 생성 등)
-      const newHistory = await this.wikiRepository.createHistory({
-        userId: user.id,
-        docId: doc.id,
-        textPointer: `${process.env.S3_ENDPOINT}${process.env.S3_BUCKET_NAME}/${title}/r${newVersion}.wiki`,
-        summary: editWikiDto.summary,
-        count: editWikiDto.new_content.length,
-        diff: editWikiDto.new_content.length - recentHistory.count,
-        version: newVersion,
-        isQBased: Boolean(editWikiDto.is_q_based),
-        isRollback: false,
-        indexTitle: editWikiDto.index_title,
-      });
+      // const newHistory = await this.wikiRepository.createHistory({
+      //   userId: user.id,
+      //   docId: doc.id,
+      //   textPointer: `${process.env.S3_ENDPOINT}${process.env.S3_BUCKET_NAME}/${title}/r${newVersion}.wiki`,
+      //   summary: editWikiDto.summary,
+      //   count: editWikiDto.new_content.length,
+      //   diff: editWikiDto.new_content.length - recentHistory.count,
+      //   version: newVersion,
+      //   isQBased: Boolean(editWikiDto.is_q_based),
+      //   isRollback: false,
+      //   indexTitle: editWikiDto.index_title,
+      // });
 
       // TODO: 기여도 로직 추가 요함
 
