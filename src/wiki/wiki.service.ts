@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -22,6 +22,15 @@ export class WikiService {
     return this.wikiRepository.getAllDocTitles();
   }
 
+  async getWikiDocsIdByTitle(title: string): Promise<number> {
+    const wikiDoc = await this.wikiRepository.findDocByTitle(title);
+    if (!wikiDoc) {
+      throw new NotFoundException('Document not found');
+    }
+    return wikiDoc.id;
+  }
+
+
   async getRandomWikiDoc(): Promise<{ [key: string]: string | boolean }> {
     const randomWikiDoc = await this.wikiRepository.getRandomDoc();
     return {
@@ -31,6 +40,7 @@ export class WikiService {
   }
 
   async getContents(title: string) {
+    // TODO: 이 메서드를 더 작은 단위의 메서드로 분리하여 가독성 개선
     const doc = await this.wikiRepository.findDocByTitle(title);
     if (!doc) {
       return {
@@ -126,7 +136,7 @@ export class WikiService {
         editWikiDto.new_content,
       );
 
-      //todo : what is this??
+      // TODO: newHistory를 활용하는 로직 구현 (예: 기여도 계산, 알림 생성 등)
       const newHistory = await this.wikiRepository.createHistory({
         userId: user.id,
         docId: doc.id,
@@ -306,4 +316,6 @@ export class WikiService {
 
     return content_json;
   }
+
+  // TODO: 이미지 업로드 로직을 위한 새로운 메서드 추가
 }

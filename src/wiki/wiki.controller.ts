@@ -142,6 +142,7 @@ export class WikiController {
         .json({ success: true, message: '위키 문서 삭제 성공' });
     } catch (error) {
       console.error(error);
+      // TODO: 에러 종류에 따라 다른 상태 코드 반환하도록 개선
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: '위키 문서 삭제 중 오류' });
@@ -238,6 +239,7 @@ export class WikiController {
     },
   })
   async uploadImage(@UploadedFile() file, @Res() res) {
+    // TODO: 파일 업로드 로직을 WikiService로 이동
     try {
       console.log(file);
       return res.status(HttpStatus.OK).json({

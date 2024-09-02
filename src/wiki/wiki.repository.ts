@@ -15,7 +15,6 @@ import { Readable } from 'stream';
 @Injectable()
 export class WikiRepository {
   private readonly s3Client: S3Client;
-  //todo : S3도 여기서 접근하도록 분리
   constructor(
     @InjectRepository(WikiHistory)
     private wikiHistoryRepository: Repository<WikiHistory>,
@@ -26,6 +25,7 @@ export class WikiRepository {
     @InjectRepository(WikiDocsView)
     private wikiDocsViewRepository: Repository<WikiDocsView>,
   ) {
+    // TODO: S3 설정을 환경 변수로 분리
     this.s3Client = new S3Client({
       region: process.env.AWS_REGION,
       credentials: {
@@ -85,6 +85,7 @@ export class WikiRepository {
     return this.wikiDocRepository.findOne({ where: { title } });
   }
 
+
   async getAllDocTitles(): Promise<string[]> {
     const docs = await this.wikiDocRepository.find({
       where: { isDeleted: false },
@@ -138,6 +139,7 @@ export class WikiRepository {
   }
 
   async getWikiContent(title: string, version: number): Promise<string> {
+    // TODO: S3 버킷 이름을 환경 변수로 분리
     const replacedTitle = title.replace(/\/+/g, '_');
     const getObjectCommand = new GetObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
@@ -165,4 +167,6 @@ export class WikiRepository {
     });
     await this.s3Client.send(putObjectCommand);
   }
+
+  // TODO: 이미지 업로드를 위한 S3 관련 메서드 추가
 }
