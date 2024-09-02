@@ -6,7 +6,9 @@ import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
 import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
 import { WikiController } from './wiki.controller';
 import { WikiService } from './wiki.service';
+import { WikiRepository } from './wiki.repository';
 import { AuthModule } from 'src/auth/auth.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -17,8 +19,9 @@ import { AuthModule } from 'src/auth/auth.module';
       WikiHistory,
     ]),
     AuthModule,
+    UserModule,
   ],
   controllers: [WikiController],
-  providers: [WikiService],
+  providers: [WikiService, WikiRepository],
 })
 export class WikiModule {}
