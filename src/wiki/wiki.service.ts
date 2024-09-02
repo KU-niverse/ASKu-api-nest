@@ -325,13 +325,20 @@ export class WikiService {
   }
 
   // 수정 시 기존 섹션 텍스트 불러오기
-  async getContentsBySection(title: string, section: number, user: User) {
+  async getContentsBySection(
+    title: string,
+    section_number: number,
+    user: User,
+  ) {
     const doc: WikiDoc = await this.getWikiDocsByTitle(title);
+    console.log('🚀 ~ WikiService ~ doc:', doc);
     const docId = doc.id;
     const recentHistory: WikiHistory =
       await this.getRecentWikiHistoryByDocId(docId);
     const parsedTitle: string = title.replace(/\/+/g, '_');
+    console.log('🚀 ~ WikiService ~ parsedTitle:', parsedTitle);
     const version = recentHistory.version;
+    console.log('🚀 ~ WikiService ~ version:', version);
 
     let text = '';
     let sections = [];
@@ -343,6 +350,7 @@ export class WikiService {
 
     // 정규화로 섹션 분리
     const lines = text.split(/\r?\n/);
+    console.log('🚀 ~ WikiService ~ lines:', lines);
     let current_section = null;
     let current_content = null;
 
@@ -371,9 +379,11 @@ export class WikiService {
       current_section.content.push(current_content);
       sections.push(current_section);
     }
+    console.log('🚀 ~ WikiService ~ sections:', sections);
 
     // 섹션 번호에 맞는 섹션 불러오기
-    section = sections[section - 1];
+    section = sections[section_number - 1];
+    console.log('🚀 ~ WikiService ~ section:', section);
     jsonData = {};
     jsonData['doc_id'] = docId;
     jsonData['version'] = version;
@@ -381,6 +391,8 @@ export class WikiService {
     jsonData['content'] = section.content.join('\n');
     jsonData['is_managed'] = doc.isManaged;
     jsonData['success'] = true;
+
+    return jsonData;
   }
 
   // -------------------------이 위로 영섭 작업물 -------------------------//
