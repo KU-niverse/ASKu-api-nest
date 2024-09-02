@@ -169,4 +169,7 @@ export class WikiRepository {
   }
 
   // TODO: 이미지 업로드를 위한 S3 관련 메서드 추가
+  async saveNewHistory(history: WikiHistory): Promise<WikiHistory> {
+    return this.wikiHistoryRepository.save(history);
+  }
 }
