@@ -318,5 +318,17 @@ export class WikiService {
     return content_json;
   }
 
+  //todo: wikidocs를 반환하는 Dto 생성
+
+  async searchWikiDocsByTitle(title: string, userId: number) {
+    const result = await this.wikiRepository.searchWikiDocsByTitle(
+      title,
+      userId,
+    );
+    if (!result || result.length === 0) {
+      throw new NotFoundException('문서를 찾을 수 없습니다.');
+    }
+    return result;
+  }
   // TODO: 이미지 업로드 로직을 위한 새로운 메서드 추가
 }

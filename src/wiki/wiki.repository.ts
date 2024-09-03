@@ -172,4 +172,39 @@ export class WikiRepository {
   async saveNewHistory(history: WikiHistory): Promise<WikiHistory> {
     return this.wikiHistoryRepository.save(history);
   }
+
+  async searchWikiDocsByTitle(
+    title: string,
+    userId: number,
+  ): Promise<WikiDoc[]> {
+    const query = this.wikiDocRepository
+      .createQueryBuilder('wiki_docs')
+      .select('wiki_docs.*')
+      .addSelect(
+        'CASE WHEN favorites.user_id IS NOT NULL THEN 1 ELSE 0 END',
+        'is_favorite',
+      )
+      .leftJoin(
+        'wiki_favorites',
+        'wiki_favorites',
+        'wiki_docs.id = favorites.doc_id AND favorites.user_id = :userId',
+        { userId },
+      )
+      .where(
+        'MATCH(wiki_docs.title, wiki_docs.recentFilteredContent) AGAINST (:title IN BOOLEAN MODE)',
+        { title },
+      )
+      .setParameter('title', title)
+      .setParameter('userId', userId);
+
+    const results = await query.getRawMany();
+
+    // 결과를 WikiDoc 객체로 변환
+    return results.map((result) => {
+      const wikiDoc = new WikiDoc();
+      Object.assign(wikiDoc, result);
+      wikiDoc.isFavorite = result.is_favorite;
+      return wikiDoc;
+    });
+  }
 }
