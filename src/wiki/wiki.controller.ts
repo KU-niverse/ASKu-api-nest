@@ -404,6 +404,36 @@ export class WikiController {
     return this.wikiService.getUserContributions(user.id);
   }
 
+  //wiki/historys/{title*}
+  @Get('/historys/:title')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 히스토리 조회',
+    description: '위키 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 히스토리 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 히스토리 조회 중 오류',
+  })
+  async getHistorys(
+    @Param('title') title: string,
+    @Res() res
+  ): Promise<void> {
+    try {
+      const historys = await this.wikiService.getHistorysByTitle(title);
+      res.status(HttpStatus.OK).json({ success: true, historys });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 히스토리 불러오기 중 오류' });
+    }
+  }
+
   //todo: auth guard 추가??
   //사용되고 있지 않은 api입니다.
   @Get('contributions/total')

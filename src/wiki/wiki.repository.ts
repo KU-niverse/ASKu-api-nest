@@ -237,4 +237,15 @@ export class WikiRepository {
       return wikiDoc;
     });
   }
+
+  // getWikiHistoryByDocId
+  async getWikiHistoryByDocId(docId: number): Promise<any[]> {
+    return this.wikiHistoryRepository
+      .createQueryBuilder('wh')
+      .select(['wh', 'u.nickname'])
+      .innerJoin('wh.user', 'u') // users 테이블과 조인
+      .where('wh.doc_id = :docId', { docId })
+      .orderBy('wh.createdAt', 'DESC')
+      .getMany();
+  }
 }

@@ -699,4 +699,14 @@ export class WikiService {
     return result;
   }
   // TODO: 이미지 업로드 로직을 위한 새로운 메서드 추가
+
+  async getWikiHistoryByDocId(docId: number): Promise<WikiHistory[]> {
+    return this.wikiRepository.getWikiHistoryByDocId(docId);
+  }
+
+  async getHistorysByTitle(title: string): Promise<any[]> {
+    const doc_id = await this.getWikiDocsIdByTitle(title);
+    const historys = await this.getWikiHistoryByDocId(doc_id);  // 문서 ID로 히스토리 가져오기
+    return historys;
+  }
 }
