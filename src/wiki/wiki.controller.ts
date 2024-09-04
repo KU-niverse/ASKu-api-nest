@@ -401,7 +401,6 @@ export class WikiController {
   }
 
   @Get('query/:title')
-  @UseGuards(AuthGuard())
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '위키 제목을 기반으로 문서를 검색',
