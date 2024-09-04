@@ -85,7 +85,6 @@ export class WikiRepository {
     return this.wikiDocRepository.findOne({ where: { title } });
   }
 
-
   async getAllDocTitles(): Promise<string[]> {
     const docs = await this.wikiDocRepository.find({
       where: { isDeleted: false },
@@ -181,17 +180,21 @@ export class WikiRepository {
       .createQueryBuilder('wiki_docs')
       .select('wiki_docs.*')
       .addSelect(
-        'CASE WHEN favorites.user_id IS NOT NULL THEN 1 ELSE 0 END',
+        'CASE WHEN wiki_favorites.user_id IS NOT NULL THEN 1 ELSE 0 END',
         'is_favorite',
       )
       .leftJoin(
+        (subQuery) => {
+          return subQuery
+            .select('user_id, doc_id')
+            .from('wiki_favorites', 'wf')
+            .where('wf.user_id = :userId', { userId });
+        },
         'wiki_favorites',
-        'wiki_favorites',
-        'wiki_docs.id = favorites.doc_id AND favorites.user_id = :userId',
-        { userId },
+        'wiki_docs.id = wiki_favorites.doc_id',
       )
       .where(
-        'MATCH(wiki_docs.title, wiki_docs.recentFilteredContent) AGAINST (:title IN BOOLEAN MODE)',
+        'MATCH(wiki_docs.title) AGAINST (:title IN BOOLEAN MODE) OR MATCH(wiki_docs.recent_filtered_content) AGAINST (:title IN BOOLEAN MODE)',
         { title },
       )
       .setParameter('title', title)
