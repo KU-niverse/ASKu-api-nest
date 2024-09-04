@@ -9,6 +9,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   Res,
   Request,
   UploadedFile,
@@ -598,4 +599,34 @@ export class WikiController {
   }
 
   // --------------이 위까지 영섭 작업 --------------//
+
+  //wiki/historys?type={type}
+  @Get('historys')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '최근 위키 히스토리 조회',
+    description: '최근 위키 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '최근 위키 히스토리 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 히스토리 조회 중 오류 발생',
+  })
+  async getRecentHistory(
+    @Query('type') type: string,
+    @Res() res
+  ): Promise<void> {
+    try {
+      const history = await this.wikiService.getRecentWikiHistorys(type);
+      res.status(HttpStatus.OK).json({ success: true, message: history });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 히스토리 불러오기 중 오류' });
+    }
+  }
 }

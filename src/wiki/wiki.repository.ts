@@ -248,4 +248,34 @@ export class WikiRepository {
       .orderBy('wh.createdAt', 'DESC')
       .getMany();
   }
+
+  async getRecentWikiHistorys(type: string): Promise<any[]> {
+    return this.wikiHistoryRepository
+      .createQueryBuilder('wh')
+      .select([
+        'wh.id',
+        'wh.userId',
+        'wh.docId',
+        'wh.version',
+        'wh.summary',
+        'wh.createdAt',
+        'wh.diff',
+        'wh.isRollback',
+        'wd.title',
+        'u.nickname',
+      ])
+      .innerJoin('wh.wikiDoc', 'wd') // wiki_docs와 조인
+      .innerJoin('wh.user', 'u') // users와 조인
+      .where(
+        `(CASE 
+          WHEN :type = 'create' THEN wh.version = 1 
+          WHEN :type = 'rollback' THEN wh.isRollback = 1 
+          ELSE true 
+        END)`,
+        { type },
+      )
+      .orderBy('wh.createdAt', 'DESC')
+      .limit(30)
+      .getMany();
+  }
 }

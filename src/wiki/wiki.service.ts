@@ -709,4 +709,8 @@ export class WikiService {
     const historys = await this.getWikiHistoryByDocId(doc_id);  // 문서 ID로 히스토리 가져오기
     return historys;
   }
+
+  async getRecentWikiHistorys(type: string): Promise<any[]> {
+    return this.wikiRepository.getRecentWikiHistorys(type);
+  }
 }
