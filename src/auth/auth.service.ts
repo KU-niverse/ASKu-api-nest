@@ -118,11 +118,14 @@ export class AuthService {
         nickname,
       );
     }
-    // TODO: 출석 로직 추가
+    // 출석 체크
+    this.userService.markUserAttend(user.id);
 
+    // 현재 db상의 닉네임과 고파스 db간의 닉네임 차이 동기화
     await this.syncNickname(user, nickname);
+    // 유저 탈퇴 여부, 이용 제한 여부 확인
     await this.validateUser(user);
-
+    // jwt 발급 및 반환
     return this.getJwt(user.id);
   }
 

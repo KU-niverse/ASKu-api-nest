@@ -34,7 +34,6 @@ export class UserService {
     await this.userAttendRepository.save(userAttend);
   }
 
-  // TODO: 제대로 수정 요함
   async markUserAttend(userId: number): Promise<void> {
     const userAttend = await this.userAttendRepository.findOne({
       where: { userId },
