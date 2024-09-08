@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiHistory } from './entities/wikiHistory.entity';
@@ -31,6 +32,7 @@ import { EditWikiDto } from './dto/editWiki.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/config/multer.config';
 import { WikiDoc } from './entities/wikiDoc.entity';
+import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 
 @ApiTags('wiki')
 @Controller('wiki')
@@ -398,6 +400,34 @@ export class WikiController {
     @GetUser() user: User,
   ): Promise<ContributionsResponseDto> {
     return this.wikiService.getUserContributions(user.id);
+  }
+
+  //todo: auth guard 추가??
+  //사용되고 있지 않은 api입니다.
+  @Get('contributions/total')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '전체 기여도 리스트 조회',
+    description: '문서 수정 기여도 포인트를 기반으로 전체 순위를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '랭킹 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '랭킹 조회 중 오류 발생',
+  })
+  async getTotalContributions(): Promise<TotalContributionsListDto[]> {
+    try {
+      return await this.wikiService.getDocsContributionsList();
+    } catch (error) {
+      // 에러 로깅을 추가할 수 있습니다.
+      console.error('Error fetching total contributions:', error);
+      throw new InternalServerErrorException(
+        '랭킹 조회 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   @Get('query/:title')

@@ -5,17 +5,22 @@ import { WikiHistory } from './entities/wikiHistory.entity';
 import { WikiDoc } from './entities/wikiDoc.entity';
 import { WikiFavorites } from './entities/wikiFavorites';
 import { WikiDocsView } from './entities/wikiView.entity';
+import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 import {
   S3Client,
   GetObjectCommand,
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
+// import { Debate } from "../debate/entities/debate.entity";
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class WikiRepository {
   private readonly s3Client: S3Client;
   constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     @InjectRepository(WikiHistory)
     private wikiHistoryRepository: Repository<WikiHistory>,
     @InjectRepository(WikiDoc)
@@ -47,6 +52,16 @@ export class WikiRepository {
       where: { docId },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async getDocsContributionsList(): Promise<TotalContributionsListDto[]> {
+    return this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id as user_id', 'user.nickname', 'user.point'])
+      .where('user.is_deleted = :isDeleted', { isDeleted: false })
+      .orderBy('user.point', 'DESC')
+      .limit(100)
+      .getRawMany();
   }
 
   async getDocsContributions(userId: number) {

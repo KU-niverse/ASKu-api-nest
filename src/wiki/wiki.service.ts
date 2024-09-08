@@ -6,6 +6,7 @@ import { EditWikiDto } from './dto/editWiki.dto';
 import { User } from '../user/entities/user.entity';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import { WikiDoc } from './entities/wikiDoc.entity';
+import { TotalContributionsListDto } from "./dto/total-contributions-list.dto";
 
 @Injectable()
 export class WikiService {
@@ -210,6 +211,11 @@ export class WikiService {
 
     await this.wikiRepository.deleteFavorite(userId, doc.id);
     return { success: true, message: '위키 즐겨찾기 삭제 성공', status: 200 };
+  }
+
+  async getDocsContributionsList(): Promise<TotalContributionsListDto[]> {
+    const results = await this.wikiRepository.getDocsContributionsList();
+    return results.map((result) => new TotalContributionsListDto(result));
   }
 
   async getUserContributions(
