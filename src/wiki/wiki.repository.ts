@@ -85,7 +85,6 @@ export class WikiRepository {
     return this.wikiDocRepository.findOne({ where: { title } });
   }
 
-
   async getAllDocTitles(): Promise<string[]> {
     const docs = await this.wikiDocRepository.find({
       where: { isDeleted: false },
@@ -171,5 +170,45 @@ export class WikiRepository {
   // TODO: 이미지 업로드를 위한 S3 관련 메서드 추가
   async saveNewHistory(history: WikiHistory): Promise<WikiHistory> {
     return this.wikiHistoryRepository.save(history);
+  }
+
+  // wiki_docs 테이블에서 title을 통해 like를 기반으로 문서를 찾아주는 함수
+  async searchWikiDocsByTitle(
+    title: string,
+    userId: number,
+  ): Promise<WikiDoc[]> {
+    const query = this.wikiDocRepository
+      .createQueryBuilder('wiki_docs')
+      .select('wiki_docs.*')
+      .addSelect(
+        'CASE WHEN wiki_favorites.user_id IS NOT NULL THEN 1 ELSE 0 END',
+        'is_favorite',
+      )
+      .leftJoin(
+        (subQuery) => {
+          return subQuery
+            .select('user_id, doc_id')
+            .from('wiki_favorites', 'wf')
+            .where('wf.user_id = :userId', { userId });
+        },
+        'wiki_favorites',
+        'wiki_docs.id = wiki_favorites.doc_id',
+      )
+      .where(
+        'MATCH(wiki_docs.title, wiki_docs.recent_filtered_content) AGAINST (:title IN BOOLEAN MODE)',
+        { title },
+      )
+      .setParameter('title', title)
+      .setParameter('userId', userId);
+
+    const results = await query.getRawMany();
+
+    // 결과를 WikiDoc 객체로 변환
+    return results.map((result) => {
+      const wikiDoc = new WikiDoc();
+      Object.assign(wikiDoc, result);
+      wikiDoc.isFavorite = result.is_favorite;
+      return wikiDoc;
+    });
   }
 }

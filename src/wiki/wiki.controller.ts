@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Res,
+  Request,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -18,6 +19,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -28,6 +30,7 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { EditWikiDto } from './dto/editWiki.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/config/multer.config';
+import { WikiDoc } from './entities/wikiDoc.entity';
 
 @ApiTags('wiki')
 @Controller('wiki')
@@ -395,5 +398,27 @@ export class WikiController {
     @GetUser() user: User,
   ): Promise<ContributionsResponseDto> {
     return this.wikiService.getUserContributions(user.id);
+  }
+
+  @Get('query/:title')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '위키 제목을 기반으로 문서를 검색',
+    description: '위키 제목을 기반으로 문서를 검색합니다.',
+  })
+  @ApiParam({ name: 'title', description: '검색할 위키 문서의 제목' })
+  @ApiResponse({
+    status: 200,
+    description: '위키 문서 검색 성공',
+    type: WikiDoc,
+  })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
+  @ApiResponse({ status: 404, description: '문서를 찾을 수 없음' })
+  async searchWikiDocsByTitle(@Param('title') title: string, @Request() req) {
+    const userId = req.user ? req.user.id : 0;
+    const decodedTitle = decodeURIComponent(title)
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_');
+    return await this.wikiService.searchWikiDocsByTitle(decodedTitle, userId);
   }
 }
