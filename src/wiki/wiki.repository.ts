@@ -25,12 +25,17 @@ export class WikiRepository {
     @InjectRepository(WikiDocsView)
     private wikiDocsViewRepository: Repository<WikiDocsView>,
   ) {
+    console.log('Initializing S3Client with region:', process.env.AWS_REGION);
+    console.log('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
+    console.log('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
+
     // TODO: S3 설정을 환경 변수로 분리
     this.s3Client = new S3Client({
-      region: process.env.AWS_REGION,
+      region: 'kr-standard',
+      endpoint: 'https://kr.object.ncloudstorage.com/',
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.ACCESSKEY,
+        secretAccessKey: process.env.SECRETACCESSKEY,
       },
     });
   }
@@ -39,7 +44,7 @@ export class WikiRepository {
     return this.wikiHistoryRepository.find({
       where: { userId: userId },
       relations: ['wikiDoc'],
-    });
+    });3
   }
 
   async getMostRecentHistory(docId: number): Promise<WikiHistory> {
@@ -142,7 +147,7 @@ export class WikiRepository {
     // TODO: S3 버킷 이름을 환경 변수로 분리
     const replacedTitle = title.replace(/\/+/g, '_');
     const getObjectCommand = new GetObjectCommand({
-      Bucket: process.env.S3_BUCKET_NAME,
+      Bucket: 'wiki-bucket',
       Key: `${replacedTitle}/r${version}.wiki`,
     });
     const response = await this.s3Client.send(getObjectCommand);
@@ -199,8 +204,8 @@ export class WikiRepository {
         'wd.title',
         'u.nickname',
       ])
-      .innerJoin('wh.wikiDoc', 'wd') // wiki_docs와 조인
-      .innerJoin('wh.user', 'u') // users와 조인
+      .innerJoin('wh.wikiDoc', 'wd')
+      .innerJoin('wh.user', 'u')
       .where(
         `(CASE 
           WHEN :type = 'create' THEN wh.version = 1 
@@ -212,5 +217,10 @@ export class WikiRepository {
       .orderBy('wh.createdAt', 'DESC')
       .limit(30)
       .getMany();
+  }
+
+  async getWikiDocsIdByTitle(title: string): Promise<number | null> {
+    const doc = await this.wikiDocRepository.findOne({ where: { title } });
+    return doc ? doc.id : null;
   }
 }

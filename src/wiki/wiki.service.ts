@@ -27,6 +27,8 @@ export class WikiService {
     if (!wikiDoc) {
       throw new NotFoundException('Document not found');
     }
+    console.log('Found document ID:', wikiDoc);
+
     return wikiDoc.id;
   }
 
@@ -332,5 +334,19 @@ export class WikiService {
 
   async getRecentWikiHistorys(type: string): Promise<any[]> {
     return this.wikiRepository.getRecentWikiHistorys(type);
+  }
+
+  async getHistoryRawData(title: string, version: number): Promise<any> {
+    const docId = await this.getWikiDocsIdByTitle(title);
+    const wikiContent = await this.wikiRepository.getWikiContent(title, version);
+
+    // S3에서 가져온 텍스트 처리
+    const lines = wikiContent.split(/\r?\n/).join('\n');
+
+    return {
+      doc_id: docId,
+      version,
+      text: lines,
+    };
   }
 }

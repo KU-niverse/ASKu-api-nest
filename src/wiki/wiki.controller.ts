@@ -457,4 +457,36 @@ export class WikiController {
         .json({ success: false, message: '위키 히스토리 불러오기 중 오류' });
     }
   }
+
+    //get wiki/historys/:title(*)/version/:version
+  @Get('historys/:title/version/:version')
+  @ApiOperation({
+    summary: '특정 버전의 위키 내용 가져오기',
+    description: 'GET 방식으로 특정 버전의 위키 내용을 가져옵니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 raw 데이터 가져오기 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 raw 데이터 가져오기 중 오류',
+  })
+  async getHistoryRaw(
+    @Param('title') title: string,
+    @Param('version') version: number,
+    @Res() res
+  ): Promise<void> {
+    try {
+      console.log('Received title:', title); 
+      console.log('Received version:', version); 
+      const result = await this.wikiService.getHistoryRawData(title, version);
+      res.status(HttpStatus.OK).json({ success: true, jsonData: result });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 raw data 불러오기 중 오류' });
+    }
+  }
 }
