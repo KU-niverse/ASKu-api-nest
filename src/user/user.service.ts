@@ -6,6 +6,7 @@ import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { Repository } from 'typeorm';
 import { BadgeService } from 'src/badge/badge.service';
+import { AiSession } from 'src/ai/entities/aiSession.entity';
 
 @Injectable()
 export class UserService {
@@ -16,7 +17,10 @@ export class UserService {
     private userAttendRepository: Repository<UserAttend>,
     @InjectRepository(UserAction)
     private userActionRepository: Repository<UserAction>,
+    @InjectRepository(AiSession)
+    private aiSessionRepository: Repository<AiSession>,
     private badgeService: BadgeService,
+
     // private aiService: AiService,
   ) {}
 
@@ -34,11 +38,18 @@ export class UserService {
     await this.userAttendRepository.save(userAttend);
   }
 
-  // TODO: 제대로 수정 요함
+  async insertAiSessionRow(userId: number): Promise<void> {
+    const aiSession = this.aiSessionRepository.create({
+      userId,
+    });
+    await this.aiSessionRepository.save(aiSession);
+  }
+
   async markUserAttend(userId: number): Promise<void> {
     const userAttend = await this.userAttendRepository.findOne({
       where: { userId },
     });
+    console.log('🚀 ~ UserService ~ markUserAttend ~ userAttend:', userAttend);
     // 오늘 첫 출석이라면
     if (!userAttend.todayAttend) {
       // 연속 출석 일수가 최대 연속 출석 일수보다 크다면 최대 연속 출석일수를 업데이트
@@ -60,19 +71,7 @@ export class UserService {
     return;
   }
 
-  //새로운 유저의 활동 정보 ai 세션저장을 위한 설정
-  async userInit(userId: number): Promise<void> {
-    await this.insertUserActionRow(userId);
-    await this.insertUserAttendRow(userId);
-    //TODO: AIsession 생성 로직 추가
-    // await this.aiService.createAiSession(userId);
-  }
-
-  async createUser(
-    koreapasCredentialsDto: KoreapasCredentialsDto,
-  ): Promise<User> {
-    const { uuid, nickname } = koreapasCredentialsDto;
-
+  async createUser(uuid: string, nickname: string): Promise<User> {
     const user: User = this.userRepository.create({
       uuid,
       nickname,
@@ -80,7 +79,9 @@ export class UserService {
 
     await this.userRepository.save(user);
     //새로운 유저의 활동 정보 ai 세션저장을 위한 설정
-    await this.userInit(user.id);
+    await this.insertUserActionRow(user.id);
+    await this.insertUserAttendRow(user.id);
+    await this.insertAiSessionRow(user.id);
 
     return user;
   }

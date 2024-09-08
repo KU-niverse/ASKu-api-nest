@@ -10,9 +10,11 @@ import {
   ParseIntPipe,
   Post,
   Res,
+  Request,
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiHistory } from './entities/wikiHistory.entity';
@@ -20,15 +22,19 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ContributionsResponseDto } from './dto/contributions-response.dto';
 import { User } from 'src/user/entities/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { EditWikiDto } from './dto/editWiki.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/config/multer.config';
+import { WikiDoc } from './entities/wikiDoc.entity';
+import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 
 @ApiTags('wiki')
 @Controller('wiki')
@@ -87,6 +93,7 @@ export class WikiController {
   }
 
   // 위키 문서 수정하기 및 기여도 지급
+  // TODO: 기여도 로직 추가 요함
   @Post('contents/:title')
   @UseGuards(AuthGuard())
   @ApiOperation({
@@ -142,6 +149,7 @@ export class WikiController {
         .json({ success: true, message: '위키 문서 삭제 성공' });
     } catch (error) {
       console.error(error);
+      // TODO: 에러 종류에 따라 다른 상태 코드 반환하도록 개선
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: '위키 문서 삭제 중 오류' });
@@ -238,6 +246,7 @@ export class WikiController {
     },
   })
   async uploadImage(@UploadedFile() file, @Res() res) {
+    // TODO: 파일 업로드 로직을 WikiService로 이동
     try {
       console.log(file);
       return res.status(HttpStatus.OK).json({
@@ -267,6 +276,183 @@ export class WikiController {
         message: '서버에서 예상치 못한 오류가 발생했습니다.',
       });
     }
+  }
+
+  // 위키 즐겨찾기 조회
+  @Get('favorite')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 즐겨찾기 조회',
+    description: 'GET 방식으로 위키 즐겨찾기를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 즐겨찾기 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 즐겨찾기 조회 중 오류',
+  })
+  async getFavorite(@GetUser() user: User) {
+    return this.wikiService.getWikiFavoriteByUserId(user.id);
+  }
+
+  // 위키 즐겨찾기 추가
+  @Post('favorite/:title')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 즐겨찾기 추가',
+    description: 'POST 방식으로 위키 즐겨찾기를 추가합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 즐겨찾기 추가 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 즐겨찾기 추가 중 오류',
+  })
+  async addFavorite(
+    @Param('title') title: string,
+    @GetUser() user: User,
+    @Res() res,
+  ) {
+    try {
+      const result = await this.wikiService.addWikiFavorite(user.id, title);
+      return res.status(HttpStatus.OK).json(result);
+    } catch (error) {
+      if (error.status === 404) {
+        return res
+          .status(HttpStatus.NOT_FOUND)
+          .json({ success: false, message: '존재하지 않는 문서입니다.' });
+      }
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 즐겨찾기 추가 중 오류' });
+    }
+  }
+
+  // 위키 즐겨찾기 삭제
+  @Delete('favorite/:title')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 즐겨찾기 삭제',
+    description: 'DELETE 방식으로 위키 즐겨찾기를 삭제합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 즐겨찾기 삭제 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '즐겨찾기에 없는 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 즐겨찾기 삭제 중 오류',
+  })
+  async deleteFavorite(
+    @Param('title') title: string,
+    @GetUser() user: User,
+    @Res() res,
+  ) {
+    try {
+      const result = await this.wikiService.deleteWikiFavorite(user.id, title);
+      if (result) {
+        return res
+          .status(HttpStatus.OK)
+          .json({ success: true, message: '위키 즐겨찾기 삭제 성공' });
+      } else {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: '위키 즐겨찾기에 없는 문서입니다.',
+        });
+      }
+    } catch (error) {
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 즐겨찾기 삭제 중 오류' });
+    }
+  }
+
+  @Get('contributions')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '유저의 문서별 기여도',
+    description: '로그인한 유저의 문서별 기여도를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '기여도 조회 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '유저 로그인 되어있지 않은 상태',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+  })
+  getUserContributions(
+    @GetUser() user: User,
+  ): Promise<ContributionsResponseDto> {
+    return this.wikiService.getUserContributions(user.id);
+  }
+
+  //todo: auth guard 추가??
+  //사용되고 있지 않은 api입니다.
+  @Get('contributions/total')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '전체 기여도 리스트 조회',
+    description: '문서 수정 기여도 포인트를 기반으로 전체 순위를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '랭킹 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '랭킹 조회 중 오류 발생',
+  })
+  async getTotalContributions(): Promise<TotalContributionsListDto[]> {
+    try {
+      return await this.wikiService.getDocsContributionsList();
+    } catch (error) {
+      // 에러 로깅을 추가할 수 있습니다.
+      console.error('Error fetching total contributions:', error);
+      throw new InternalServerErrorException(
+        '랭킹 조회 중 오류가 발생했습니다.',
+      );
+    }
+  }
+
+  @Get('query/:title')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 제목을 기반으로 문서를 검색',
+    description: '위키 제목을 기반으로 문서를 검색합니다.',
+  })
+  @ApiParam({ name: 'title', description: '검색할 위키 문서의 제목' })
+  @ApiResponse({
+    status: 200,
+    description: '위키 문서 검색 성공',
+    type: WikiDoc,
+  })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
+  @ApiResponse({ status: 404, description: '문서를 찾을 수 없음' })
+  async searchWikiDocsByTitle(@Param('title') title: string, @Request() req) {
+    const userId = req.user ? req.user.id : 0;
+    const decodedTitle = decodeURIComponent(title)
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_');
+    return await this.wikiService.searchWikiDocsByTitle(decodedTitle, userId);
   }
 
   //--------------이 아래부터 영섭 작업 --------------//

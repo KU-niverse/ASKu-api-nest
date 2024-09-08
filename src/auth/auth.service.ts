@@ -12,7 +12,14 @@ import axios from 'axios';
 import { Response } from 'express';
 import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
 import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
-import { KoreapasLoginException } from 'src/common/exceptions/koreapas-login.exception';
+
+import {
+  IncorrectIdPwException,
+  LeaveUserException,
+  KoreapasLoginException,
+  UserAlreadyExistException,
+  KoreapasRestrictedUserException,
+} from 'src/common/exceptions/auth.exception';
 import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
 import { Repository } from 'typeorm';
@@ -30,17 +37,21 @@ export class AuthService {
     koreapasCredentialsDto: KoreapasCredentialsDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const { uuid, nickname } = koreapasCredentialsDto;
+
+    // 고파스 로그인 api를 통해 받아온 uuid로 이미 존재하는 유저인지 확인
     const user = await this.userService.getUserByUuid(uuid);
 
+    // 이미 존재하는 유저일경우 에러 발생
     if (user) {
-      throw new NotAcceptableException('이미 가입된 회원입니다.');
+      throw new UserAlreadyExistException(
+        '회원가입에 실패하였습니다. 중복된 항목이 있습니다.',
+      );
     }
-
-    const createdUser: User = await this.userService.createUser(
-      koreapasCredentialsDto,
-    );
-    // TODO: 출석 로직 추가
-
+    // 들어온 정보를 가지고 유저를 생성
+    const createdUser: User = await this.userService.createUser(uuid, nickname);
+    // 생성된 유저에 대해 출석 체크 로직 실행
+    await this.userService.markUserAttend(createdUser.id);
+    // jwt 발급 및 반환
     return this.getJwt(createdUser.id);
   }
 
@@ -59,7 +70,7 @@ export class AuthService {
     const today = new Date();
 
     if (user.isDeleted) {
-      throw new GoneException('탈퇴한 회원입니다.');
+      throw new LeaveUserException('탈퇴한 회원입니다.');
     } else if (new Date(user.restrictPeriod) > today) {
       throw new ForbiddenException('이용이 제한된 회원입니다.');
     }
@@ -81,7 +92,7 @@ export class AuthService {
         return { uuid, nickname };
       }
       if (res.data.result == false) {
-        throw new UnauthorizedException(
+        throw new IncorrectIdPwException(
           '아이디와 비밀번호를 다시 확인해주세요',
         );
       }
@@ -114,11 +125,14 @@ export class AuthService {
         nickname,
       );
     }
-    // TODO: 출석 로직 추가
+    // 출석 체크
+    await this.userService.markUserAttend(user.id);
 
+    // 현재 db상의 닉네임과 고파스 db간의 닉네임 차이 동기화
     await this.syncNickname(user, nickname);
+    // 유저 탈퇴 여부, 이용 제한 여부 확인
     await this.validateUser(user);
-
+    // jwt 발급 및 반환
     return this.getJwt(user.id);
   }
 
@@ -138,22 +152,34 @@ export class AuthService {
     user_id: number | null;
   }> {
     console.log('🚀 ~ AuthService ~ koreapasOAuth ~ uuid:', uuid);
+    // koreapas api를 통해 uuid로 유저 정보를 받아옴
     const response = await axios.get(
       `https://www.koreapas.com/bbs/valid_api.php?api_key=${process.env.KOREAPAS_API_KEY}&uuid=${uuid}`,
     );
-    console.log('🚀 ~ AuthService ~ koreapasOAuth ~ response:', response.data);
+    console.log(
+      '🚀 ~ AuthService ~ koreapasOAuth ~ response:',
+      response.data.data,
+    );
 
+    // result가 false라면 reject
     if (response.data.result == false) {
       throw new UnauthorizedException('유효하지 않은 접근입니다.');
     }
 
-    const { koreapas_uuid, nickname, level } = response.data.data;
+    const { uuid: koreapas_uuid, nickname, level } = response.data.data;
+    console.log(
+      '🚀 ~ AuthService ~ koreapasOAuth ~ koreapas_uuid:',
+      koreapas_uuid,
+    );
     // 9, 10 -> 강등 또는 미인증 상태의 유저
     if (level > 8) {
-      throw new UnauthorizedException('강등 또는 미인증 상태의 유저입니다.');
+      throw new KoreapasRestrictedUserException(
+        '강등 또는 미인증 상태의 유저입니다.',
+      );
     }
 
     const user: User | null = await this.getUserByUuid(koreapas_uuid);
+    console.log('🚀 ~ AuthService ~ koreapasOAuth ~ user:', user);
     // 고파스 uuid로 등록된 유저가 없다면 reject
     if (user == null) {
       return {
@@ -164,15 +190,13 @@ export class AuthService {
       };
     }
 
-    // TODO: 출석 로직 추가
-
+    await this.userService.markUserAttend(user.id);
+    // 고파스 uuid가 ASKu DB에 이미 등록된 유저라면 로그인 처리
     return {
       is_registered: true,
       koreapas_nickname: null,
       koreapas_uuid: null,
       user_id: user.id,
     };
-
-    return;
   }
 }

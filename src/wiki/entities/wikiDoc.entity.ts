@@ -33,6 +33,7 @@ export class WikiDoc extends BaseEntity {
   @Column({
     type: 'int',
     nullable: false,
+    default: 0,
   })
   @ApiProperty({ description: '최신 버전 번호' })
   latestVer: number;
@@ -77,4 +78,8 @@ export class WikiDoc extends BaseEntity {
     default: false,
   })
   isManaged: boolean;
+
+  //@Column 데코레이터가 없기 때문에 DB에는 들어가지 않음
+  @ApiProperty({ description: '즐겨찾기 여부', required: false })
+  isFavorite?: boolean;
 }

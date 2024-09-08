@@ -1,62 +1,34 @@
-import {
-  GoneException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { WikiHistory } from './entities/wikiHistory.entity';
-import { In, Repository } from 'typeorm';
-import { WikiDoc } from './entities/wikiDoc.entity';
-import { WikiFavorites } from './entities/wikiFavorites';
-import { WikiDocsView } from './entities/wikiView.entity';
+import { GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { WikiRepository } from './wiki.repository';
+import { UserRepository } from '../user/user.repository';
+import { ContributionsResponseDto } from './dto/contributions-response.dto';
 import { EditWikiDto } from './dto/editWiki.dto';
-import { User } from 'src/user/entities/user.entity';
-import {
-  S3Client,
-  GetObjectCommand,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3';
-import { Readable } from 'stream';
-import { QuestionService } from 'src/question/question.service';
+import { User } from '../user/entities/user.entity';
+import { WikiHistory } from './entities/wikiHistory.entity';
+import { WikiDoc } from './entities/wikiDoc.entity';
+import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Question } from 'src/question/entities/question.entity';
-
-const edp = 'https://kr.object.ncloudstorage.com/';
-const region = 'kr-standard';
+import { Repository } from 'typeorm';
+import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
+import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
 
 @Injectable()
 export class WikiService {
-  private readonly s3Client: S3Client;
-
   constructor(
-    @InjectRepository(WikiHistory)
-    private wikiHistoryRepository: Repository<WikiHistory>,
-    @InjectRepository(WikiDoc)
-    private wikiDocRepository: Repository<WikiDoc>,
+    private wikiRepository: WikiRepository,
+    private userRepository: UserRepository,
     @InjectRepository(Question)
     private questionRepository: Repository<Question>,
-    @InjectRepository(WikiFavorites)
-    private readonly wikiFavoriteRepository: Repository<WikiFavorites>,
+    @InjectRepository(WikiDoc)
+    private wikiDocRepository: Repository<WikiDoc>,
     @InjectRepository(WikiDocsView)
     private readonly wikiDocsViewRepository: Repository<WikiDocsView>,
-    private readonly questionService: QuestionService,
-  ) {
-    this.s3Client = new S3Client({
-      region,
-      endpoint: edp,
-      credentials: {
-        accessKeyId: process.env.ACCESSKEY,
-        secretAccessKey: process.env.SECRETACCESSKEY,
-      },
-    });
-  }
-
+  ) {}
   // -------------------------이 아래로 영섭 작업물 -------------------------//
   async getRecentWikiHistoryByDocId(doc_id: number): Promise<WikiHistory> {
-    const wikiHistory: WikiHistory = await this.wikiHistoryRepository.findOne({
-      where: { wikiDoc: { id: doc_id } },
-      order: { createdAt: 'DESC' },
-    });
+    const wikiHistory: WikiHistory =
+      await this.wikiRepository.getWikiHistoryByDocId(doc_id);
     return wikiHistory;
   }
 
@@ -80,7 +52,9 @@ export class WikiService {
       recentWikiHistory,
     );
 
-    const wikiDoc: WikiDoc = await this.getWikiDocsById(question.docId);
+    const wikiDoc: WikiDoc = await this.wikiRepository.getWikiDocsById(
+      question.docId,
+    );
     console.log('🚀 ~ WikiService ~ checkIndexExist ~ wikiDoc:', wikiDoc);
 
     const title: string = wikiDoc.title.replace(/\/+/g, '_');
@@ -89,7 +63,7 @@ export class WikiService {
     const jsonData = {};
 
     // S3에서 제목과 이름으로 이전 문서 가져오기
-    text = await this.getWikiContent(title, version);
+    text = await this.wikiRepository.getWikiContent(title, version);
     console.log('2');
     // 원래 통으로 가져오는 코드
     const lines = text.split(/\r?\n/);
@@ -134,7 +108,7 @@ export class WikiService {
       sections.push(current_section);
     }
 
-    const content_json: any[] = this.indexing(numbers, sections);
+    const content_json: any[] = this.indexSections(numbers, sections);
     jsonData['contents'] = content_json;
 
     const index_title_list = [];
@@ -211,7 +185,7 @@ export class WikiService {
 
     // 가장 최근 버전의 파일 읽어서 jsonData에 저장
     //S3에서 파일 읽어오는 코드
-    text = await this.getWikiContent(parsedTitle, using_version);
+    text = await this.wikiRepository.getWikiContent(parsedTitle, using_version);
 
     // 원래 통으로 가져오는 코드
     const lines = text.split(/\r?\n/);
@@ -278,7 +252,7 @@ export class WikiService {
       });
     }
 
-    this.indexing(numbers, sections).forEach((obj) => {
+    this.indexSections(numbers, sections).forEach((obj) => {
       jsonData.contents.push(obj);
     });
 
@@ -346,7 +320,7 @@ export class WikiService {
     let section = null;
 
     // S3에서 파일 읽어오는 코드
-    text = await this.getWikiContent(parsedTitle, version);
+    text = await this.wikiRepository.getWikiContent(parsedTitle, version);
 
     // 정규화로 섹션 분리
     const lines = text.split(/\r?\n/);
@@ -396,298 +370,93 @@ export class WikiService {
   }
 
   // -------------------------이 위로 영섭 작업물 -------------------------//
-
   async getWikiHistoryByUserId(userId: number): Promise<WikiHistory[]> {
-    const wikiHistory: WikiHistory[] = await this.wikiHistoryRepository.find({
-      where: { userId: userId },
-      relations: ['wikiDoc'],
-    });
-    return wikiHistory;
+    return this.wikiRepository.getWikiHistoryByUserId(userId);
   }
 
   async getAllWikiDocs(): Promise<string[]> {
-    const allWikiDocs: WikiDoc[] = await this.wikiDocRepository.find({
-      where: { isDeleted: false },
-      select: ['title'],
-    });
-    return allWikiDocs.map((doc) => doc.title);
+    return this.wikiRepository.getAllDocTitles();
+  }
+
+  async getWikiDocsIdByTitle(title: string): Promise<number> {
+    const wikiDoc = await this.wikiRepository.findDocByTitle(title);
+    if (!wikiDoc) {
+      throw new NotFoundException('Document not found');
+    }
+    return wikiDoc.id;
   }
 
   async getRandomWikiDoc(): Promise<{ [key: string]: string | boolean }> {
-    const randomWikiDoc: WikiDoc = await this.wikiDocRepository
-      .createQueryBuilder('wikiDoc')
-      .select('wikiDoc.title')
-      .where('wikiDoc.isDeleted = :isDeleted', { isDeleted: false })
-      .orderBy('RAND()')
-      .limit(1)
-      .getOne();
+    const randomWikiDoc = await this.wikiRepository.getRandomDoc();
     return {
       '0': randomWikiDoc ? randomWikiDoc.title : 'No Document Found',
       success: true,
     };
   }
 
-  // 전체 글 불러오기 / 특정 버전 전체 글 불러오기 때 둘다 쓰임, req.calltype으로 구분
   async getContents(title: string) {
-    try {
-      const doc = await this.wikiDocRepository.findOne({ where: { title } });
-
-      // 존재 여부 확인
-      if (!doc) {
-        return {
-          success: false,
-          message: '존재하지 않는 문서입니다.',
-          statusCode: 404,
-        };
-      }
-
-      // 삭제 여부 확인
-      if (doc.isDeleted) {
-        return {
-          success: false,
-          message: '삭제된 문서입니다.',
-          statusCode: 410,
-        };
-      }
-
-      // 히스토리 존재 여부 확인
-      const docId = doc.id;
-      const recentHistory = await this.wikiHistoryRepository.findOne({
-        where: { docId },
-        order: { createdAt: 'DESC' },
-      });
-
-      if (!recentHistory) {
-        return {
-          success: false,
-          message: '존재하지 않는 문서입니다.',
-          statusCode: 404,
-        };
-      }
-
-      // version 선언 - 수정 필요
-      // const version =
-      //   req['calltype'] === 1 ? recentHistory.version : req['version']; // 1: 글 불러오거나 수정 2: 버전별 글 불러오기
-      const version = recentHistory.version;
-      let text = await this.getWikiContent(title, version);
-
-      const lines = text.split(/\r?\n/);
-      text = lines.join('\n');
-
-      const jsonData = {
-        is_managed: doc.isManaged,
-        version,
-        text,
-        contents: [],
-        success: true,
-        is_favorite: false,
-      };
-
-      const sections = [];
-      let current_section = null;
-      let current_content = '';
-      let is_started = false;
-      const numbers = [];
-
-      // 파일 읽고 section 나누기
-      for (const line of lines) {
-        const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
-        if (matches !== null) {
-          // 해당 라인이 섹션 타이틀인 경우
-          numbers.push(matches[1].length - 1);
-          if (current_section !== null) {
-            current_section.content.push(current_content);
-            sections.push(current_section);
-          } else {
-            // 목차 없이 그냥 글만 있는 경우
-            is_started = true;
-            if (current_content.trim() !== '') {
-              jsonData.contents.push({
-                section: '0',
-                index: '0',
-                title: '들어가며',
-                content: current_content,
-              });
-            }
-          }
-          current_section = {
-            title: matches[2],
-            content: [],
-          };
-          current_content = '';
-        } else {
-          // 해당 라인이 섹션 내용인 경우
-          if (current_content !== '') {
-            // 빈 줄이면
-            current_content += '\n';
-          }
-          current_content += line;
-        }
-      }
-      if (current_section !== null) {
-        // 마지막 섹션 push
-        current_section.content.push(current_content);
-        sections.push(current_section);
-      } else if (current_content !== null && !is_started) {
-        // 목차가 아예 없는 경우
-        jsonData.contents.push({
-          section: '0',
-          index: '0',
-          title: '들어가며',
-          content: current_content,
-        });
-      }
-
-      this.indexing(numbers, sections).forEach((obj) => {
-        jsonData.contents.push(obj);
-      });
-
-      jsonData['success'] = true;
-
-      // // TODO: 위키 즐겨찾기 확인 로직 - JwtAuthGuard 필요
-      // if (user) {
-      // }
-      // if (req.isAuthenticated()) {
-      //   const rows = await Wiki.Wiki_favorite.getWikiFavoriteByUserIdAndDocId(
-      //     req.user[0].id,
-      //     doc_id,
-      //   );
-      //   if (rows.length === 0) {
-      //     jsonData['is_favorite'] = false;
-      //   } else {
-      //     jsonData['is_favorite'] = true;
-      //   }
-      // } else {
-      //   jsonData['is_favorite'] = false;
-      // }
-
-      // // TODO: 조회수 증가 로직 - JwtAuthGuard 필요
-      // if (req.isAuthenticated()) {
-      //   const wikiDocsView = new WikiDocsView();
-      //   wikiDocsView.docId = docId;
-      //   wikiDocsView.userId = req.user.id;
-      //   await this.wikiDocsViewRepository.save(wikiDocsView);
-
-      //   const favorite = await this.wikiFavoriteRepository.findOne({
-      //     where: { docId, userId: req.user.id },
-      //   });
-      //   jsonData.is_favorite = !!favorite;
-      // }
-
-      return jsonData;
-    } catch (err) {
-      console.error(err);
+    // TODO: 이 메서드를 더 작은 단위의 메서드로 분리하여 가독성 개선
+    const doc = await this.wikiRepository.findDocByTitle(title);
+    if (!doc) {
       return {
         success: false,
-        message: '위키 불러오기 중 오류',
-        statusCode: 500,
+        message: '존재하지 않는 문서입니다.',
+        statusCode: 404,
       };
     }
-  }
-
-  // 이전 위키 내용 가져오기
-  private async getWikiContent(
-    title: string,
-    version: number,
-  ): Promise<string> {
-    const replacedTitle = title.replace(/\/+/g, '_');
-    const getObjectCommand = new GetObjectCommand({
-      Bucket: 'wiki-bucket',
-      Key: `${replacedTitle}/r${version}.wiki`,
-    });
-    const response = await this.s3Client.send(getObjectCommand);
-    const stream = response.Body as Readable;
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
-    }
-    return Buffer.concat(chunks).toString('utf-8');
-  }
-
-  // 위키 내용 s3에 저장
-  private async saveWikiContent(
-    title: string,
-    version: number,
-    content: string,
-  ): Promise<void> {
-    const replacedTitle = title.replace(/\/+/g, '_');
-    const putObjectCommand = new PutObjectCommand({
-      Bucket: 'wiki-bucket',
-      Key: `${replacedTitle}/r${version}.wiki`,
-      Body: content,
-    });
-    await this.s3Client.send(putObjectCommand);
-  }
-
-  // 인덱싱 함수
-  private indexing = (numbers, sections) => {
-    const content_json = []; // content의 메타데이터와 데이터
-    let num_list = []; // index의 리스트
-    let idx = 1; // 가장 상위 목차
-
-    // 인덱싱
-    for (let i = 0; i < numbers.length; i++) {
-      const section_dic = {}; // section : section, index : index, title: title, content: content
-      section_dic['section'] = (i + 1).toString();
-      const num = numbers[i];
-
-      if (num === 1) {
-        // 가장 상위 목차가 변경됐을 경우
-        num_list = [idx++];
-        section_dic['index'] = num_list[0].toString();
-      } else {
-        if (num > num_list.length) {
-          // 하위 목차로 들어갈 때
-          while (num_list.length < num) num_list.push(1);
-        } else {
-          while (num_list.length > 0 && num < num_list.length) {
-            // depth가 똑같아질 때까지 pop
-            num_list.pop();
-          }
-          const tmp = num_list[num_list.length - 1]; // 한 단계 올리기
-          num_list.pop();
-          num_list.push(tmp + 1);
-        }
-        section_dic['index'] = num_list.join('.');
-      }
-
-      // title과 content 저장
-      section_dic['title'] = sections[i].title;
-      let content_text = '';
-      for (const content of sections[i].content) {
-        content_text += content;
-      }
-      section_dic['content'] = content_text;
-
-      content_json.push(section_dic);
+    if (doc.isDeleted) {
+      return { success: false, message: '삭제된 문서입니다.', statusCode: 410 };
     }
 
-    return content_json;
-  };
-
-  async getWikiDocsIdByTitle(title: string): Promise<number> {
-    const wikiDoc = await this.wikiDocRepository.findOne({ where: { title } });
-
-    if (!wikiDoc) {
-      throw new NotFoundException('Document not found');
+    const recentHistory = await this.wikiRepository.getMostRecentHistory(
+      doc.id,
+    );
+    if (!recentHistory) {
+      return {
+        success: false,
+        message: '존재하지 않는 문서입니다.',
+        statusCode: 404,
+      };
     }
 
-    return wikiDoc.id;
-  }
+    const version = recentHistory.version;
+    let text = await this.wikiRepository.getWikiContent(title, version);
 
-  async getWikiDocsById(id: number): Promise<WikiDoc> {
-    const wikiDoc = await this.wikiDocRepository.findOne({ where: { id } });
+    const lines = text.split(/\r?\n/);
+    text = lines.join('\n');
 
-    if (!WikiDoc) {
-      throw new NotFoundException('Document not found');
+    const jsonData = {
+      is_managed: doc.isManaged,
+      version,
+      text,
+      contents: [],
+      success: true,
+      is_favorite: false,
+    };
+
+    const sections = this.parseSections(lines);
+    const numbers = sections.map((section) => section.level);
+
+    if (sections.length === 0) {
+      jsonData.contents.push({
+        section: '0',
+        index: '0',
+        title: '들어가며',
+        content: text,
+      });
+    } else {
+      this.indexSections(numbers, sections).forEach((obj) => {
+        jsonData.contents.push(obj);
+      });
     }
 
-    return wikiDoc;
+    return jsonData;
   }
 
   async editWikiDoc(title: string, editWikiDto: EditWikiDto, user: User) {
+    //TODO: 앞쪽 히스토리 저장과 뒤쪽 히스토리 저장이 모두 완료가 되었을때만 성공 반환. transactional 처리 요망
     try {
-      const doc = await this.wikiDocRepository.findOne({ where: { title } });
+      const doc = await this.wikiRepository.findDocByTitle(title);
       if (!doc) {
         return {
           success: false,
@@ -704,11 +473,9 @@ export class WikiService {
         };
       }
 
-      const recentHistory = await this.wikiHistoryRepository.findOne({
-        where: { docId: doc.id },
-        order: { createdAt: 'DESC' },
-      });
-
+      const recentHistory = await this.wikiRepository.getMostRecentHistory(
+        doc.id,
+      );
       if (recentHistory.version !== editWikiDto.version) {
         return {
           success: false,
@@ -719,12 +486,17 @@ export class WikiService {
       }
 
       const newVersion = recentHistory.version + 1;
-      await this.saveWikiContent(title, newVersion, editWikiDto.new_content);
+      await this.wikiRepository.saveWikiContent(
+        title,
+        newVersion,
+        editWikiDto.new_content,
+      );
 
-      const newHistory = this.wikiHistoryRepository.create({
+      // TODO: newHistory를 활용하는 로직 구현 (예: 기여도 계산, 알림 생성 등)
+      const newHistory = await this.wikiRepository.createHistory({
         userId: user.id,
         docId: doc.id,
-        textPointer: `${edp}wiki-bucket/${title}/r${newVersion}.wiki`,
+        textPointer: `${process.env.S3_ENDPOINT}${process.env.S3_BUCKET_NAME}/${title}/r${newVersion}.wiki`,
         summary: editWikiDto.summary,
         count: editWikiDto.new_content.length,
         diff: editWikiDto.new_content.length - recentHistory.count,
@@ -733,15 +505,11 @@ export class WikiService {
         isRollback: false,
         indexTitle: editWikiDto.index_title,
       });
-      await this.wikiHistoryRepository.save(newHistory);
+      await this.wikiRepository.saveNewHistory(newHistory);
 
-      // TODO: createHistoryMid, wikiPointMid, newActionRecord, newActionRevise, newActionAnswer, newNotice
+      // TODO: 기여도 로직 추가 요함
 
-      return {
-        success: true,
-        message: '위키 문서 수정 성공',
-        statusCode: 200,
-      };
+      return { success: true, message: '위키 문서 수정 성공', statusCode: 200 };
     } catch (error) {
       console.error(error);
       return {
@@ -753,10 +521,182 @@ export class WikiService {
   }
 
   async deleteWikiDocsById(id: number): Promise<void> {
-    const result = await this.wikiDocRepository.update(id, { isDeleted: true });
-
-    if (result.affected === 0) {
-      throw new InternalServerErrorException('Failed to delete document');
-    }
+    await this.wikiRepository.updateDoc(id, { isDeleted: true });
   }
+
+  async getWikiFavoriteByUserId(userId: number): Promise<WikiDoc[]> {
+    return this.wikiRepository.getFavoritesByUserId(userId);
+  }
+
+  async addWikiFavorite(userId: number, title: string) {
+    const doc = await this.wikiRepository.findDocByTitle(title);
+    if (!doc) {
+      return {
+        success: false,
+        message: '존재하지 않는 문서입니다.',
+        status: 404,
+      };
+    }
+
+    const existingFavorite = await this.wikiRepository.findFavorite(
+      userId,
+      doc.id,
+    );
+    if (existingFavorite) {
+      return {
+        success: false,
+        message: '이미 즐겨찾기에 추가된 문서입니다.',
+        status: 200,
+      };
+    }
+
+    await this.wikiRepository.createFavorite(userId, doc.id);
+    return { success: true, message: '위키 즐겨찾기 추가 성공', status: 200 };
+  }
+
+  async deleteWikiFavorite(userId: number, title: string) {
+    const doc = await this.wikiRepository.findDocByTitle(title);
+    if (!doc) {
+      return {
+        success: false,
+        message: '존재하지 않는 문서입니다.',
+        status: 404,
+      };
+    }
+
+    await this.wikiRepository.deleteFavorite(userId, doc.id);
+    return { success: true, message: '위키 즐겨찾기 삭제 성공', status: 200 };
+  }
+
+  async getDocsContributionsList(): Promise<TotalContributionsListDto[]> {
+    const results = await this.wikiRepository.getDocsContributionsList();
+    return results.map((result) => new TotalContributionsListDto(result));
+  }
+
+  async getUserContributions(
+    userId: number,
+  ): Promise<ContributionsResponseDto> {
+    const totalUsers = await this.userRepository.getTotalUsers();
+    const userRankingAndPoint =
+      await this.userRepository.getUserRankingAndPoint(userId);
+
+    const { ranking, user_point } = userRankingAndPoint;
+
+    let ranking_percentage = (ranking / totalUsers) * 100;
+    if (user_point === 0) {
+      ranking_percentage = 100;
+    }
+
+    const docsContributions =
+      await this.wikiRepository.getDocsContributions(userId);
+
+    // Calculate total_point
+    const total_point = docsContributions.reduce(
+      (sum, doc) => sum + Number(doc.doc_point),
+      0,
+    );
+
+    return {
+      count: totalUsers,
+      ranking,
+      point: user_point,
+      ranking_percentage: Number(ranking_percentage.toFixed(4)),
+      docs: docsContributions.map((doc) => ({
+        ...doc,
+        doc_point: doc.doc_point.toString(),
+        percentage:
+          total_point === 0
+            ? '0.0000'
+            : (Number(doc.doc_point) / total_point).toFixed(4),
+      })),
+    };
+  }
+
+  private parseSections(
+    lines: string[],
+  ): { level: number; title: string; content: string[] }[] {
+    const sections = [];
+    let currentSection = null;
+    let currentContent = [];
+
+    for (const line of lines) {
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/);
+      if (matches) {
+        if (currentSection) {
+          currentSection.content = currentContent;
+          sections.push(currentSection);
+        }
+        currentSection = {
+          level: matches[1].length - 1,
+          title: matches[2],
+          content: [],
+        };
+        currentContent = [];
+      } else {
+        currentContent.push(line);
+      }
+    }
+
+    if (currentSection) {
+      currentSection.content = currentContent;
+      sections.push(currentSection);
+    }
+
+    return sections;
+  }
+
+  private indexSections(
+    numbers: number[],
+    sections: { level: number; title: string; content: string[] }[],
+  ) {
+    const content_json = [];
+    let num_list = [];
+    let idx = 1;
+
+    for (let i = 0; i < numbers.length; i++) {
+      const section_dic = {
+        section: (i + 1).toString(),
+        index: '',
+        title: sections[i].title,
+        content: sections[i].content.join('\n'),
+      };
+
+      const num = numbers[i];
+
+      if (num === 1) {
+        num_list = [idx++];
+        section_dic.index = num_list[0].toString();
+      } else {
+        if (num > num_list.length) {
+          while (num_list.length < num) num_list.push(1);
+        } else {
+          while (num_list.length > 0 && num < num_list.length) {
+            num_list.pop();
+          }
+          const tmp = num_list[num_list.length - 1];
+          num_list.pop();
+          num_list.push(tmp + 1);
+        }
+        section_dic.index = num_list.join('.');
+      }
+
+      content_json.push(section_dic);
+    }
+
+    return content_json;
+  }
+
+  //todo: wikidocs를 반환하는 Dto 생성
+
+  async searchWikiDocsByTitle(title: string, userId: number) {
+    const result = await this.wikiRepository.searchWikiDocsByTitle(
+      title,
+      userId,
+    );
+    if (!result || result.length === 0) {
+      throw new NotFoundException('문서를 찾을 수 없습니다.');
+    }
+    return result;
+  }
+  // TODO: 이미지 업로드 로직을 위한 새로운 메서드 추가
 }

@@ -7,7 +7,6 @@ import {
 import { isArray } from 'class-validator';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-
 @Injectable()
 export class SuccessInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -15,6 +14,13 @@ export class SuccessInterceptor implements NestInterceptor {
       map((data) => {
         const response = context.switchToHttp().getResponse();
         const statusCode = response.statusCode;
+        if (!isArray(data) && data?.revised === 1) {
+          return {
+            success: data.success,
+            message: data.message,
+            data: data.data,
+          };
+        }
         if (data?.success) {
           return data;
         }
@@ -25,10 +31,10 @@ export class SuccessInterceptor implements NestInterceptor {
               success: true,
             };
           }
-          if (!isArray(data)) {
+          if (typeof data == typeof []) {
             return {
               success: true,
-              data: data,
+              data,
             };
           }
           return {
