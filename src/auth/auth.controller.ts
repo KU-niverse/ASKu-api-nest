@@ -81,24 +81,24 @@ export class AuthController {
   async signIn(
     @Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<void> {
+  ): Promise<{ success: boolean; message: string }> {
     const { accessToken, refreshToken } =
       await this.authService.signIn(authCredentialsDto);
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       //TODO: 개발시에 true로 변경해야 쿠키 작동
-      secure: false,
+      secure: true,
       sameSite: 'none',
     });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       //TODO: 개발시에 true로 변경해야 쿠키 작동
-      secure: false,
+      secure: true,
       sameSite: 'none',
     });
 
-    return;
+    return { success: true, message: '로그인에 성공하였습니다!' };
   }
 
   @Post('/signup')
