@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WikiHistory } from './entities/wikiHistory.entity';
@@ -37,6 +37,23 @@ export class WikiRepository {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
       },
+    });
+  }
+
+  async getWikiDocsById(id: number): Promise<WikiDoc> {
+    const wikiDoc = await this.wikiDocRepository.findOne({ where: { id } });
+
+    if (!WikiDoc) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return wikiDoc;
+  }
+
+  async getWikiHistoryByDocId(docId: number): Promise<WikiHistory> {
+    return this.wikiHistoryRepository.findOne({
+      where: { wikiDoc: { id: docId } },
+      order: { createdAt: 'DESC' },
     });
   }
 

@@ -10,7 +10,7 @@ export class CreateQuestionDto {
   @ApiProperty({ description: '인덱스 명', default: '0. 전체' })
   @IsNotEmpty()
   @IsString()
-  indexTitle: string;
+  index_title: string;
 
   @ApiProperty({ description: '문서 제목', default: '고양이' })
   @IsNotEmpty()
