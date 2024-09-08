@@ -11,8 +11,9 @@ import {
   Request,
   UploadedFile,
   UseGuards,
-  UseInterceptors, InternalServerErrorException
-} from "@nestjs/common";
+  UseInterceptors,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import {
@@ -31,7 +32,7 @@ import { EditWikiDto } from './dto/editWiki.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/config/multer.config';
 import { WikiDoc } from './entities/wikiDoc.entity';
-import { TotalContributionsListDto } from "./dto/total-contributions-list.dto";
+import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 
 @ApiTags('wiki')
 @Controller('wiki')
