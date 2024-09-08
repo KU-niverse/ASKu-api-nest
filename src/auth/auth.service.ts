@@ -12,7 +12,11 @@ import axios from 'axios';
 import { Response } from 'express';
 import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
 import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
-import { KoreapasLoginException } from 'src/common/exceptions/koreapas-login.exception';
+import {
+  IncorrectIdPwException,
+  LeaveUserException,
+  KoreapasLoginException,
+} from 'src/common/exceptions/signin.exception';
 import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
 import { Repository } from 'typeorm';
@@ -59,7 +63,7 @@ export class AuthService {
     const today = new Date();
 
     if (user.isDeleted) {
-      throw new GoneException('탈퇴한 회원입니다.');
+      throw new LeaveUserException('탈퇴한 회원입니다.');
     } else if (new Date(user.restrictPeriod) > today) {
       throw new ForbiddenException('이용이 제한된 회원입니다.');
     }
@@ -81,7 +85,7 @@ export class AuthService {
         return { uuid, nickname };
       }
       if (res.data.result == false) {
-        throw new UnauthorizedException(
+        throw new IncorrectIdPwException(
           '아이디와 비밀번호를 다시 확인해주세요',
         );
       }
