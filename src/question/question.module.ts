@@ -11,6 +11,7 @@ import { UserModule } from 'src/user/user.module';
 import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { User } from 'src/user/entities/user.entity';
+import { BadgeModule } from 'src/badge/badge.module';
 
 @Module({
   imports: [
@@ -23,10 +24,12 @@ import { User } from 'src/user/entities/user.entity';
       WikiHistory,
       User,
     ]),
+    BadgeModule,
     UserModule,
     AuthModule,
   ],
   controllers: [QuestionController],
   providers: [QuestionService],
+  exports: [QuestionService, TypeOrmModule],
 })
 export class QuestionModule {}

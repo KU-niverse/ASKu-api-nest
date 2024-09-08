@@ -230,7 +230,7 @@ export class DebateController {
     const result = await this.debateService.createDebateNewTitle(newDebate);
     return result;
   }
-  
+
   // TODO: 이 api 기존 api와 달라짐
   // GET /debate/view/{title}/{debate} 토론방 조회
   @Get('view/:title/:debate')
@@ -254,9 +254,8 @@ export class DebateController {
     @Param('title') title: string,
     @Param('debate') debateId: string,
   ): Promise<DebateHistory[]> {
-    const histories = await this.debateService.getAllDebateHistoryByDebateId(+debateId);
+    const histories =
+      await this.debateService.getAllDebateHistoryByDebateId(+debateId);
     return histories;
   }
-
-
 }

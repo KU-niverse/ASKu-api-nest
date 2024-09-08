@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Post,
   Res,
   Request,
@@ -452,4 +454,118 @@ export class WikiController {
       .replace(/_/g, '\\_');
     return await this.wikiService.searchWikiDocsByTitle(decodedTitle, userId);
   }
+
+  //--------------이 아래부터 영섭 작업 --------------//
+
+  @Get('contents/question/:questionId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '같은 목차가 존재하는지 확인',
+    description:
+      'Get방식으로 같은 목차가 존재하는지 확인합니다. ex) based_on_section: true, section:3',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      '같은 목차 정보 가져오기 성공(based_on_section:true면 찾은거고 false면 없다는 뜻',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그인이 필요한 서비스입니다.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 위키 문서',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+  })
+  @UseGuards(AuthGuard())
+  async checkIndexExist(
+    @GetUser() user: User,
+    @Param('questionId', ParseIntPipe)
+    questionId: number,
+  ) {
+    console.log('🚀 ~ WikiController ~ questionId:', questionId);
+    const result = await this.wikiService.checkIndexExist(user, questionId);
+    console.log('🚀 ~ WikiController ~ result:', result);
+    return result;
+  }
+
+  @Get('contents/:title(*)/version/:version')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '위키 문서 버전 미리보기 정보 가져오기',
+    description: 'GET 방식으로 위키 문서 버전 미리보기 정보를 가져옵니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '	위키 문서 정보 가져오기 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 위키 문서',
+  })
+  @ApiResponse({
+    status: 410,
+    description: '삭제된 위키 문서',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 문서 정보 가져오기 중 오류',
+  })
+  async getWikiContentByVersion(
+    @Param('title') title: string,
+    @Param('version', ParseIntPipe) version: number,
+    @GetUser() user: User,
+  ) {
+    return await this.wikiService.getTotalContentsByVersion(
+      title,
+      version,
+      2,
+      user,
+    );
+  }
+
+  @Get('contents/:title(*)/section/:section')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '위키 문서의 특정 섹션 정보 가져오기',
+    description: 'GET 방식으로 위키 문서의 특정 섹션 정보를 가져옵니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 문서의 특정 섹션 정보 가져오기 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그인이 필요한 서비스입니다.',
+  })
+  @ApiResponse({
+    status: 422,
+    description: '잘못된 섹션 번호',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 위키 문서',
+  })
+  @ApiResponse({
+    status: 410,
+    description: '삭제된 위키 문서',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 문서의 특정 섹션 정보 가져오기 중 오류',
+  })
+  @UseGuards(AuthGuard())
+  async getWikiContentBySection(
+    @Param('title') title: string,
+    @Param('section', ParseIntPipe) section: number,
+    @GetUser() user: User,
+  ) {
+    return await this.wikiService.getContentsBySection(title, section, user);
+  }
+
+  // --------------이 위까지 영섭 작업 --------------//
 }

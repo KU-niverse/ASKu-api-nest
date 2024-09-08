@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { GoneException, Injectable, NotFoundException } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -6,15 +6,370 @@ import { EditWikiDto } from './dto/editWiki.dto';
 import { User } from '../user/entities/user.entity';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import { WikiDoc } from './entities/wikiDoc.entity';
-import { TotalContributionsListDto } from "./dto/total-contributions-list.dto";
+import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Question } from 'src/question/entities/question.entity';
+import { Repository } from 'typeorm';
+import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
+import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
 
 @Injectable()
 export class WikiService {
   constructor(
     private wikiRepository: WikiRepository,
     private userRepository: UserRepository,
+    @InjectRepository(Question)
+    private questionRepository: Repository<Question>,
+    @InjectRepository(WikiDoc)
+    private wikiDocRepository: Repository<WikiDoc>,
+    @InjectRepository(WikiDocsView)
+    private readonly wikiDocsViewRepository: Repository<WikiDocsView>,
   ) {}
+  // -------------------------이 아래로 영섭 작업물 -------------------------//
+  async getRecentWikiHistoryByDocId(doc_id: number): Promise<WikiHistory> {
+    const wikiHistory: WikiHistory =
+      await this.wikiRepository.getWikiHistoryByDocId(doc_id);
+    return wikiHistory;
+  }
 
+  async checkIndexExist(user: User, question_id: number) {
+    console.log(
+      '🚀 ~ WikiService ~ checkIndexExist ~ question_id:',
+      question_id,
+    );
+    console.log('hihi');
+    //질문 가져오기
+    const question: Question = await this.questionRepository.findOne({
+      where: { id: question_id },
+    });
+    console.log('🚀 ~ WikiService ~ checkIndexExist ~ question:', question);
+
+    // 질문에 해당하는 문서를 가져와서 목차를 가져온다
+    const recentWikiHistory: WikiHistory =
+      await this.getRecentWikiHistoryByDocId(question.docId);
+    console.log(
+      '🚀 ~ WikiService ~ checkIndexExist ~ recentWikiHistory:',
+      recentWikiHistory,
+    );
+
+    const wikiDoc: WikiDoc = await this.wikiRepository.getWikiDocsById(
+      question.docId,
+    );
+    console.log('🚀 ~ WikiService ~ checkIndexExist ~ wikiDoc:', wikiDoc);
+
+    const title: string = wikiDoc.title.replace(/\/+/g, '_');
+    const version: number = Number(recentWikiHistory.version);
+    let text: string = '';
+    const jsonData = {};
+
+    // S3에서 제목과 이름으로 이전 문서 가져오기
+    text = await this.wikiRepository.getWikiContent(title, version);
+    console.log('2');
+    // 원래 통으로 가져오는 코드
+    const lines = text.split(/\r?\n/);
+    text = lines.join('\n');
+
+    jsonData['version'] = version;
+    jsonData['text'] = text;
+
+    const sections = [];
+    let current_section = null;
+    let current_content = null;
+    const numbers = [];
+    console.log('3');
+    // 파일 읽고 section 나누기
+    for (const line of lines) {
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
+      if (matches !== null) {
+        // 해당 라인이 섹션 타이틀인 경우
+        numbers.push(matches[1].length - 1);
+        if (current_section !== null) {
+          current_section.content.push(current_content);
+          sections.push(current_section);
+        }
+        current_section = {
+          title: matches[2],
+          content: [],
+        };
+        current_content = '';
+      } else {
+        // 해당 라인이 섹션 내용인 경우
+        if (current_content !== '') {
+          // 빈 줄이면
+          current_content += '\n';
+        }
+        current_content += line;
+      }
+    }
+    console.log('4');
+    if (current_section !== null) {
+      // 마지막 섹션 push
+      current_section.content.push(current_content);
+      sections.push(current_section);
+    }
+
+    const content_json: any[] = this.indexSections(numbers, sections);
+    jsonData['contents'] = content_json;
+
+    const index_title_list = [];
+    for (let i = 0; i < content_json.length; i++) {
+      index_title_list.push(
+        content_json[i].index + ' ' + content_json[i].title,
+      );
+    }
+    console.log('5');
+    const found = index_title_list.includes(question.indexTitle);
+
+    // 목차를 순회하면서 질문과 같은 목차가 있는지 확인한다
+    // 같은 목차가 있으면 res에 based_on_section: true, section: section을 넣어서 보낸다
+    if (found) {
+      jsonData['based_on_section'] = true;
+      const section = index_title_list.indexOf(question.indexTitle) + 1;
+      jsonData['section'] = section;
+    }
+    // 같은 목차가 없으면 res에 based_on_section: false를 넣어서 보낸다
+    else {
+      jsonData['based_on_section'] = false;
+    }
+    console.log('6');
+    jsonData['success'] = true;
+    console.log('6');
+    return jsonData;
+  }
+
+  async getTotalContentsByVersion(
+    title: string,
+    version: number,
+    calltype: number,
+    user?: User,
+  ) {
+    const doc: WikiDoc = await this.getWikiDocsByTitle(title);
+    console.log('🚀 ~ WikiService ~ doc:', doc);
+    const docId = doc.id;
+    const recentHistory: WikiHistory =
+      await this.getRecentWikiHistoryByDocId(docId);
+    const parsedTitle: string = title.replace(/\/+/g, '_');
+
+    // 로그인 시에만, 조회수 증가
+    if (user?.id) {
+      const wikiDocsView: WikiDocsView = new WikiDocsView();
+      wikiDocsView.docId = docId;
+      wikiDocsView.userId = user.id;
+      await this.wikiDocsViewRepository.save(wikiDocsView);
+    }
+
+    // TODO: 아래 케이스 테스트 요함
+    if (!recentHistory) {
+      throw new NotFoundException('존재하지 않는 문서입니다.');
+    }
+    let using_version;
+    if (calltype === 1) {
+      // 글 불러오거나 수정용
+      using_version = recentHistory.version;
+    } else if (calltype === 2) {
+      // 버전별 글 불러오기용
+      using_version = version;
+    }
+
+    let text = '';
+    const jsonData: {
+      contents: any[];
+    } = { contents: [] };
+    jsonData['is_managed'] = doc.isManaged;
+
+    // 삭제된 문서인지 확인
+    if (!this.checkWikiIsRemoved(docId)) {
+      // 410반환
+      throw new GoneException('삭제된 문서입니다.');
+    }
+
+    // 가장 최근 버전의 파일 읽어서 jsonData에 저장
+    //S3에서 파일 읽어오는 코드
+    text = await this.wikiRepository.getWikiContent(parsedTitle, using_version);
+
+    // 원래 통으로 가져오는 코드
+    const lines = text.split(/\r?\n/);
+    text = lines.join('\n');
+
+    jsonData['version'] = using_version;
+    jsonData['text'] = text;
+    jsonData['contents'] = [];
+    console.log('🚀 ~ WikiService ~ jsonData:', jsonData);
+
+    const sections = [];
+    let current_section = null;
+    let current_content = '';
+    let is_started = false;
+    const numbers = [];
+
+    // 파일 읽고 section 나누기
+    for (let line of lines) {
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
+      if (matches !== null) {
+        // 해당 라인이 섹션 타이틀인 경우
+        numbers.push(matches[1].length - 1);
+        if (current_section !== null) {
+          current_section.content.push(current_content);
+          sections.push(current_section);
+        } else {
+          // 목차 없이 그냥 글만 있는 경우
+          is_started = true;
+          if (current_content.trim() !== '') {
+            jsonData.contents.push({
+              section: '0',
+              index: '0',
+              title: '들어가며',
+              content: current_content,
+            });
+          }
+        }
+        current_section = {
+          title: matches[2],
+          content: [],
+        };
+        current_content = '';
+      } else {
+        // 해당 라인이 섹션 내용인 경우
+        if (current_content !== '') {
+          // 빈 줄이면
+          current_content += '\n';
+        }
+        current_content += line;
+      }
+    }
+
+    if (current_section !== null) {
+      // 마지막 섹션 push
+      current_section.content.push(current_content);
+      sections.push(current_section);
+    } else if (current_content !== null && !is_started) {
+      // 목차가 아예 없는 경우
+      jsonData.contents.push({
+        section: '0',
+        index: '0',
+        title: '들어가며',
+        content: current_content,
+      });
+    }
+
+    this.indexSections(numbers, sections).forEach((obj) => {
+      jsonData.contents.push(obj);
+    });
+
+    jsonData['success'] = true;
+    if (user?.id) {
+      const rows = await this.getWikiFavoriteByUserIdAndDocId(user.id, docId);
+      if (rows.length === 0) {
+        jsonData['is_favorite'] = false;
+      } else {
+        jsonData['is_favorite'] = true;
+      }
+    } else {
+      jsonData['is_favorite'] = false;
+    }
+    return jsonData;
+  }
+  async getWikiDocsByTitle(title: string): Promise<WikiDoc> {
+    const wikiDoc: WikiDoc = await this.wikiDocRepository.findOne({
+      where: { title },
+    });
+    return wikiDoc;
+  }
+
+  async checkWikiIsRemoved(docId: number): Promise<boolean> {
+    const wikiDoc: WikiDoc = await this.wikiDocRepository.findOne({
+      where: { id: docId },
+    });
+    return wikiDoc.isDeleted;
+  }
+
+  async getWikiFavoriteByUserIdAndDocId(
+    userId: number,
+    docId: number,
+  ): Promise<WikiDoc[]> {
+    const favoriteDocs: WikiDoc[] = await this.wikiDocRepository
+      .createQueryBuilder('wd')
+      .innerJoin(WikiFavorites, 'wf', 'wf.doc_id = wd.id')
+      .where('wf.userId = :user_id', { userId })
+      .andWhere('wf.docId = :doc_id', { docId })
+      .orderBy('wf.createdAt', 'DESC')
+      .getMany();
+
+    return favoriteDocs;
+  }
+
+  // 수정 시 기존 섹션 텍스트 불러오기
+  async getContentsBySection(
+    title: string,
+    section_number: number,
+    user: User,
+  ) {
+    const doc: WikiDoc = await this.getWikiDocsByTitle(title);
+    console.log('🚀 ~ WikiService ~ doc:', doc);
+    const docId = doc.id;
+    const recentHistory: WikiHistory =
+      await this.getRecentWikiHistoryByDocId(docId);
+    const parsedTitle: string = title.replace(/\/+/g, '_');
+    console.log('🚀 ~ WikiService ~ parsedTitle:', parsedTitle);
+    const version = recentHistory.version;
+    console.log('🚀 ~ WikiService ~ version:', version);
+
+    let text = '';
+    let sections = [];
+    let jsonData = {};
+    let section = null;
+
+    // S3에서 파일 읽어오는 코드
+    text = await this.wikiRepository.getWikiContent(parsedTitle, version);
+
+    // 정규화로 섹션 분리
+    const lines = text.split(/\r?\n/);
+    console.log('🚀 ~ WikiService ~ lines:', lines);
+    let current_section = null;
+    let current_content = null;
+
+    for (let line of lines) {
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
+      if (matches !== null) {
+        // 해당 라인이 섹션 타이틀인 경우
+        if (current_section !== null) {
+          current_section.content.push(current_content);
+          sections.push(current_section);
+        }
+        current_section = {
+          title: line,
+          content: [],
+        };
+        current_content = '';
+      } else {
+        // 해당 라인이 섹션 내용인 경우
+        if (current_content !== '') {
+          current_content += '\n';
+        }
+        current_content += line;
+      }
+    }
+    if (current_section !== null) {
+      current_section.content.push(current_content);
+      sections.push(current_section);
+    }
+    console.log('🚀 ~ WikiService ~ sections:', sections);
+
+    // 섹션 번호에 맞는 섹션 불러오기
+    section = sections[section_number - 1];
+    console.log('🚀 ~ WikiService ~ section:', section);
+    jsonData = {};
+    jsonData['doc_id'] = docId;
+    jsonData['version'] = version;
+    jsonData['title'] = title;
+    jsonData['content'] = section.content.join('\n');
+    jsonData['is_managed'] = doc.isManaged;
+    jsonData['success'] = true;
+
+    return jsonData;
+  }
+
+  // -------------------------이 위로 영섭 작업물 -------------------------//
   async getWikiHistoryByUserId(userId: number): Promise<WikiHistory[]> {
     return this.wikiRepository.getWikiHistoryByUserId(userId);
   }

@@ -105,9 +105,9 @@ export class DebateService {
       `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
       [id],
     );
-  
+
     if (!flag || flag.doneOrNot) {
-      throw new Error('이미 종료된 토론방입니다.'); 
+      throw new Error('이미 종료된 토론방입니다.');
     } else {
       const date = new Date();
       date.setHours(date.getHours() + 9);
@@ -147,7 +147,21 @@ export class DebateService {
     return debateWithoutWikiDoc as Omit<Debate, 'wikiDoc'>;
   }
 
-  async getAllDebateHistoryByDebateId(debateId: number): Promise<DebateHistory[]> {
+  // TODO: api 정상 작동 확인 후 삭제 요망
+  async getDebate(id: number): Promise<Debate> {
+    const debate = await this.debate.findOne({
+      where: { id },
+      relations: ['wikiDoc'],
+    });
+    if (!debate) {
+      throw new NotFoundException('토론을 찾을 수 없습니다.');
+    }
+    return debate;
+  }
+
+  async getAllDebateHistoryByDebateId(
+    debateId: number,
+  ): Promise<DebateHistory[]> {
     const result = await this.debateRepository
       .createQueryBuilder('debateHistory')
       .innerJoinAndSelect('debateHistory.user', 'user')
@@ -155,7 +169,7 @@ export class DebateService {
       .where('debateHistory.debateId = :debateId', { debateId })
       .orderBy('debateHistory.createdAt')
       .getMany();
-  
+
     return result;
   }
 }
