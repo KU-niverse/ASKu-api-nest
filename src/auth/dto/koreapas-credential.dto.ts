@@ -28,6 +28,7 @@ export class KoreapasCredentialsDto {
 }
 
 export class KoreapasOAuthDto {
+  @ApiProperty({ description: '유저 고파스 uuid', default: '12314154' })
   @IsNotEmpty()
   @IsString()
   uuid: string;

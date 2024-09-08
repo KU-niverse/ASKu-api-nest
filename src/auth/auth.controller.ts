@@ -77,6 +77,16 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
+  })
   @HttpCode(HttpStatus.OK)
   async signIn(
     @Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto,
@@ -102,16 +112,38 @@ export class AuthController {
   }
 
   @Post('/signup')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '회원가입' })
   @ApiBody({ type: KoreapasCredentialsDto })
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: '회원가입 성공',
+    schema: {
+      example: {
+        success: true,
+        message: '회원가입 완료!',
+      },
+    },
   })
   @ApiResponse({
-    status: 400,
+    status: 401,
     description: '이미 존재하는 사용자',
+    schema: {
+      example: {
+        success: false,
+        message: '회원가입에 실패하였습니다. 중복된 항목이 있습니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
   })
   async signUp(
     @Body(ValidationPipe) koreapasCredentialsDto: KoreapasCredentialsDto,
@@ -120,7 +152,6 @@ export class AuthController {
     const { accessToken, refreshToken } = await this.authService.signUp(
       koreapasCredentialsDto,
     );
-
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       //TODO: 개발시에 true로 변경해야 쿠키 작동
@@ -135,7 +166,7 @@ export class AuthController {
     });
     return {
       success: true,
-      message: '회원가입 성공',
+      message: '회원가입 완료!',
     };
   }
 
@@ -145,6 +176,16 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: '로그아웃 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
   })
   @UseGuards(AuthGuard())
   async signOut(@Res({ passthrough: true }) res: Response): Promise<void> {
@@ -167,17 +208,73 @@ export class AuthController {
 
   // TODO: is-not-signed-in-validation.pipe.ts를 사용하여 로그인 여부를 검사
   @Post('/koreapasoauth')
+  @ApiResponse({
+    status: 200,
+    description: '로그인 성공',
+    schema: {
+      example: {
+        success: true,
+        message: '등록된 고파스유저 로그인 처리 완료',
+        data: {
+          is_registered: true,
+          koreapas_nickname: '이힣히힣',
+          koreapas_uuid: '3bc0420d503f6e1d2f2e5cb232abb748',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '로그인 성공',
+    schema: {
+      example: {
+        success: true,
+        message: '등록되지 않은 유저입니다.',
+        data: {
+          is_registered: false,
+          koreapas_nickname: '이힣히힣',
+          koreapas_uuid: '3bc0420d503f6e1d2f2e5cb232abb748',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      '고파스 내에서 미인증 또는 강등유저일때 발생하는 예외 - KoreapasRestrictedUserException',
+    schema: {
+      example: {
+        success: false,
+        message: '이용이 제한된 회원입니다.',
+      },
+    },
+  })
   @HttpCode(HttpStatus.OK)
   async koreapasOAuth(
     @Body() koreapasOAuthDto: KoreapasOAuthDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void | {
-    is_registered: boolean;
-    koreapas_nickname: string;
-    koreapas_uuid: string;
+    success: boolean;
+    message: string;
+    data: {
+      is_registered: boolean;
+      koreapas_nickname: string;
+      koreapas_uuid: string;
+    };
   }> {
     const { is_registered, koreapas_uuid, koreapas_nickname, user_id } =
       await this.authService.koreapasOAuth(koreapasOAuthDto.uuid);
+    // 등록된 유저라면 jwt 발급 후 로그인처리 하여 return
     if (is_registered == true) {
       const { accessToken, refreshToken } = this.authService.getJwt(user_id);
 
@@ -191,9 +288,20 @@ export class AuthController {
         secure: false,
         sameSite: 'none',
       });
+      return {
+        success: true,
+        message: '등록된 고파스유저 로그인 처리 완료',
+        data: { is_registered, koreapas_nickname, koreapas_uuid },
+      };
     }
+
+    // 등록되지 않은 유저라면 로그인 처리 없이 등록되지 않은 유저라는 메시지 return
     if (is_registered == false) {
-      return { is_registered, koreapas_nickname, koreapas_uuid };
+      return {
+        success: true,
+        message: '등록되지 않은 유저입니다.',
+        data: { is_registered, koreapas_nickname, koreapas_uuid },
+      };
     }
   }
 }
