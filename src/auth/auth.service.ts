@@ -12,11 +12,13 @@ import axios from 'axios';
 import { Response } from 'express';
 import { AuthCredentialsDto } from 'src/auth/dto/auth-credential.dto';
 import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
+
 import {
   IncorrectIdPwException,
   LeaveUserException,
   KoreapasLoginException,
-} from 'src/common/exceptions/signin.exception';
+  UserAlreadyExistException,
+} from 'src/common/exceptions/auth.exception';
 import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
 import { Repository } from 'typeorm';
@@ -34,17 +36,21 @@ export class AuthService {
     koreapasCredentialsDto: KoreapasCredentialsDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const { uuid, nickname } = koreapasCredentialsDto;
+
+    // 고파스 로그인 api를 통해 받아온 uuid로 이미 존재하는 유저인지 확인
     const user = await this.userService.getUserByUuid(uuid);
 
+    // 이미 존재하는 유저일경우 에러 발생
     if (user) {
-      throw new NotAcceptableException('이미 가입된 회원입니다.');
+      throw new UserAlreadyExistException(
+        '회원가입에 실패하였습니다. 중복된 항목이 있습니다.',
+      );
     }
-
-    const createdUser: User = await this.userService.createUser(
-      koreapasCredentialsDto,
-    );
-    // TODO: 출석 로직 추가
-
+    // 들어온 정보를 가지고 유저를 생성
+    const createdUser: User = await this.userService.createUser(uuid, nickname);
+    // 생성된 유저에 대해 출석 체크 로직 실행
+    await this.userService.markUserAttend(createdUser.id);
+    // jwt 발급 및 반환
     return this.getJwt(createdUser.id);
   }
 
@@ -119,7 +125,7 @@ export class AuthService {
       );
     }
     // 출석 체크
-    this.userService.markUserAttend(user.id);
+    await this.userService.markUserAttend(user.id);
 
     // 현재 db상의 닉네임과 고파스 db간의 닉네임 차이 동기화
     await this.syncNickname(user, nickname);

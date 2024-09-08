@@ -2,6 +2,7 @@
 
 import { HttpException, HttpStatus } from '@nestjs/common';
 
+// sign in 시 아이디 비밀번호가 틀렸을 때 발생하는 예외
 export class IncorrectIdPwException extends HttpException {
   constructor(message: string) {
     super(message, HttpStatus.UNAUTHORIZED);
@@ -15,6 +16,7 @@ export class IncorrectIdPwException extends HttpException {
   }
 }
 
+// sign in 시 이미 탈퇴한 유저일 때 발생하는 예외
 export class LeaveUserException extends HttpException {
   constructor(message: string) {
     super(message, HttpStatus.GONE);
@@ -28,6 +30,7 @@ export class LeaveUserException extends HttpException {
   }
 }
 
+// sign in 시 고파스 계정으로 최초 로그인할 때 발생하는 예외
 export class ForbiddenUserException extends HttpException {
   constructor(message: string) {
     super(message, HttpStatus.FORBIDDEN);
@@ -41,6 +44,7 @@ export class ForbiddenUserException extends HttpException {
   }
 }
 
+// sign in 시 고파스 계정으로 최초 로그인할 때 발생하는 예외
 export class KoreapasLoginException extends HttpException {
   constructor(message: string, koreapasUuid: string, koreapasNickname: string) {
     // TODO: 406으로 수정 요함
@@ -58,6 +62,20 @@ export class KoreapasLoginException extends HttpException {
       message: this.message,
       koreapas_nickname: this.koreapasNickname,
       koreapas_uuid: this.koreapasUuid,
+    };
+  }
+}
+
+// sign up시 이미 존재하는 사용자일때 발생하는 예외
+export class UserAlreadyExistException extends HttpException {
+  constructor(message: string) {
+    super(message, HttpStatus.UNAUTHORIZED);
+  }
+
+  getResponse() {
+    return {
+      success: false,
+      message: this.message,
     };
   }
 }

@@ -9,10 +9,11 @@ import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { UserRepository } from './user.repository';
+import { AiSession } from 'src/ai/entities/aiSession.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserAttend, UserAction, Badge]),
+    TypeOrmModule.forFeature([User, UserAttend, UserAction, Badge, AiSession]),
     forwardRef(() => BadgeModule),
     forwardRef(() => AuthModule),
   ],

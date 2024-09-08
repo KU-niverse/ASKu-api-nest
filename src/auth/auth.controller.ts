@@ -77,6 +77,16 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
+  })
   @HttpCode(HttpStatus.OK)
   async signIn(
     @Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto,
@@ -102,16 +112,38 @@ export class AuthController {
   }
 
   @Post('/signup')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '회원가입' })
   @ApiBody({ type: KoreapasCredentialsDto })
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: '회원가입 성공',
+    schema: {
+      example: {
+        success: true,
+        message: '회원가입 완료!',
+      },
+    },
   })
   @ApiResponse({
-    status: 400,
+    status: 401,
     description: '이미 존재하는 사용자',
+    schema: {
+      example: {
+        success: false,
+        message: '회원가입에 실패하였습니다. 중복된 항목이 있습니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
   })
   async signUp(
     @Body(ValidationPipe) koreapasCredentialsDto: KoreapasCredentialsDto,
@@ -120,7 +152,6 @@ export class AuthController {
     const { accessToken, refreshToken } = await this.authService.signUp(
       koreapasCredentialsDto,
     );
-
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       //TODO: 개발시에 true로 변경해야 쿠키 작동
@@ -135,7 +166,7 @@ export class AuthController {
     });
     return {
       success: true,
-      message: '회원가입 성공',
+      message: '회원가입 완료!',
     };
   }
 
@@ -145,6 +176,16 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: '로그아웃 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
   })
   @UseGuards(AuthGuard())
   async signOut(@Res({ passthrough: true }) res: Response): Promise<void> {
@@ -167,6 +208,16 @@ export class AuthController {
 
   // TODO: is-not-signed-in-validation.pipe.ts를 사용하여 로그인 여부를 검사
   @Post('/koreapasoauth')
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
+  })
   @HttpCode(HttpStatus.OK)
   async koreapasOAuth(
     @Body() koreapasOAuthDto: KoreapasOAuthDto,
