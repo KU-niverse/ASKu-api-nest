@@ -226,9 +226,13 @@ export class WikiService {
       ranking_percentage = 100;
     }
 
-    const docsContributions = await this.wikiRepository.getDocsContributions(
-      userId,
-      user_point,
+    const docsContributions =
+      await this.wikiRepository.getDocsContributions(userId);
+
+    // Calculate total_point
+    const total_point = docsContributions.reduce(
+      (sum, doc) => sum + Number(doc.doc_point),
+      0,
     );
 
     return {
@@ -239,7 +243,10 @@ export class WikiService {
       docs: docsContributions.map((doc) => ({
         ...doc,
         doc_point: doc.doc_point.toString(),
-        percentage: doc.percentage.toString(),
+        percentage:
+          total_point === 0
+            ? '0.0000'
+            : (Number(doc.doc_point) / total_point).toFixed(4),
       })),
     };
   }

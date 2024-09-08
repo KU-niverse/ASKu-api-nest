@@ -49,7 +49,7 @@ export class WikiRepository {
     });
   }
 
-  async getDocsContributions(userId: number, userPoint: number) {
+  async getDocsContributions(userId: number) {
     return this.wikiHistoryRepository
       .createQueryBuilder('wh')
       .select('wh.docId', 'doc_id')
@@ -59,11 +59,6 @@ export class WikiRepository {
           'WHEN wh.diff > 0 THEN wh.diff * 4 ELSE 0 END)',
         'doc_point',
       )
-      .addSelect(
-        'CAST(SUM(CASE WHEN wh.diff > 0 AND wh.isQBased = 1 THEN wh.diff * 5 ' +
-          'WHEN wh.diff > 0 THEN wh.diff * 4 ELSE 0 END) / :totalPoint * 100 AS DECIMAL(5,4))',
-        'percentage',
-      )
       .innerJoin('wh.wikiDoc', 'wd')
       .where('wh.userId = :userId', { userId })
       .andWhere('wh.isBad = 0')
@@ -71,7 +66,6 @@ export class WikiRepository {
       .groupBy('wh.docId')
       .addGroupBy('wd.title')
       .orderBy('doc_point', 'DESC')
-      .setParameter('totalPoint', userPoint)
       .getRawMany();
   }
 
