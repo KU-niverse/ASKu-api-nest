@@ -53,7 +53,7 @@ export class AiHistory extends BaseEntity {
 
   @Column({ type: 'timestamp', nullable: true })
   @ApiProperty({ description: '질문이 처리된 시각', nullable: true })
-  respondedAt: Date | null;
+  responsedAt: Date | null;
 
   @Column({ type: 'int', nullable: true })
   @ApiProperty({ description: '총 대기 시간', nullable: true })
