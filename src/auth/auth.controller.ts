@@ -209,6 +209,36 @@ export class AuthController {
   // TODO: is-not-signed-in-validation.pipe.ts를 사용하여 로그인 여부를 검사
   @Post('/koreapasoauth')
   @ApiResponse({
+    status: 200,
+    description: '로그인 성공',
+    schema: {
+      example: {
+        success: true,
+        message: '등록된 고파스유저 로그인 처리 완료',
+        data: {
+          is_registered: true,
+          koreapas_nickname: '이힣히힣',
+          koreapas_uuid: '3bc0420d503f6e1d2f2e5cb232abb748',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '로그인 성공',
+    schema: {
+      example: {
+        success: true,
+        message: '등록되지 않은 유저입니다.',
+        data: {
+          is_registered: false,
+          koreapas_nickname: '이힣히힣',
+          koreapas_uuid: '3bc0420d503f6e1d2f2e5cb232abb748',
+        },
+      },
+    },
+  })
+  @ApiResponse({
     status: 500,
     description: '서버 에러',
     schema: {
@@ -218,17 +248,33 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({
+    status: 403,
+    description:
+      '고파스 내에서 미인증 또는 강등유저일때 발생하는 예외 - KoreapasRestrictedUserException',
+    schema: {
+      example: {
+        success: false,
+        message: '이용이 제한된 회원입니다.',
+      },
+    },
+  })
   @HttpCode(HttpStatus.OK)
   async koreapasOAuth(
     @Body() koreapasOAuthDto: KoreapasOAuthDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void | {
-    is_registered: boolean;
-    koreapas_nickname: string;
-    koreapas_uuid: string;
+    success: boolean;
+    message: string;
+    data: {
+      is_registered: boolean;
+      koreapas_nickname: string;
+      koreapas_uuid: string;
+    };
   }> {
     const { is_registered, koreapas_uuid, koreapas_nickname, user_id } =
       await this.authService.koreapasOAuth(koreapasOAuthDto.uuid);
+    // 등록된 유저라면 jwt 발급 후 로그인처리 하여 return
     if (is_registered == true) {
       const { accessToken, refreshToken } = this.authService.getJwt(user_id);
 
@@ -242,9 +288,20 @@ export class AuthController {
         secure: false,
         sameSite: 'none',
       });
+      return {
+        success: true,
+        message: '등록된 고파스유저 로그인 처리 완료',
+        data: { is_registered, koreapas_nickname, koreapas_uuid },
+      };
     }
+
+    // 등록되지 않은 유저라면 로그인 처리 없이 등록되지 않은 유저라는 메시지 return
     if (is_registered == false) {
-      return { is_registered, koreapas_nickname, koreapas_uuid };
+      return {
+        success: true,
+        message: '등록되지 않은 유저입니다.',
+        data: { is_registered, koreapas_nickname, koreapas_uuid },
+      };
     }
   }
 }

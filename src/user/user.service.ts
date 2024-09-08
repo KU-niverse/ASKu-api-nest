@@ -49,6 +49,7 @@ export class UserService {
     const userAttend = await this.userAttendRepository.findOne({
       where: { userId },
     });
+    console.log('🚀 ~ UserService ~ markUserAttend ~ userAttend:', userAttend);
     // 오늘 첫 출석이라면
     if (!userAttend.todayAttend) {
       // 연속 출석 일수가 최대 연속 출석 일수보다 크다면 최대 연속 출석일수를 업데이트

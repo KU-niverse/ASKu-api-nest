@@ -79,3 +79,17 @@ export class UserAlreadyExistException extends HttpException {
     };
   }
 }
+
+// 고파스 내에서 미인증 또는 강등유저일때 발생하는 예외
+export class KoreapasRestrictedUserException extends HttpException {
+  constructor(message: string) {
+    super(message, HttpStatus.FORBIDDEN);
+  }
+
+  getResponse() {
+    return {
+      success: false,
+      message: this.message,
+    };
+  }
+}

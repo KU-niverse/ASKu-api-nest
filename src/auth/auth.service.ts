@@ -18,6 +18,7 @@ import {
   LeaveUserException,
   KoreapasLoginException,
   UserAlreadyExistException,
+  KoreapasRestrictedUserException,
 } from 'src/common/exceptions/auth.exception';
 import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
@@ -151,22 +152,34 @@ export class AuthService {
     user_id: number | null;
   }> {
     console.log('🚀 ~ AuthService ~ koreapasOAuth ~ uuid:', uuid);
+    // koreapas api를 통해 uuid로 유저 정보를 받아옴
     const response = await axios.get(
       `https://www.koreapas.com/bbs/valid_api.php?api_key=${process.env.KOREAPAS_API_KEY}&uuid=${uuid}`,
     );
-    console.log('🚀 ~ AuthService ~ koreapasOAuth ~ response:', response.data);
+    console.log(
+      '🚀 ~ AuthService ~ koreapasOAuth ~ response:',
+      response.data.data,
+    );
 
+    // result가 false라면 reject
     if (response.data.result == false) {
       throw new UnauthorizedException('유효하지 않은 접근입니다.');
     }
 
-    const { koreapas_uuid, nickname, level } = response.data.data;
+    const { uuid: koreapas_uuid, nickname, level } = response.data.data;
+    console.log(
+      '🚀 ~ AuthService ~ koreapasOAuth ~ koreapas_uuid:',
+      koreapas_uuid,
+    );
     // 9, 10 -> 강등 또는 미인증 상태의 유저
     if (level > 8) {
-      throw new UnauthorizedException('강등 또는 미인증 상태의 유저입니다.');
+      throw new KoreapasRestrictedUserException(
+        '강등 또는 미인증 상태의 유저입니다.',
+      );
     }
 
     const user: User | null = await this.getUserByUuid(koreapas_uuid);
+    console.log('🚀 ~ AuthService ~ koreapasOAuth ~ user:', user);
     // 고파스 uuid로 등록된 유저가 없다면 reject
     if (user == null) {
       return {
@@ -177,15 +190,13 @@ export class AuthService {
       };
     }
 
-    // TODO: 출석 로직 추가
-
+    await this.userService.markUserAttend(user.id);
+    // 고파스 uuid가 ASKu DB에 이미 등록된 유저라면 로그인 처리
     return {
       is_registered: true,
       koreapas_nickname: null,
       koreapas_uuid: null,
       user_id: user.id,
     };
-
-    return;
   }
 }
