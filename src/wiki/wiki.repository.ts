@@ -172,6 +172,7 @@ export class WikiRepository {
     return this.wikiHistoryRepository.save(history);
   }
 
+  // wiki_docs 테이블에서 title을 통해 like를 기반으로 문서를 찾아주는 함수
   async searchWikiDocsByTitle(
     title: string,
     userId: number,
@@ -194,7 +195,7 @@ export class WikiRepository {
         'wiki_docs.id = wiki_favorites.doc_id',
       )
       .where(
-        'MATCH(wiki_docs.title) AGAINST (:title IN BOOLEAN MODE) OR MATCH(wiki_docs.recent_filtered_content) AGAINST (:title IN BOOLEAN MODE)',
+        'MATCH(wiki_docs.title, wiki_docs.recent_filtered_content) AGAINST (:title IN BOOLEAN MODE)',
         { title },
       )
       .setParameter('title', title)
