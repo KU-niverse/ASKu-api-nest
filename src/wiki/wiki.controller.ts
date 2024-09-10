@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Req,
   Res,
   Request,
   UploadedFile,
@@ -630,8 +631,9 @@ export class WikiController {
     }
   }
 
-    //get wiki/historys/:title(*)/version/:version
+  //get wiki/historys/:title(*)/version/:version
   @Get('historys/:title/version/:version')
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '특정 버전의 위키 내용 가져오기',
     description: 'GET 방식으로 특정 버전의 위키 내용을 가져옵니다.',
@@ -650,8 +652,6 @@ export class WikiController {
     @Res() res
   ): Promise<void> {
     try {
-      console.log('Received title:', title); 
-      console.log('Received version:', version); 
       const result = await this.wikiService.getHistoryRawData(title, version);
       res.status(HttpStatus.OK).json({ success: true, jsonData: result });
     } catch (error) {
@@ -659,6 +659,55 @@ export class WikiController {
       res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: '위키 raw data 불러오기 중 오류' });
+    }
+  }
+  //post wiki/historys/:title(*)/version/:version
+
+  @Post('/historys/:title/version/:version')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '특정 버전의 위키 내용 롤백',
+    description: 'POST 방식으로 특정 버전의 위키 내용을 롤백합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 롤백 성공',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '인증된 회원만 롤백이 가능한 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '롤백 중 오류 발생',
+  })
+  async rollbackVersion(
+    @Param('title') title: string,
+    @Param('version') version: number,
+    @Res() res,
+    @Req() req
+  ): Promise<void> {
+    try {
+      const user = req.user;
+      await this.wikiService.rollbackWikiVersion(title, version, user);
+
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        message: '위키 롤백 성공',
+      });
+    } catch (error) {
+      
+      if (error.status === HttpStatus.FORBIDDEN) {
+        return res.status(HttpStatus.FORBIDDEN).json({
+          success: false,
+          message: '인증된 회원만 롤백이 가능한 문서입니다.',
+        });
+      }
+      
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: '롤백 중 오류 발생',
+      });
     }
   }
 }
