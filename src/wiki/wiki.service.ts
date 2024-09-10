@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -348,5 +348,62 @@ export class WikiService {
       version,
       text: lines,
     };
+  }
+
+  //post wiki/historys/:title(*)/version/:version
+  async rollbackWikiVersion(
+    title: string, 
+    rollbackVersion: number, 
+    user: User
+  ): Promise<void> {
+    const doc = await this.wikiRepository.findDocByTitle(title);
+
+    if (!doc) {
+      throw new NotFoundException('문서를 찾을 수 없습니다.');
+    }
+
+    const recentHistory = await this.wikiRepository.getMostRecentHistory(doc.id);
+    const currentVersion = recentHistory.version;
+
+    if (doc.isManaged && !user.isAuthorized) {
+      throw new ForbiddenException('인증된 회원만 롤백이 가능합니다.');
+    }
+
+    const newVersion = currentVersion + 1;
+    const content = await this.wikiRepository.getWikiContent(title, rollbackVersion);
+    const lines = content.split(/\r?\n/).join('\n');
+
+    await this.wikiRepository.saveWikiContent(title, newVersion, lines);
+
+    const newHistory = await this.wikiRepository.createHistory({
+      userId: user.id,
+      docId: doc.id,
+      textPointer: `${process.env.S3_ENDPOINT}/${title}/r${newVersion}.wiki`,
+      summary: `version ${rollbackVersion}으로 롤백`,
+      count: lines.length,
+      diff: lines.length - recentHistory.count,
+      version: newVersion,
+      isRollback: true,
+      indexTitle: recentHistory.indexTitle,
+    });
+
+    const filteredContent = this.filterWikiContent(lines);
+    await this.wikiRepository.updateRecentContent(doc.id, filteredContent);
+  }
+
+  private filterWikiContent(text: string): string {
+    text = text.replace(/\n([^=].*?)\n/g, "$1 ");
+    text = text.replace(/'''([^=].*?)'''/g, "$1");
+    text = text.replace(/''(.+?)''/g, "$1");
+    text = text.replace(/--(.+?)--/g, "$1");
+    text = text.replace(/&amp;/g, "&");
+    text = text.replace(/={2,}/g, "");
+    text = text.replace(/\[\[.*http.*\]\]/g, "");
+    text = text.replace(/\[\[(.+?)\]\]/g, "$1");
+    return text.replace(/\n/g, " ");
+  }
+
+  async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
+    await this.wikiRepository.createHistory(historyData);
   }
 }

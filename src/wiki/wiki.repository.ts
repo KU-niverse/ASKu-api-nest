@@ -166,7 +166,7 @@ export class WikiRepository {
   ): Promise<void> {
     const replacedTitle = title.replace(/\/+/g, '_');
     const putObjectCommand = new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET_NAME,
+      Bucket: 'wiki-bucket',
       Key: `${replacedTitle}/r${version}.wiki`,
       Body: content,
     });
@@ -222,5 +222,9 @@ export class WikiRepository {
   async getWikiDocsIdByTitle(title: string): Promise<number | null> {
     const doc = await this.wikiDocRepository.findOne({ where: { title } });
     return doc ? doc.id : null;
+  }
+
+  async updateRecentContent(docId: number, text: string): Promise<void> {
+    await this.wikiDocRepository.update(docId, { recentFilteredContent: text });
   }
 }
