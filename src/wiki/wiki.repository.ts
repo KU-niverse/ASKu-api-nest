@@ -66,7 +66,7 @@ export class WikiRepository {
     return this.wikiHistoryRepository.find({
       where: { userId: userId },
       relations: ['wikiDoc'],
-    });3
+    });
   }
 
   async getMostRecentHistory(docId: number): Promise<WikiHistory> {
@@ -244,7 +244,7 @@ export class WikiRepository {
   }
 
   // getWikiHistoryByDocId
-  async getWikiHistoryByDocId(docId: number): Promise<any[]> {
+  async getWikiHistoryUserByDocId(docId: number): Promise<any[]> {
     return this.wikiHistoryRepository
       .createQueryBuilder('wh')
       .select(['wh', 'u.nickname'])

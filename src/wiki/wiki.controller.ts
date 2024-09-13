@@ -408,7 +408,7 @@ export class WikiController {
 
   //wiki/historys/{title*}
   @Get('/historys/:title')
-  @UseGuards(AuthGuard())
+  //@UseGuards(AuthGuard())
   @ApiOperation({
     summary: '위키 히스토리 조회',
     description: '위키 히스토리를 조회합니다.',

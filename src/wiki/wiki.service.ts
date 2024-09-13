@@ -11,6 +11,7 @@ import { Question } from 'src/question/entities/question.entity';
 import { Repository } from 'typeorm';
 import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
 import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
+import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 
 @Injectable()
 export class WikiService {
@@ -702,7 +703,7 @@ export class WikiService {
   // TODO: 이미지 업로드 로직을 위한 새로운 메서드 추가
 
   async getWikiHistoryByDocId(docId: number): Promise<WikiHistory[]> {
-    return this.wikiRepository.getWikiHistoryByDocId(docId);
+    return this.wikiRepository.getWikiHistoryUserByDocId(docId);
   }
 
   async getHistorysByTitle(title: string): Promise<any[]> {
