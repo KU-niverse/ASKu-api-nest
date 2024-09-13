@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -6,6 +6,7 @@ import { EditWikiDto } from './dto/editWiki.dto';
 import { User } from '../user/entities/user.entity';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import { WikiDoc } from './entities/wikiDoc.entity';
+import { CreateWikiDto } from './dto/createWiki.dto';
 
 @Injectable()
 export class WikiService {
@@ -405,5 +406,65 @@ export class WikiService {
 
   async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
     await this.wikiRepository.createHistory(historyData);
+  }
+
+
+  //post wiki/contents/new/:title(*)
+  async createNewWikiDocument(title: string, createWikiDto: CreateWikiDto, user: User) {
+    const docId = await this.wikiRepository.getWikiDocsIdByTitle(title);
+
+    if (docId !== null) {
+      const row = await this.wikiRepository.getWikiDocsById(docId);
+      if (row.isDeleted) {
+      } else {
+        throw new ConflictException('이미 존재하는 문서입니다.');
+      }
+    }
+
+    const sanitizedTitle = title.replace(/\/+/g, '_');
+    const text = createWikiDto.text;
+    const version = 1;
+    const type = createWikiDto.type;
+
+    await this.wikiRepository.saveWikiContent(sanitizedTitle, version, text);
+
+    const endpoint = 'https://kr.object.ncloudstorage.com';
+    const newWikiDoc = {
+      title,
+      textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
+      recentFilteredContent: text,
+      type,
+      latestVer: version,
+      isManaged: 0,
+    };
+
+    const savedDoc = await this.wikiRepository.createWikiDoc(newWikiDoc);
+
+    const count = text.length;
+    const summary = '새 위키 문서 생성';
+    
+    await this.wikiRepository.createHistory({
+      userId: user.id,
+      docId: savedDoc.id,
+      textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
+      summary,
+      count,
+      diff: count,
+      version,
+      isRollback: false,
+      indexTitle: createWikiDto.index_title,
+    });
+
+    return {
+      success: true,
+      message: '위키 문서 생성 성공',
+      docId: savedDoc.id,
+      version,
+      count,
+      summary: '새 위키 문서 생성',
+      textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
+      diff: count,
+      statusCode: 201,
+    };
   }
 }

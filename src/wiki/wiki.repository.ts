@@ -227,4 +227,13 @@ export class WikiRepository {
   async updateRecentContent(docId: number, text: string): Promise<void> {
     await this.wikiDocRepository.update(docId, { recentFilteredContent: text });
   }
+
+    //post wiki/contents/new/:title(*)
+    async getWikiDocsById(docId: number): Promise<WikiDoc> {
+      return this.wikiDocRepository.findOne({ where: { id: docId } });
+    }
+  
+    async createWikiDoc(newWikiDoc): Promise<WikiDoc> {
+      return this.wikiDocRepository.save(newWikiDoc);
+    }
 }

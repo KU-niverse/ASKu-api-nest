@@ -30,6 +30,7 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { EditWikiDto } from './dto/editWiki.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/config/multer.config';
+import { CreateWikiDto } from './dto/createWiki.dto';
 
 @ApiTags('wiki')
 @Controller('wiki')
@@ -535,6 +536,57 @@ export class WikiController {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: '롤백 중 오류 발생',
+      });
+    }
+  }
+
+
+  //post wiki/contents/new/:title(*)
+  @Post('/contents/new/:title')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '새 위키 문서 생성',
+    description: 'POST 방식으로 새 위키 문서를 생성합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '위키 문서 생성 성공',
+  })
+  @ApiResponse({
+    status: 409,
+    description: '이미 존재하는 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 생성 중 오류 발생',
+  })
+  async createWikiDocument(
+    @Param('title') title: string,
+    @Body() createWikiDto: CreateWikiDto,
+    @GetUser() user: User,
+    @Res() res,
+  ): Promise<void> {
+    try {
+      const result = await this.wikiService.createNewWikiDocument(title, createWikiDto, user);
+
+      return res.status(HttpStatus.CREATED).json({
+        success: true,
+        message: '위키 문서 생성 성공',
+        docId: result.docId,
+        version: result.version,
+        count: result.count,
+      });
+    } catch (error) {
+      if (error.status === HttpStatus.CONFLICT) {
+        return res.status(HttpStatus.CONFLICT).json({
+          success: false,
+          message: '이미 존재하는 문서입니다.',
+        });
+      }
+
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: '위키 생성 중 오류 발생',
       });
     }
   }
