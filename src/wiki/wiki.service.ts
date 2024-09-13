@@ -1,4 +1,4 @@
-import { GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -6,7 +6,6 @@ import { EditWikiDto } from './dto/editWiki.dto';
 import { User } from '../user/entities/user.entity';
 import { WikiHistory } from './entities/wikiHistory.entity';
 import { WikiDoc } from './entities/wikiDoc.entity';
-import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Question } from 'src/question/entities/question.entity';
 import { Repository } from 'typeorm';
@@ -383,6 +382,8 @@ export class WikiService {
     if (!wikiDoc) {
       throw new NotFoundException('Document not found');
     }
+    console.log('Found document ID:', wikiDoc);
+
     return wikiDoc.id;
   }
 
@@ -699,4 +700,89 @@ export class WikiService {
     return result;
   }
   // TODO: 이미지 업로드 로직을 위한 새로운 메서드 추가
+
+  async getWikiHistoryByDocId(docId: number): Promise<WikiHistory[]> {
+    return this.wikiRepository.getWikiHistoryByDocId(docId);
+  }
+
+  async getHistorysByTitle(title: string): Promise<any[]> {
+    const doc_id = await this.getWikiDocsIdByTitle(title);
+    const historys = await this.getWikiHistoryByDocId(doc_id);  // 문서 ID로 히스토리 가져오기
+    return historys;
+  }
+
+  async getRecentWikiHistorys(type: string): Promise<any[]> {
+    return this.wikiRepository.getRecentWikiHistorys(type);
+  }
+
+  async getHistoryRawData(title: string, version: number): Promise<any> {
+    const docId = await this.getWikiDocsIdByTitle(title);
+    const wikiContent = await this.wikiRepository.getWikiContent(title, version);
+
+    // S3에서 가져온 텍스트 처리
+    const lines = wikiContent.split(/\r?\n/).join('\n');
+
+    return {
+      doc_id: docId,
+      version,
+      text: lines,
+    };
+  }
+
+  //post wiki/historys/:title(*)/version/:version
+  async rollbackWikiVersion(
+    title: string,
+    rollbackVersion: number,
+    user: User
+  ): Promise<void> {
+    const doc = await this.wikiRepository.findDocByTitle(title);
+
+    if (!doc) {
+      throw new NotFoundException('문서를 찾을 수 없습니다.');
+    }
+
+    const recentHistory = await this.wikiRepository.getMostRecentHistory(doc.id);
+    const currentVersion = recentHistory.version;
+
+    if (doc.isManaged && !user.isAuthorized) {
+      throw new ForbiddenException('인증된 회원만 롤백이 가능합니다.');
+    }
+
+    const newVersion = currentVersion + 1;
+    const content = await this.wikiRepository.getWikiContent(title, rollbackVersion);
+    const lines = content.split(/\r?\n/).join('\n');
+
+    await this.wikiRepository.saveWikiContent(title, newVersion, lines);
+
+    const newHistory = await this.wikiRepository.createHistory({
+      userId: user.id,
+      docId: doc.id,
+      textPointer: `${process.env.S3_ENDPOINT}/${title}/r${newVersion}.wiki`,
+      summary: `version ${rollbackVersion}으로 롤백`,
+      count: lines.length,
+      diff: lines.length - recentHistory.count,
+      version: newVersion,
+      isRollback: true,
+      indexTitle: recentHistory.indexTitle,
+    });
+
+    const filteredContent = this.filterWikiContent(lines);
+    await this.wikiRepository.updateRecentContent(doc.id, filteredContent);
+  }
+
+  private filterWikiContent(text: string): string {
+    text = text.replace(/\n([^=].*?)\n/g, "$1 ");
+    text = text.replace(/'''([^=].*?)'''/g, "$1");
+    text = text.replace(/''(.+?)''/g, "$1");
+    text = text.replace(/--(.+?)--/g, "$1");
+    text = text.replace(/&amp;/g, "&");
+    text = text.replace(/={2,}/g, "");
+    text = text.replace(/\[\[.*http.*\]\]/g, "");
+    text = text.replace(/\[\[(.+?)\]\]/g, "$1");
+    return text.replace(/\n/g, " ");
+  }
+
+  async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
+    await this.wikiRepository.createHistory(historyData);
+  }
 }

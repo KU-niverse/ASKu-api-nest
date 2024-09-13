@@ -9,6 +9,8 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
+  Req,
   Res,
   Request,
   UploadedFile,
@@ -404,6 +406,36 @@ export class WikiController {
     return this.wikiService.getUserContributions(user.id);
   }
 
+  //wiki/historys/{title*}
+  @Get('/historys/:title')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 히스토리 조회',
+    description: '위키 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 히스토리 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 히스토리 조회 중 오류',
+  })
+  async getHistorys(
+    @Param('title') title: string,
+    @Res() res
+  ): Promise<void> {
+    try {
+      const historys = await this.wikiService.getHistorysByTitle(title);
+      res.status(HttpStatus.OK).json({ success: true, historys });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 히스토리 불러오기 중 오류' });
+    }
+  }
+
   //todo: auth guard 추가??
   //사용되고 있지 않은 api입니다.
   @Get('contributions/total')
@@ -568,4 +600,114 @@ export class WikiController {
   }
 
   // --------------이 위까지 영섭 작업 --------------//
+
+  //wiki/historys?type={type}
+  @Get('historys')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '최근 위키 히스토리 조회',
+    description: '최근 위키 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '최근 위키 히스토리 조회 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 히스토리 조회 중 오류 발생',
+  })
+  async getRecentHistory(
+    @Query('type') type: string,
+    @Res() res
+  ): Promise<void> {
+    try {
+      const history = await this.wikiService.getRecentWikiHistorys(type);
+      res.status(HttpStatus.OK).json({ success: true, message: history });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 히스토리 불러오기 중 오류' });
+    }
+  }
+
+  //get wiki/historys/:title(*)/version/:version
+  @Get('historys/:title/version/:version')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '특정 버전의 위키 내용 가져오기',
+    description: 'GET 방식으로 특정 버전의 위키 내용을 가져옵니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 raw 데이터 가져오기 성공',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 raw 데이터 가져오기 중 오류',
+  })
+  async getHistoryRaw(
+    @Param('title') title: string,
+    @Param('version') version: number,
+    @Res() res
+  ): Promise<void> {
+    try {
+      const result = await this.wikiService.getHistoryRawData(title, version);
+      res.status(HttpStatus.OK).json({ success: true, jsonData: result });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: '위키 raw data 불러오기 중 오류' });
+    }
+  }
+  //post wiki/historys/:title(*)/version/:version
+
+  @Post('/historys/:title/version/:version')
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '특정 버전의 위키 내용 롤백',
+    description: 'POST 방식으로 특정 버전의 위키 내용을 롤백합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 롤백 성공',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '인증된 회원만 롤백이 가능한 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '롤백 중 오류 발생',
+  })
+  async rollbackVersion(
+    @Param('title') title: string,
+    @Param('version') version: number,
+    @Res() res,
+    @Req() req
+  ): Promise<void> {
+    try {
+      const user = req.user;
+      await this.wikiService.rollbackWikiVersion(title, version, user);
+
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        message: '위키 롤백 성공',
+      });
+    } catch (error) {
+      
+      if (error.status === HttpStatus.FORBIDDEN) {
+        return res.status(HttpStatus.FORBIDDEN).json({
+          success: false,
+          message: '인증된 회원만 롤백이 가능한 문서입니다.',
+        });
+      }
+      
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: '롤백 중 오류 발생',
+      });
+    }
+  }
 }
