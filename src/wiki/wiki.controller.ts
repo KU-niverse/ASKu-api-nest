@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -421,10 +420,7 @@ export class WikiController {
     status: 500,
     description: '위키 히스토리 조회 중 오류',
   })
-  async getHistorys(
-    @Param('title') title: string,
-    @Res() res
-  ): Promise<void> {
+  async getHistorys(@Param('title') title: string, @Res() res): Promise<void> {
     try {
       const historys = await this.wikiService.getHistorysByTitle(title);
       res.status(HttpStatus.OK).json({ success: true, historys });
@@ -618,7 +614,7 @@ export class WikiController {
   })
   async getRecentHistory(
     @Query('type') type: string,
-    @Res() res
+    @Res() res,
   ): Promise<void> {
     try {
       const history = await this.wikiService.getRecentWikiHistorys(type);
@@ -649,7 +645,7 @@ export class WikiController {
   async getHistoryRaw(
     @Param('title') title: string,
     @Param('version') version: number,
-    @Res() res
+    @Res() res,
   ): Promise<void> {
     try {
       const result = await this.wikiService.getHistoryRawData(title, version);
@@ -685,7 +681,7 @@ export class WikiController {
     @Param('title') title: string,
     @Param('version') version: number,
     @Res() res,
-    @Req() req
+    @Req() req,
   ): Promise<void> {
     try {
       const user = req.user;
@@ -696,14 +692,13 @@ export class WikiController {
         message: '위키 롤백 성공',
       });
     } catch (error) {
-      
       if (error.status === HttpStatus.FORBIDDEN) {
         return res.status(HttpStatus.FORBIDDEN).json({
           success: false,
           message: '인증된 회원만 롤백이 가능한 문서입니다.',
         });
       }
-      
+
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: '롤백 중 오류 발생',
