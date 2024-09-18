@@ -1,4 +1,9 @@
-import { ForbiddenException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  GoneException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -708,7 +713,7 @@ export class WikiService {
 
   async getHistorysByTitle(title: string): Promise<any[]> {
     const doc_id = await this.getWikiDocsIdByTitle(title);
-    const historys = await this.getWikiHistoryByDocId(doc_id);  // 문서 ID로 히스토리 가져오기
+    const historys = await this.getWikiHistoryByDocId(doc_id); // 문서 ID로 히스토리 가져오기
     return historys;
   }
 
@@ -718,7 +723,10 @@ export class WikiService {
 
   async getHistoryRawData(title: string, version: number): Promise<any> {
     const docId = await this.getWikiDocsIdByTitle(title);
-    const wikiContent = await this.wikiRepository.getWikiContent(title, version);
+    const wikiContent = await this.wikiRepository.getWikiContent(
+      title,
+      version,
+    );
 
     // S3에서 가져온 텍스트 처리
     const lines = wikiContent.split(/\r?\n/).join('\n');
@@ -734,7 +742,7 @@ export class WikiService {
   async rollbackWikiVersion(
     title: string,
     rollbackVersion: number,
-    user: User
+    user: User,
   ): Promise<void> {
     const doc = await this.wikiRepository.findDocByTitle(title);
 
@@ -742,7 +750,9 @@ export class WikiService {
       throw new NotFoundException('문서를 찾을 수 없습니다.');
     }
 
-    const recentHistory = await this.wikiRepository.getMostRecentHistory(doc.id);
+    const recentHistory = await this.wikiRepository.getMostRecentHistory(
+      doc.id,
+    );
     const currentVersion = recentHistory.version;
 
     if (doc.isManaged && !user.isAuthorized) {
@@ -750,7 +760,10 @@ export class WikiService {
     }
 
     const newVersion = currentVersion + 1;
-    const content = await this.wikiRepository.getWikiContent(title, rollbackVersion);
+    const content = await this.wikiRepository.getWikiContent(
+      title,
+      rollbackVersion,
+    );
     const lines = content.split(/\r?\n/).join('\n');
 
     await this.wikiRepository.saveWikiContent(title, newVersion, lines);
@@ -772,15 +785,15 @@ export class WikiService {
   }
 
   private filterWikiContent(text: string): string {
-    text = text.replace(/\n([^=].*?)\n/g, "$1 ");
-    text = text.replace(/'''([^=].*?)'''/g, "$1");
-    text = text.replace(/''(.+?)''/g, "$1");
-    text = text.replace(/--(.+?)--/g, "$1");
-    text = text.replace(/&amp;/g, "&");
-    text = text.replace(/={2,}/g, "");
-    text = text.replace(/\[\[.*http.*\]\]/g, "");
-    text = text.replace(/\[\[(.+?)\]\]/g, "$1");
-    return text.replace(/\n/g, " ");
+    text = text.replace(/\n([^=].*?)\n/g, '$1 ');
+    text = text.replace(/'''([^=].*?)'''/g, '$1');
+    text = text.replace(/''(.+?)''/g, '$1');
+    text = text.replace(/--(.+?)--/g, '$1');
+    text = text.replace(/&amp;/g, '&');
+    text = text.replace(/={2,}/g, '');
+    text = text.replace(/\[\[.*http.*\]\]/g, '');
+    text = text.replace(/\[\[(.+?)\]\]/g, '$1');
+    return text.replace(/\n/g, ' ');
   }
 
   async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
