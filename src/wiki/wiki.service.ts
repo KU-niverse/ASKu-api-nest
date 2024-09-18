@@ -786,4 +786,25 @@ export class WikiService {
   async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
     await this.wikiRepository.createHistory(historyData);
   }
+
+  async compareVersions(title: string, rev: number, oldrev: number) {
+    const replacedTitle = title.replace(/\/+/g, '_');
+
+    const [revContent, oldrevContent] = await Promise.all([
+      this.wikiRepository.getWikiContent(replacedTitle, rev),
+      this.wikiRepository.getWikiContent(replacedTitle, oldrev),
+    ]);
+
+    return {
+      rev,
+      rev_text: this.processContent(revContent),
+      oldrev,
+      oldrev_text: this.processContent(oldrevContent),
+    };
+  }
+
+  private processContent(content: string): string {
+    const lines = content.split(/\r?\n/);
+    return lines.join('\n');
+  }
 }
