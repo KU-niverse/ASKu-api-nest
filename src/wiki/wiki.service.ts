@@ -12,6 +12,7 @@ import { Repository } from 'typeorm';
 import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
 import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
 import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
+import { Connection } from 'mysql2';
 
 @Injectable()
 export class WikiService {
@@ -24,6 +25,7 @@ export class WikiService {
     private wikiDocRepository: Repository<WikiDoc>,
     @InjectRepository(WikiDocsView)
     private readonly wikiDocsViewRepository: Repository<WikiDocsView>,
+    private connection: Connection,
   ) {}
   // -------------------------이 아래로 영섭 작업물 -------------------------//
   async getRecentWikiHistoryByDocId(doc_id: number): Promise<WikiHistory> {
@@ -734,7 +736,7 @@ export class WikiService {
   async rollbackWikiVersion(
     title: string,
     rollbackVersion: number,
-    user: User
+    user: User,
   ): Promise<void> {
     const doc = await this.wikiRepository.findDocByTitle(title);
 
@@ -785,5 +787,17 @@ export class WikiService {
 
   async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
     await this.wikiRepository.createHistory(historyData);
+  }
+
+  async awardWikiPoint(
+    userId: number,
+    diff: number,
+    isQBased: boolean,
+  ): Promise<void> {
+    if (diff <= 0) {
+      return;
+    }
+    const point = isQBased ? diff * 5 : diff * 4;
+    await this.wikiRepository.incrementUserPoint(userId, point);
   }
 }

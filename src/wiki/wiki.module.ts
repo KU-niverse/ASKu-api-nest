@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
@@ -10,7 +10,7 @@ import { WikiRepository } from './wiki.repository';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from '../user/user.module';
 import { QuestionModule } from 'src/question/question.module';
-import { Question } from 'src/question/entities/question.entity';
+import { WikiPointAwardMiddleware } from '../common/middlewares/wiki-point-award.middleware';
 
 @Module({
   imports: [
@@ -28,4 +28,10 @@ import { Question } from 'src/question/entities/question.entity';
   providers: [WikiService, WikiRepository],
   exports: [WikiService, TypeOrmModule],
 })
-export class WikiModule {}
+export class WikiModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // consumer
+    //   .apply(WikiPointAwardMiddleware)
+    //   .forRoutes({ path: 'wiki/contents/:title', method: RequestMethod.POST });
+  }
+}

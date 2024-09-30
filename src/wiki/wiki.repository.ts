@@ -292,4 +292,8 @@ export class WikiRepository {
   async updateRecentContent(docId: number, text: string): Promise<void> {
     await this.wikiDocRepository.update(docId, { recentFilteredContent: text });
   }
+
+  async incrementUserPoint(userId: number, point: number): Promise<void> {
+    await this.userRepository.increment({ id: userId }, 'point', point);
+  }
 }
