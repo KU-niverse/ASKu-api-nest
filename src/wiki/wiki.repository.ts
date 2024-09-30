@@ -340,4 +340,8 @@ export class WikiRepository {
   }
 
 
+
+  async incrementUserPoint(userId: number, point: number): Promise<void> {
+    await this.userRepository.increment({ id: userId }, 'point', point);
+  }
 }
