@@ -10,7 +10,7 @@ import { WikiRepository } from './wiki.repository';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from '../user/user.module';
 import { QuestionModule } from 'src/question/question.module';
-import { Question } from 'src/question/entities/question.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Module({
   imports: [
@@ -19,6 +19,7 @@ import { Question } from 'src/question/entities/question.entity';
       WikiDocsView,
       WikiFavorites,
       WikiHistory,
+      User,
     ]),
     QuestionModule,
     AuthModule,
