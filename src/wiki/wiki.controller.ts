@@ -985,45 +985,4 @@ export class WikiController {
     }
   }
 
-  //get wiki/historys/:title(*)/version/:version
-  @Get('historys/:title/version/:version')
-  @UseGuards(AuthGuard())
-  @ApiOperation({
-    summary: '위키 특정 버전의 히스토리 가져오기',
-    description: 'GET 방식으로 위키 특정 버전의 히스토리 데이터를 가져옵니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '위키 히스토리 가져오기 성공',
-  })
-  @ApiResponse({
-    status: 404,
-    description: '존재하지 않는 문서입니다.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: '서버에서 예상치 못한 오류가 발생했습니다.',
-  })
-  // async getHistoryRaw(
-  //   @Param('title') title: string,
-  //   @Param('version') version: number,
-  //   @Res() res
-  // ): Promise<void> {
-  //   try {
-  //     const jsonData = await this.wikiService.getHistoryRawData(title, version);
-  //     res.status(HttpStatus.OK).json({ success: true, jsonData });
-  //   } catch (err) {
-  //     res
-  //       .status(HttpStatus.INTERNAL_SERVER_ERROR)
-  //       .json({ success: false, message: '서버에서 예상치 못한 오류가 발생했습니다.' });
-  //   }
-  // }
-  async getHistoryRaw(
-    @Param('title') title: string,
-    @Param('version') version: number,
-    @Res() res
-  ): Promise<void> {
-      const jsonData = await this.wikiService.getHistoryRawData(title, version);
-      res.status(HttpStatus.OK).json({ success: true, jsonData });
-    }
 }
