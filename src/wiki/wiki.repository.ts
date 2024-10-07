@@ -6,6 +6,7 @@ import { WikiDoc } from './entities/wikiDoc.entity';
 import { WikiFavorites } from './entities/wikiFavorites';
 import { WikiDocsView } from './entities/wikiView.entity';
 import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
+import { WikiContributionsDto } from './dto/wiki-contributions-response.dto';
 import {
   S3Client,
   GetObjectCommand,
@@ -102,6 +103,50 @@ export class WikiRepository {
       .orderBy('doc_point', 'DESC')
       .getRawMany();
   }
+
+  // 진권
+  async getContributorPoints(docId: number): Promise<WikiContributionsDto[]> {
+    return this.wikiHistoryRepository.createQueryBuilder('wh')
+      .select('wh.userId', 'userId')
+      .addSelect('u.nickname', 'nickname')
+      .addSelect(`SUM(
+        CASE
+          WHEN wh.diff > 0 AND wh.isQBased = 1 THEN wh.diff * 5
+          WHEN wh.diff > 0 THEN wh.diff * 4
+          ELSE 0
+        END
+      )`, 'point')
+      .innerJoin(User, 'u', 'wh.userId = u.id')
+      .where('wh.docId = :docId', { docId })
+      .andWhere('wh.isBad = 0')
+      .andWhere('wh.isRollback = 0')
+      .groupBy('wh.userId')
+      .addGroupBy('u.nickname')
+      .orderBy('point', 'DESC')
+      .getRawMany();
+  }
+
+  async recalculatePoint(userId: number): Promise<number> {
+    const result = await this.userRepository.createQueryBuilder()
+      .update(User)
+      .set({
+        point: () => `(
+          SELECT SUM(
+            CASE
+              WHEN diff > 0 AND is_q_based = 1 THEN diff * 5
+              WHEN diff > 0 THEN diff * 4
+              ELSE 0
+            END
+          )
+          FROM wiki_history
+          WHERE user_id = :userId AND is_bad = 0 AND is_rollback = 0
+        )`
+      })
+      .where("id = :userId", { userId })
+      .execute();
+    return result.affected || 0;
+  }
+  // ↑↑↑
 
   async createHistory(historyData: Partial<WikiHistory>): Promise<WikiHistory> {
     const newHistory = this.wikiHistoryRepository.create(historyData);

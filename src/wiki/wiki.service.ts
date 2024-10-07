@@ -26,6 +26,8 @@ export class WikiService {
     private wikiDocRepository: Repository<WikiDoc>,
     @InjectRepository(WikiDocsView)
     private readonly wikiDocsViewRepository: Repository<WikiDocsView>,
+    @InjectRepository(WikiHistory)
+    private wikiHistoryRepository: Repository<WikiHistory>,
   ) {}
   // -------------------------이 아래로 영섭 작업물 -------------------------//
   async getRecentWikiHistoryByDocId(doc_id: number): Promise<WikiHistory> {
@@ -615,6 +617,30 @@ export class WikiService {
       })),
     };
   }
+
+  // 진권
+  async getWikiContributions(doc_id: number): Promise<any> {
+    const contributorPoints = await this.wikiRepository.getContributorPoints(doc_id);    
+    return contributorPoints;
+  }
+
+  // 특정 히스토리를 bad로 변경
+  async badHistoryById(id: number, user: User,): Promise<number> {
+    if (!user.isAuthorized || !user.isAdmin) {
+      throw new ForbiddenException('관리자만 히스토리 변경이 가능합니다.');
+    }
+
+    const result = await this.wikiHistoryRepository.update(id, { isBad: true });
+    
+    const wikiHistory = await this.wikiHistoryRepository.findOne({ where: { id } });
+    if (wikiHistory) {
+      // 해당 히스토리에서 작성한 유저의 기여도와 기록 횟수를 재계산하는 repository 계층 함수
+      await this.wikiRepository.recalculatePoint(wikiHistory.userId);
+    }
+
+    return result.affected || 0;
+  }
+  // ↑↑↑
 
   private parseSections(
     lines: string[],

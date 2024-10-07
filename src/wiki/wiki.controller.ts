@@ -9,6 +9,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -17,6 +18,7 @@ import {
   UseGuards,
   UseInterceptors,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { WikiService } from './wiki.service';
 import { WikiHistory } from './entities/wikiHistory.entity';
@@ -38,6 +40,9 @@ import { multerOptions } from 'src/config/multer.config';
 import { WikiDoc } from './entities/wikiDoc.entity';
 import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 import { CreateWikiDto } from './dto/createWiki.dto';
+import { WikiContributionsDto } from './dto/wiki-contributions-response.dto';
+import { NotFoundError } from 'rxjs';
+import { EntityNotFoundError } from 'typeorm';
 
 @ApiTags('wiki')
 @Controller('wiki')
@@ -457,13 +462,104 @@ export class WikiController {
     try {
       return await this.wikiService.getDocsContributionsList();
     } catch (error) {
-      // 에러 로깅을 추가할 수 있습니다.
       console.error('Error fetching total contributions:', error);
       throw new InternalServerErrorException(
         '랭킹 조회 중 오류가 발생했습니다.',
       );
     }
   }
+
+  // 진권
+  @Get('contributions/:title(*)')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '위키 문서 내 기여도 조회',
+    description: 'GET 방식으로 위키 문서 내 기여도를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 문서 내 기여도 조회 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버에서 예상치 못한 오류가 발생했습니다.',
+  })
+  async getWikiContributions(
+    @Param('title') title: string,
+  ): Promise<WikiContributionsDto> {
+    try {
+      const doc_id = await this.wikiService.getWikiDocsIdByTitle(title);
+      return await this.wikiService.getWikiContributions(doc_id);
+    } catch (error) {
+      if (error.status === 404) {
+        throw new NotFoundException(
+          `위키 문서 "${title}" 존재하지 않음`,
+        );
+      } else {
+        throw new InternalServerErrorException(
+          `위키 문서 "${title}" 기여도 조회 중 오류`,
+        );
+      }
+    }
+  }
+
+  @Put('badhis/:hisid')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '특정 히스토리 bad로 변경',
+    description: 'PUT 방식으로 특정 히스토리를 bad로 변경하면서, 작성한 유저의 기여도와 기록 횟수도 재계산',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '특정 히스토리 bad로 변경 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그인이 필요한 서비스입니다.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '관리자가 아닙니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '히스토리 bad로 변경 중 오류',
+  })
+  async badHistoryPut(
+    @Param('hisid') hisid: string,
+    @Res() res,
+    @Req() req,
+  ): Promise<any> {
+    try {
+      const user = req.user;
+      // parseInt(hisid, 10) 값은 Integer, 'NaN' 중 하나임을 이용 || 음수일 경우 제외
+      if (String(parseInt(hisid, 10)) === 'NaN' || parseInt(hisid, 10) < 0) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: '잘못된 히스토리 ID 형식입니다.',
+        });
+      }
+      const historyId = parseInt(hisid, 10);
+      await this.wikiService.badHistoryById(historyId, user);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        message: '히스토리 bad로 변경 성공',
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: '서버에서 예상하지 못한 오류가 발생했습니다.',
+      });
+    }
+  }
+  // ↑↑↑
 
   @Get('query/:title')
   @HttpCode(HttpStatus.OK)

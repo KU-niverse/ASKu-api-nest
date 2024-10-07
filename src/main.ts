@@ -20,7 +20,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, documentConfig);
   // 노출할 문서의 경로
   SwaggerModule.setup('api-swagger', app, document);
-
-  await app.listen(3000);
+  await app.listen(8000);
 }
 bootstrap();
