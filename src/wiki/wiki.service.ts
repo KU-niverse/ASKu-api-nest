@@ -1,4 +1,11 @@
-import { ConflictException, ForbiddenException, GoneException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  GoneException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -12,6 +19,7 @@ import { Repository } from 'typeorm';
 import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
 import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
 import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
+import { Server } from 'mysql2/typings/mysql/lib/Server';
 import { CreateWikiDto } from './dto/createWiki.dto';
 import { UserAction } from 'src/user/entities/userAction.entity';
 
@@ -404,25 +412,27 @@ export class WikiService {
     // TODO: 이 메서드를 더 작은 단위의 메서드로 분리하여 가독성 개선
     const doc = await this.wikiRepository.findDocByTitle(title);
     if (!doc) {
-      return {
-        success: false,
+      console.log('hihi');
+      throw new NotFoundException({
+        sucess: false,
         message: '존재하지 않는 문서입니다.',
-        statusCode: 404,
-      };
+      });
     }
     if (doc.isDeleted) {
-      return { success: false, message: '삭제된 문서입니다.', statusCode: 410 };
+      throw new GoneException({
+        success: false,
+        message: '삭제된 문서입니다.',
+      });
     }
 
     const recentHistory = await this.wikiRepository.getMostRecentHistory(
       doc.id,
     );
     if (!recentHistory) {
-      return {
+      throw new NotFoundException({
         success: false,
         message: '존재하지 않는 문서입니다.',
-        statusCode: 404,
-      };
+      });
     }
 
     const version = recentHistory.version;
@@ -464,31 +474,27 @@ export class WikiService {
     try {
       const doc = await this.wikiRepository.findDocByTitle(title);
       if (!doc) {
-        return {
+        throw new NotFoundException({
           success: false,
           message: '존재하지 않는 문서입니다.',
-          statusCode: 404,
-        };
+        });
       }
 
       if (doc.isManaged && !user.isAuthorized) {
-        return {
+        throw new ForbiddenException({
           success: false,
           message: '인증된 회원만 편집이 가능한 문서입니다.',
-          statusCode: 403,
-        };
+        });
       }
 
       const recentHistory = await this.wikiRepository.getMostRecentHistory(
         doc.id,
       );
       if (recentHistory.version !== editWikiDto.version) {
-        return {
+        throw new GoneException({
           success: false,
-          message: 'Version is not matched',
-          statusCode: 426,
-          new_content: editWikiDto.new_content,
-        };
+          message: '버전이 일치하지 않습니다.',
+        });
       }
 
       const newVersion = recentHistory.version + 1;
@@ -518,11 +524,10 @@ export class WikiService {
       return { success: true, message: '위키 문서 수정 성공', statusCode: 200 };
     } catch (error) {
       console.error(error);
-      return {
+      throw new InternalServerErrorException({
         success: false,
         message: '위키 문서 수정 중 오류',
-        statusCode: 500,
-      };
+      });
     }
   }
 
@@ -537,11 +542,10 @@ export class WikiService {
   async addWikiFavorite(userId: number, title: string) {
     const doc = await this.wikiRepository.findDocByTitle(title);
     if (!doc) {
-      return {
+      throw new NotFoundException({
         success: false,
         message: '존재하지 않는 문서입니다.',
-        status: 404,
-      };
+      });
     }
 
     const existingFavorite = await this.wikiRepository.findFavorite(
@@ -552,7 +556,6 @@ export class WikiService {
       return {
         success: false,
         message: '이미 즐겨찾기에 추가된 문서입니다.',
-        status: 200,
       };
     }
 
@@ -562,16 +565,15 @@ export class WikiService {
 
   async deleteWikiFavorite(userId: number, title: string) {
     const doc = await this.wikiRepository.findDocByTitle(title);
-    if (!doc) {
-      return {
+    if (doc == null) {
+      throw new NotFoundException({
         success: false,
         message: '존재하지 않는 문서입니다.',
-        status: 404,
-      };
+      });
     }
 
     await this.wikiRepository.deleteFavorite(userId, doc.id);
-    return { success: true, message: '위키 즐겨찾기 삭제 성공', status: 200 };
+    return { success: true, message: '위키 즐겨찾기 삭제 성공' };
   }
 
   async getDocsContributionsList(): Promise<TotalContributionsListDto[]> {
@@ -604,7 +606,7 @@ export class WikiService {
 
     return {
       count: totalUsers,
-      ranking,
+      ranking: Number(ranking),
       point: user_point,
       ranking_percentage: Number(ranking_percentage.toFixed(4)),
       docs: docsContributions.map((doc) => ({
@@ -620,19 +622,22 @@ export class WikiService {
 
   // 진권
   async getWikiContributions(doc_id: number): Promise<any> {
-    const contributorPoints = await this.wikiRepository.getContributorPoints(doc_id);    
+    const contributorPoints =
+      await this.wikiRepository.getContributorPoints(doc_id);
     return contributorPoints;
   }
 
   // 특정 히스토리를 bad로 변경
-  async badHistoryById(id: number, user: User,): Promise<number> {
+  async badHistoryById(id: number, user: User): Promise<number> {
     if (!user.isAuthorized || !user.isAdmin) {
       throw new ForbiddenException('관리자만 히스토리 변경이 가능합니다.');
     }
 
     const result = await this.wikiHistoryRepository.update(id, { isBad: true });
-    
-    const wikiHistory = await this.wikiHistoryRepository.findOne({ where: { id } });
+
+    const wikiHistory = await this.wikiHistoryRepository.findOne({
+      where: { id },
+    });
     if (wikiHistory) {
       // 해당 히스토리에서 작성한 유저의 기여도와 기록 횟수를 재계산하는 repository 계층 함수
       await this.wikiRepository.recalculatePoint(wikiHistory.userId);
@@ -736,7 +741,7 @@ export class WikiService {
 
   async getHistorysByTitle(title: string): Promise<any[]> {
     const doc_id = await this.getWikiDocsIdByTitle(title);
-    const historys = await this.getWikiHistoryByDocId(doc_id);  // 문서 ID로 히스토리 가져오기
+    const historys = await this.getWikiHistoryByDocId(doc_id); // 문서 ID로 히스토리 가져오기
     return historys;
   }
 
@@ -746,7 +751,10 @@ export class WikiService {
 
   async getHistoryRawData(title: string, version: number): Promise<any> {
     const docId = await this.getWikiDocsIdByTitle(title);
-    const wikiContent = await this.wikiRepository.getWikiContent(title, version);
+    const wikiContent = await this.wikiRepository.getWikiContent(
+      title,
+      version,
+    );
 
     // S3에서 가져온 텍스트 처리
     const lines = wikiContent.split(/\r?\n/).join('\n');
@@ -762,7 +770,7 @@ export class WikiService {
   async rollbackWikiVersion(
     title: string,
     rollbackVersion: number,
-    user: User
+    user: User,
   ): Promise<void> {
     const doc = await this.wikiRepository.findDocByTitle(title);
 
@@ -770,7 +778,9 @@ export class WikiService {
       throw new NotFoundException('문서를 찾을 수 없습니다.');
     }
 
-    const recentHistory = await this.wikiRepository.getMostRecentHistory(doc.id);
+    const recentHistory = await this.wikiRepository.getMostRecentHistory(
+      doc.id,
+    );
     const currentVersion = recentHistory.version;
 
     if (doc.isManaged && !user.isAuthorized) {
@@ -778,7 +788,10 @@ export class WikiService {
     }
 
     const newVersion = currentVersion + 1;
-    const content = await this.wikiRepository.getWikiContent(title, rollbackVersion);
+    const content = await this.wikiRepository.getWikiContent(
+      title,
+      rollbackVersion,
+    );
     const lines = content.split(/\r?\n/).join('\n');
 
     await this.wikiRepository.saveWikiContent(title, newVersion, lines);
@@ -800,15 +813,15 @@ export class WikiService {
   }
 
   private filterWikiContent(text: string): string {
-    text = text.replace(/\n([^=].*?)\n/g, "$1 ");
-    text = text.replace(/'''([^=].*?)'''/g, "$1");
-    text = text.replace(/''(.+?)''/g, "$1");
-    text = text.replace(/--(.+?)--/g, "$1");
-    text = text.replace(/&amp;/g, "&");
-    text = text.replace(/={2,}/g, "");
-    text = text.replace(/\[\[.*http.*\]\]/g, "");
-    text = text.replace(/\[\[(.+?)\]\]/g, "$1");
-    return text.replace(/\n/g, " ");
+    text = text.replace(/\n([^=].*?)\n/g, '$1 ');
+    text = text.replace(/'''([^=].*?)'''/g, '$1');
+    text = text.replace(/''(.+?)''/g, '$1');
+    text = text.replace(/--(.+?)--/g, '$1');
+    text = text.replace(/&amp;/g, '&');
+    text = text.replace(/={2,}/g, '');
+    text = text.replace(/\[\[.*http.*\]\]/g, '');
+    text = text.replace(/\[\[(.+?)\]\]/g, '$1');
+    return text.replace(/\n/g, ' ');
   }
 
   async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
