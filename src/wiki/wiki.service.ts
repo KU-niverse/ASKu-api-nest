@@ -828,9 +828,12 @@ export class WikiService {
     await this.wikiRepository.createHistory(historyData);
   }
 
-
   //post wiki/contents/new/:title(*)
-  async createNewWikiDocument(title: string, createWikiDto: CreateWikiDto, user: User) {
+  async createNewWikiDocument(
+    title: string,
+    createWikiDto: CreateWikiDto,
+    user: User,
+  ) {
     const docId = await this.wikiRepository.getWikiDocsIdByTitle(title);
 
     if (docId !== null) {
@@ -862,7 +865,7 @@ export class WikiService {
 
     const count = text.length;
     const summary = '새 위키 문서 생성';
-    
+
     await this.wikiRepository.createHistory({
       userId: user.id,
       docId: savedDoc.id,
@@ -888,34 +891,31 @@ export class WikiService {
     };
   }
 
-  async fetchSectionContent(
-    title: string,
-    section_number: number,
-    user: User,
-  ) {
-    const doc: WikiDoc = await this.getWikiDocsByTitle(title); 
+  async fetchSectionContent(title: string, section_number: number, user: User) {
+    const doc: WikiDoc = await this.getWikiDocsByTitle(title);
     const docId = doc.id;
-  
-    const recentHistory: WikiHistory = await this.getRecentWikiHistoryByDocId(docId); 
-    const parsedTitle: string = title.replace(/\/+/g, '_'); 
+
+    const recentHistory: WikiHistory =
+      await this.getRecentWikiHistoryByDocId(docId);
+    const parsedTitle: string = title.replace(/\/+/g, '_');
     const version = recentHistory.version;
-  
+
     const text = await this.wikiRepository.getWikiContent(parsedTitle, version);
-  
+
     const lines = text.split(/\r?\n/);
     console.log('🚀 ~ WikiService ~ lines:', lines);
-  
+
     let current_section = null;
     let current_content = '';
     const sections = [];
-    let is_started = false; 
-  
+    let is_started = false;
+
     for (let line of lines) {
-      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); 
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/);
       if (matches !== null) {
         if (current_section !== null) {
           current_section.content.push(current_content);
-          sections.push(current_section); 
+          sections.push(current_section);
         }
         current_section = {
           title: matches[2],
@@ -930,7 +930,7 @@ export class WikiService {
         current_content += line;
       }
     }
-  
+
     if (current_section !== null) {
       current_section.content.push(current_content);
       sections.push(current_section);
@@ -940,32 +940,32 @@ export class WikiService {
         content: lines,
       });
     }
-    
+
     if (section_number > sections.length || section_number < 1) {
       throw new NotFoundException('해당 섹션을 찾을 수 없습니다.');
     }
-  
+
     const section = sections[section_number - 1];
-  
+
     const jsonData = {
       doc_id: docId,
       version: version,
       title: title,
-      content: section.content.join('\n'), 
+      content: section.content.join('\n'),
       is_managed: doc.isManaged,
       success: true,
     };
-  
+
     return jsonData;
   }
   async updateUserAction(user: User, diff: number, actionType: string) {
-    try {  
+    try {
       let userAction = await UserAction.findOne({ where: { userId: user.id } });
       if (!userAction) {
         userAction = new UserAction();
         userAction.userId = user.id;
       }
-  
+
       if (actionType === 'recordCount') {
         userAction.recordCount += diff;
       } else if (actionType === 'reviseCount') {
@@ -973,11 +973,32 @@ export class WikiService {
       } else if (actionType === 'answerCount') {
         userAction.answerCount += 1;
       }
-  
+
       await userAction.save();
     } catch (error) {
       console.error('User action 업데이트 중 오류:', error);
       throw new InternalServerErrorException('기여도 업데이트 중 오류 발생');
     }
+  }
+
+  async compareVersions(title: string, rev: number, oldrev: number) {
+    const replacedTitle = title.replace(/\/+/g, '_');
+
+    const [revContent, oldrevContent] = await Promise.all([
+      this.wikiRepository.getWikiContent(replacedTitle, rev),
+      this.wikiRepository.getWikiContent(replacedTitle, oldrev),
+    ]);
+
+    return {
+      rev,
+      rev_text: this.processContent(revContent),
+      oldrev,
+      oldrev_text: this.processContent(oldrevContent),
+    };
+  }
+
+  private processContent(content: string): string {
+    const lines = content.split(/\r?\n/);
+    return lines.join('\n');
   }
 }

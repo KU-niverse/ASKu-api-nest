@@ -784,7 +784,6 @@ export class WikiController {
     }
   }
 
-
   //post wiki/contents/new/:title(*)
   @Post('/contents/new/:title')
   //@UseGuards(AuthGuard())
@@ -811,7 +810,11 @@ export class WikiController {
     @Res() res,
   ): Promise<void> {
     try {
-      const result = await this.wikiService.createNewWikiDocument(title, createWikiDto, user);
+      const result = await this.wikiService.createNewWikiDocument(
+        title,
+        createWikiDto,
+        user,
+      );
 
       return res.status(HttpStatus.CREATED).json({
         success: true,
@@ -831,6 +834,76 @@ export class WikiController {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: '위키 생성 중 오류 발생',
+      });
+    }
+  }
+
+  @Get('comparison/:title/rev/:rev/oldrev/:oldrev')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '두 버전 비교하기',
+    description: '위키 문서의 두 버전을 비교합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '두 버전 비교 성공',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청 (oldrev가 0 이하인 경우)',
+  })
+  @ApiResponse({
+    status: 432,
+    description: 'oldrev가 rev보다 크거나 같은 경우',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '위키 문서를 찾을 수 없음',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+  })
+  async comparisonGet(
+    @Param('title') title: string,
+    @Param('rev') rev: number,
+    @Param('oldrev') oldrev: number,
+    @Res() res,
+  ) {
+    try {
+      if (oldrev <= 0) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: '잘못된 요청입니다.',
+        });
+      }
+
+      if (oldrev >= rev) {
+        return res.status(432).json({
+          success: false,
+          message: 'oldrev should be smaller than rev',
+        });
+      }
+
+      const comparisonResult = await this.wikiService.compareVersions(
+        title,
+        rev,
+        oldrev,
+      );
+      return res
+        .status(HttpStatus.OK)
+        .json({ success: true, jsonData: comparisonResult });
+    } catch (err) {
+      console.error(err);
+      if (err.message === '위키 콘텐츠를 가져오는 중 오류가 발생했습니다.') {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: '위키 문서를 찾을 수 없습니다.',
+        });
+      }
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: '두 버전 비교 중 오류',
       });
     }
   }
@@ -862,25 +935,29 @@ export class WikiController {
     status: 500,
     description: '위키 수정/히스토리 생성/기여도 부여 중 오류',
   })
-  @UseGuards(AuthGuard()) 
+  @UseGuards(AuthGuard())
   async fetchWikiSectionContent(
     @Param('title') title: string,
     @Param('section', ParseIntPipe) section: number,
     @Body() createWikiDto: CreateWikiDto,
     @GetUser() user: User,
   ) {
-    const result = await this.wikiService.fetchSectionContent(title, section, user);
+    const result = await this.wikiService.fetchSectionContent(
+      title,
+      section,
+      user,
+    );
 
     await this.newActionRecord(user, result.content.length);
-    await this.newActionRevise(user); 
+    await this.newActionRevise(user);
 
     if (createWikiDto.is_q_based === 1) {
       await this.newActionAnswer(user);
     }
-  
+
     return result;
   }
-  
+
   async newActionRecord(user: User, diff: number) {
     try {
       await this.wikiService.updateUserAction(user, diff, 'recordCount');
@@ -907,5 +984,4 @@ export class WikiController {
       throw new Error('답변 action 오류가 발생하였습니다.');
     }
   }
-
 }
