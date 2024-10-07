@@ -1001,4 +1001,19 @@ export class WikiService {
     const lines = content.split(/\r?\n/);
     return lines.join('\n');
   }
+
+  async getHistoryRawData(title: string, version: number): Promise<any> {
+    const docId = await this.getWikiDocsIdByTitle(title);
+    const sanitizedTitle = title.replace(/\/+/g, '_');
+
+    const text = await this.getWikiContent(sanitizedTitle, version);
+    const lines = text.split(/\r?\n/).join('\n');
+
+    return {
+      doc_id: docId,
+      version: version,
+      text: lines,
+    };
+  } 
+
 }
