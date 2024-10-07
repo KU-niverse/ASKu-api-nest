@@ -1,4 +1,4 @@
-import { ForbiddenException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, GoneException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
 import { ContributionsResponseDto } from './dto/contributions-response.dto';
@@ -12,6 +12,8 @@ import { Repository } from 'typeorm';
 import { WikiDocsView } from 'src/wiki/entities/wikiView.entity';
 import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
 import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
+import { CreateWikiDto } from './dto/createWiki.dto';
+import { UserAction } from 'src/user/entities/userAction.entity';
 
 @Injectable()
 export class WikiService {
@@ -811,5 +813,158 @@ export class WikiService {
 
   async createHistory(historyData: Partial<WikiHistory>): Promise<void> {
     await this.wikiRepository.createHistory(historyData);
+  }
+
+
+  //post wiki/contents/new/:title(*)
+  async createNewWikiDocument(title: string, createWikiDto: CreateWikiDto, user: User) {
+    const docId = await this.wikiRepository.getWikiDocsIdByTitle(title);
+
+    if (docId !== null) {
+      const row = await this.wikiRepository.getWikiDocsById(docId);
+      if (row.isDeleted) {
+      } else {
+        throw new ConflictException('이미 존재하는 문서입니다.');
+      }
+    }
+
+    const sanitizedTitle = title.replace(/\/+/g, '_');
+    const text = createWikiDto.text;
+    const version = 1;
+    const type = createWikiDto.type;
+
+    await this.wikiRepository.saveWikiContent(sanitizedTitle, version, text);
+
+    const endpoint = 'https://kr.object.ncloudstorage.com';
+    const newWikiDoc = {
+      title,
+      textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
+      recentFilteredContent: text,
+      type,
+      latestVer: version,
+      isManaged: 0,
+    };
+
+    const savedDoc = await this.wikiRepository.createWikiDoc(newWikiDoc);
+
+    const count = text.length;
+    const summary = '새 위키 문서 생성';
+    
+    await this.wikiRepository.createHistory({
+      userId: user.id,
+      docId: savedDoc.id,
+      textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
+      summary,
+      count,
+      diff: count,
+      version,
+      isRollback: false,
+      indexTitle: createWikiDto.index_title,
+    });
+
+    return {
+      success: true,
+      message: '위키 문서 생성 성공',
+      docId: savedDoc.id,
+      version,
+      count,
+      summary: '새 위키 문서 생성',
+      textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
+      diff: count,
+      statusCode: 201,
+    };
+  }
+
+  async fetchSectionContent(
+    title: string,
+    section_number: number,
+    user: User,
+  ) {
+    const doc: WikiDoc = await this.getWikiDocsByTitle(title); 
+    const docId = doc.id;
+  
+    const recentHistory: WikiHistory = await this.getRecentWikiHistoryByDocId(docId); 
+    const parsedTitle: string = title.replace(/\/+/g, '_'); 
+    const version = recentHistory.version;
+  
+    const text = await this.wikiRepository.getWikiContent(parsedTitle, version);
+  
+    const lines = text.split(/\r?\n/);
+    console.log('🚀 ~ WikiService ~ lines:', lines);
+  
+    let current_section = null;
+    let current_content = '';
+    const sections = [];
+    let is_started = false; 
+  
+    for (let line of lines) {
+      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); 
+      if (matches !== null) {
+        if (current_section !== null) {
+          current_section.content.push(current_content);
+          sections.push(current_section); 
+        }
+        current_section = {
+          title: matches[2],
+          content: [],
+        };
+        current_content = '';
+      } else {
+        is_started = true;
+        if (current_content !== '') {
+          current_content += '\n';
+        }
+        current_content += line;
+      }
+    }
+  
+    if (current_section !== null) {
+      current_section.content.push(current_content);
+      sections.push(current_section);
+    } else if (!is_started) {
+      sections.push({
+        title: 'No Section Title',
+        content: lines,
+      });
+    }
+    
+    if (section_number > sections.length || section_number < 1) {
+      throw new NotFoundException('해당 섹션을 찾을 수 없습니다.');
+    }
+  
+    const section = sections[section_number - 1];
+  
+    const jsonData = {
+      doc_id: docId,
+      version: version,
+      title: title,
+      content: section.content.join('\n'), 
+      is_managed: doc.isManaged,
+      success: true,
+    };
+  
+    return jsonData;
+  }
+  async updateUserAction(user: User, diff: number, actionType: string) {
+    try {  
+      let userAction = await UserAction.findOne({ where: { userId: user.id } });
+      if (!userAction) {
+        userAction = new UserAction();
+        userAction.userId = user.id;
+      }
+  
+      if (actionType === 'recordCount') {
+        userAction.recordCount += diff;
+      } else if (actionType === 'reviseCount') {
+        userAction.reviseCount += 1;
+      } else if (actionType === 'answerCount') {
+        userAction.answerCount += 1;
+      }
+  
+      await userAction.save();
+    } catch (error) {
+      console.error('User action 업데이트 중 오류:', error);
+      throw new InternalServerErrorException('기여도 업데이트 중 오류 발생');
+    }
   }
 }
