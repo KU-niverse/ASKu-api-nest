@@ -603,7 +603,7 @@ export class WikiService {
 
     return {
       count: totalUsers,
-      ranking,
+      ranking: Number(ranking),
       point: user_point,
       ranking_percentage: Number(ranking_percentage.toFixed(4)),
       docs: docsContributions.map((doc) => ({
