@@ -39,6 +39,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/config/multer.config';
 import { WikiDoc } from './entities/wikiDoc.entity';
 import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
+import { CreateWikiDto } from './dto/createWiki.dto';
 import { WikiContributionsDto } from './dto/wiki-contributions-response.dto';
 import { NotFoundError } from 'rxjs';
 import { EntityNotFoundError } from 'typeorm';
@@ -394,7 +395,7 @@ export class WikiController {
 
   //wiki/historys/{title*}
   @Get('/historys/:title')
-  //@UseGuards(AuthGuard())
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '위키 히스토리 조회',
     description: '위키 히스토리를 조회합니다.',
@@ -782,4 +783,129 @@ export class WikiController {
       });
     }
   }
+
+
+  //post wiki/contents/new/:title(*)
+  @Post('/contents/new/:title')
+  //@UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '새 위키 문서 생성',
+    description: 'POST 방식으로 새 위키 문서를 생성합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '위키 문서 생성 성공',
+  })
+  @ApiResponse({
+    status: 409,
+    description: '이미 존재하는 문서입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 생성 중 오류 발생',
+  })
+  async createWikiDocument(
+    @Param('title') title: string,
+    @Body() createWikiDto: CreateWikiDto,
+    @GetUser() user: User,
+    @Res() res,
+  ): Promise<void> {
+    try {
+      const result = await this.wikiService.createNewWikiDocument(title, createWikiDto, user);
+
+      return res.status(HttpStatus.CREATED).json({
+        success: true,
+        message: '위키 문서 생성 성공',
+        docId: result.docId,
+        version: result.version,
+        count: result.count,
+      });
+    } catch (error) {
+      if (error.status === HttpStatus.CONFLICT) {
+        return res.status(HttpStatus.CONFLICT).json({
+          success: false,
+          message: '이미 존재하는 문서입니다.',
+        });
+      }
+
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: '위키 생성 중 오류 발생',
+      });
+    }
+  }
+
+  //post wiki/contents/:title(*)/section/:section
+  @Post('contents/:title(*)/section/:section')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '위키 문서의 특정 섹션 정보 수정',
+    description: '위키 문서의 특정 섹션 수정하기 및 기여도 지급 성공',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '위키 문서의 특정 섹션 수정하기 및 기여도 지급 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그인이 필요한 서비스입니다.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '인증된 회원만 편집이 가능한 문서입니다.',
+  })
+  @ApiResponse({
+    status: 426,
+    description: 'Version is not matched',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '위키 수정/히스토리 생성/기여도 부여 중 오류',
+  })
+  @UseGuards(AuthGuard()) 
+  async fetchWikiSectionContent(
+    @Param('title') title: string,
+    @Param('section', ParseIntPipe) section: number,
+    @Body() createWikiDto: CreateWikiDto,
+    @GetUser() user: User,
+  ) {
+    const result = await this.wikiService.fetchSectionContent(title, section, user);
+
+    await this.newActionRecord(user, result.content.length);
+    await this.newActionRevise(user); 
+
+    if (createWikiDto.is_q_based === 1) {
+      await this.newActionAnswer(user);
+    }
+  
+    return result;
+  }
+  
+  async newActionRecord(user: User, diff: number) {
+    try {
+      await this.wikiService.updateUserAction(user, diff, 'recordCount');
+    } catch (err) {
+      console.error(err);
+      throw new Error('글자수 action 오류가 발생했습니다.');
+    }
+  }
+
+  async newActionRevise(user: User) {
+    try {
+      await this.wikiService.updateUserAction(user, 0, 'reviseCount');
+    } catch (err) {
+      console.error(err);
+      throw new Error('수정 action 오류가 발생했습니다.');
+    }
+  }
+
+  async newActionAnswer(user: User) {
+    try {
+      await this.wikiService.updateUserAction(user, 0, 'answerCount');
+    } catch (err) {
+      console.error(err);
+      throw new Error('답변 action 오류가 발생하였습니다.');
+    }
+  }
+
 }

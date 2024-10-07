@@ -31,9 +31,6 @@ export class WikiRepository {
     @InjectRepository(WikiDocsView)
     private wikiDocsViewRepository: Repository<WikiDocsView>,
   ) {
-    console.log('Initializing S3Client with region:', process.env.AWS_REGION);
-    console.log('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
-    console.log('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY);
 
     // TODO: S3 설정을 환경 변수로 분리
     this.s3Client = new S3Client({
@@ -337,4 +334,10 @@ export class WikiRepository {
   async updateRecentContent(docId: number, text: string): Promise<void> {
     await this.wikiDocRepository.update(docId, { recentFilteredContent: text });
   }
+
+  async createWikiDoc(newWikiDoc): Promise<WikiDoc> {
+    return this.wikiDocRepository.save(newWikiDoc);
+  }
+
+
 }
