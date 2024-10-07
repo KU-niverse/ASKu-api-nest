@@ -91,7 +91,7 @@ export class AuthController {
   async signIn(
     @Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ message: string }> {
     const { accessToken, refreshToken } =
       await this.authService.signIn(authCredentialsDto);
 
@@ -108,7 +108,7 @@ export class AuthController {
       sameSite: 'none',
     });
 
-    return { success: true, message: '로그인에 성공하였습니다!' };
+    return { message: '로그인에 성공하였습니다!' };
   }
 
   @Post('/signup')
