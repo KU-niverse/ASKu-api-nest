@@ -717,6 +717,10 @@ export class WikiController {
     description: '위키 raw 데이터 가져오기 성공',
   })
   @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 문서입니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '위키 raw 데이터 가져오기 중 오류',
   })
@@ -750,6 +754,10 @@ export class WikiController {
   @ApiResponse({
     status: 403,
     description: '인증된 회원만 롤백이 가능한 문서입니다.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 문서입니다.',
   })
   @ApiResponse({
     status: 500,

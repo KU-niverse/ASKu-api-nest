@@ -393,7 +393,7 @@ export class WikiService {
   async getWikiDocsIdByTitle(title: string): Promise<number> {
     const wikiDoc = await this.wikiRepository.findDocByTitle(title);
     if (!wikiDoc) {
-      throw new NotFoundException('Document not found');
+      throw new NotFoundException('존재하지 않는 문서입니다.');
     }
     console.log('Found document ID:', wikiDoc);
 
@@ -777,7 +777,7 @@ export class WikiService {
     const doc = await this.wikiRepository.findDocByTitle(title);
 
     if (!doc) {
-      throw new NotFoundException('문서를 찾을 수 없습니다.');
+      throw new NotFoundException('존재하지 않는 문서입니다.');
     }
 
     const recentHistory = await this.wikiRepository.getMostRecentHistory(
