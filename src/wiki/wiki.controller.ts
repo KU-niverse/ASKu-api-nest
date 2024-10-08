@@ -786,13 +786,13 @@ export class WikiController {
 
   //post wiki/contents/new/:title(*)
   @Post('/contents/new/:title')
-  //@UseGuards(AuthGuard())
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '새 위키 문서 생성',
     description: 'POST 방식으로 새 위키 문서를 생성합니다.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: '위키 문서 생성 성공',
   })
   @ApiResponse({
@@ -816,7 +816,7 @@ export class WikiController {
         user,
       );
 
-      return res.status(HttpStatus.CREATED).json({
+      return res.status(HttpStatus.OK).json({
         success: true,
         message: '위키 문서 생성 성공',
         docId: result.docId,
@@ -828,6 +828,7 @@ export class WikiController {
         return res.status(HttpStatus.CONFLICT).json({
           success: false,
           message: '이미 존재하는 문서입니다.',
+          content: createWikiDto?.text || '전체',
         });
       }
 
@@ -984,5 +985,4 @@ export class WikiController {
       throw new Error('답변 action 오류가 발생하였습니다.');
     }
   }
-
 }

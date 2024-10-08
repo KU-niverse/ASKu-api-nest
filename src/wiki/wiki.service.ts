@@ -836,21 +836,23 @@ export class WikiService {
     createWikiDto: CreateWikiDto,
     user: User,
   ) {
+    // 1. 기존에 같은 타이틀의 문서가 있는지 체크
     const docId = await this.wikiRepository.getWikiDocsIdByTitle(title);
 
     if (docId !== null) {
+      // 2-2. 있으면 지워진 문서인지 확인
       const row = await this.wikiRepository.getWikiDocsById(docId);
       if (row.isDeleted) {
+        // 3-1. 지워진 문서면 처리
       } else {
+        // 3-2. 지워진 문서가 아니면 에러 처리(중복 알림)
         throw new ConflictException('이미 존재하는 문서입니다.');
       }
     }
-
     const sanitizedTitle = title.replace(/\/+/g, '_');
     const text = createWikiDto.text;
     const version = 1;
     const type = createWikiDto.type;
-
     await this.wikiRepository.saveWikiContent(sanitizedTitle, version, text);
 
     const endpoint = 'https://kr.object.ncloudstorage.com';
@@ -862,24 +864,30 @@ export class WikiService {
       latestVer: version,
       isManaged: 0,
     };
-
     const savedDoc = await this.wikiRepository.createWikiDoc(newWikiDoc);
 
     const count = text.length;
     const summary = '새 위키 문서 생성';
+    try {
+      await this.wikiRepository.createHistory({
+        userId: user.id,
+        docId: savedDoc.id,
+        textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
+        summary: '새 위키 문서 생성',
+        count,
+        diff: count,
+        version,
+        isRollback: false,
+        indexTitle: createWikiDto.index_title,
+      });
+    } catch (error) {
+      console.error('History 생성 중 오류:', error);
+      throw new InternalServerErrorException('히스토리 생성 중 오류 발생');
+    }
 
-    await this.wikiRepository.createHistory({
-      userId: user.id,
-      docId: savedDoc.id,
-      textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
-      summary,
-      count,
-      diff: count,
-      version,
-      isRollback: false,
-      indexTitle: createWikiDto.index_title,
-    });
+    // TODO: 기여도 로직 추가, 원래 코드의 wikiPointMid로직
 
+    // TODO: 유저 액션 로직 추가, 원래 코드의 newActionRecord로직
     return {
       success: true,
       message: '위키 문서 생성 성공',
@@ -889,7 +897,7 @@ export class WikiService {
       summary: '새 위키 문서 생성',
       textPointer: `${endpoint}/wiki-bucket/${sanitizedTitle}/r${version}.wiki`,
       diff: count,
-      statusCode: 201,
+      statusCode: 200,
     };
   }
 
