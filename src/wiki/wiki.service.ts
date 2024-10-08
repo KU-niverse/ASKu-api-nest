@@ -156,7 +156,9 @@ export class WikiService {
     user?: User,
   ) {
     const doc: WikiDoc = await this.getWikiDocsByTitle(title);
-    console.log('🚀 ~ WikiService ~ doc:', doc);
+    if (doc === null) {
+      throw new NotFoundException('존재하지 않는 문서입니다.');
+    }
     const docId = doc.id;
     const recentHistory: WikiHistory =
       await this.getRecentWikiHistoryByDocId(docId);
@@ -170,10 +172,6 @@ export class WikiService {
       await this.wikiDocsViewRepository.save(wikiDocsView);
     }
 
-    // TODO: 아래 케이스 테스트 요함
-    if (!recentHistory) {
-      throw new NotFoundException('존재하지 않는 문서입니다.');
-    }
     let using_version;
     if (calltype === 1) {
       // 글 불러오거나 수정용
@@ -190,7 +188,8 @@ export class WikiService {
     jsonData['is_managed'] = doc.isManaged;
 
     // 삭제된 문서인지 확인
-    if (!this.checkWikiIsRemoved(docId)) {
+    const is_deleted = await this.checkWikiIsRemoved(docId);
+    if (is_deleted === true) {
       // 410반환
       throw new GoneException('삭제된 문서입니다.');
     }
@@ -285,6 +284,7 @@ export class WikiService {
     const wikiDoc: WikiDoc = await this.wikiDocRepository.findOne({
       where: { title },
     });
+    console.log('🚀 ~ WikiService ~ getWikiDocsByTitle ~ wikiDoc:', wikiDoc);
     return wikiDoc;
   }
 
