@@ -409,7 +409,7 @@ export class WikiService {
   async getRandomWikiDoc(): Promise<{ [key: string]: string | boolean }> {
     const randomWikiDoc = await this.wikiRepository.getRandomDoc();
     return {
-      '0': randomWikiDoc ? randomWikiDoc.title : 'No Document Found',
+      'title': randomWikiDoc ? randomWikiDoc.title : 'No Document Found',
       success: true,
     };
   }
