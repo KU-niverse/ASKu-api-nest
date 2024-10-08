@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   ConflictException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
@@ -316,69 +317,74 @@ export class WikiService {
     section_number: number,
     user: User,
   ) {
-    const doc: WikiDoc = await this.getWikiDocsByTitle(title);
-    console.log('🚀 ~ WikiService ~ doc:', doc);
-    const docId = doc.id;
-    const recentHistory: WikiHistory =
-      await this.getRecentWikiHistoryByDocId(docId);
-    const parsedTitle: string = title.replace(/\/+/g, '_');
-    console.log('🚀 ~ WikiService ~ parsedTitle:', parsedTitle);
-    const version = recentHistory.version;
-    console.log('🚀 ~ WikiService ~ version:', version);
+    try {
+      const doc: WikiDoc = await this.getWikiDocsByTitle(title);
+      console.log('🚀 ~ WikiService ~ doc:', doc);
+      const docId = doc.id;
+      const recentHistory: WikiHistory =
+        await this.getRecentWikiHistoryByDocId(docId);
+      const parsedTitle: string = title.replace(/\/+/g, '_');
+      console.log('🚀 ~ WikiService ~ parsedTitle:', parsedTitle);
+      const version = recentHistory.version;
+      console.log('🚀 ~ WikiService ~ version:', version);
 
-    let text = '';
-    let sections = [];
-    let jsonData = {};
-    let section = null;
+      let text = '';
+      let sections = [];
+      let jsonData = {};
+      let section = null;
 
-    // S3에서 파일 읽어오는 코드
-    text = await this.wikiRepository.getWikiContent(parsedTitle, version);
+      // S3에서 파일 읽어오는 코드
+      text = await this.wikiRepository.getWikiContent(parsedTitle, version);
 
-    // 정규화로 섹션 분리
-    const lines = text.split(/\r?\n/);
-    console.log('🚀 ~ WikiService ~ lines:', lines);
-    let current_section = null;
-    let current_content = null;
+      // 정규화로 섹션 분리
+      const lines = text.split(/\r?\n/);
+      console.log('🚀 ~ WikiService ~ lines:', lines);
+      let current_section = null;
+      let current_content = null;
 
-    for (let line of lines) {
-      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
-      if (matches !== null) {
-        // 해당 라인이 섹션 타이틀인 경우
-        if (current_section !== null) {
-          current_section.content.push(current_content);
-          sections.push(current_section);
+      for (let line of lines) {
+        const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
+        if (matches !== null) {
+          // 해당 라인이 섹션 타이틀인 경우
+          if (current_section !== null) {
+            current_section.content.push(current_content);
+            sections.push(current_section);
+          }
+          current_section = {
+            title: line,
+            content: [],
+          };
+          current_content = '';
+        } else {
+          // 해당 라인이 섹션 내용인 경우
+          if (current_content !== '') {
+            current_content += '\n';
+          }
+          current_content += line;
         }
-        current_section = {
-          title: line,
-          content: [],
-        };
-        current_content = '';
-      } else {
-        // 해당 라인이 섹션 내용인 경우
-        if (current_content !== '') {
-          current_content += '\n';
-        }
-        current_content += line;
       }
-    }
-    if (current_section !== null) {
-      current_section.content.push(current_content);
-      sections.push(current_section);
-    }
-    console.log('🚀 ~ WikiService ~ sections:', sections);
+      if (current_section !== null) {
+        current_section.content.push(current_content);
+        sections.push(current_section);
+      }
+      console.log('🚀 ~ WikiService ~ sections:', sections);
 
-    // 섹션 번호에 맞는 섹션 불러오기
-    section = sections[section_number - 1];
-    console.log('🚀 ~ WikiService ~ section:', section);
-    jsonData = {};
-    jsonData['doc_id'] = docId;
-    jsonData['version'] = version;
-    jsonData['title'] = title;
-    jsonData['content'] = section.content.join('\n');
-    jsonData['is_managed'] = doc.isManaged;
-    jsonData['success'] = true;
+      // 섹션 번호에 맞는 섹션 불러오기
+      section = sections[section_number - 1];
+      console.log('🚀 ~ WikiService ~ section:', section);
+      jsonData = {};
+      jsonData['doc_id'] = docId;
+      jsonData['version'] = version;
+      jsonData['title'] = title;
+      jsonData['content'] = section.content.join('\n');
+      jsonData['is_managed'] = doc.isManaged;
+      jsonData['success'] = true;
 
-    return jsonData;
+      return jsonData;
+    } catch (error) {
+      //422에러 처리
+      throw new UnprocessableEntityException('Invalid section number');
+    }
   }
 
   // -------------------------이 위로 영섭 작업물 -------------------------//
