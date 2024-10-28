@@ -124,8 +124,7 @@ export class DebateService {
       where: { title },
       select: ['id'],
     });
-    const docId = wikiDoc?.id;
-    return docId;
+    return wikiDoc?.id;
   }
 
   async createDebateNewTitle(
