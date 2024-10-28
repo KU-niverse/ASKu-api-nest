@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
