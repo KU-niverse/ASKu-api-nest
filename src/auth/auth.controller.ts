@@ -1,16 +1,14 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
-  HttpStatus, InternalServerErrorException,
-  Param,
+  HttpStatus,
+  InternalServerErrorException,
   Post,
-  Req,
-  Res, UnauthorizedException,
+  Res,
+  UnauthorizedException,
   UseGuards,
-  UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -205,7 +203,7 @@ export class AuthController {
   })
   @UseGuards(AuthGuard())
   async signOut(
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ success: boolean; message: string }> {
     try {
       res.clearCookie('accessToken', {
@@ -223,6 +221,61 @@ export class AuthController {
       return {
         success: true,
         message: '로그아웃 되었습니다.',
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException({
+          success: false,
+          message: '로그인이 필요합니다.',
+        });
+      }
+
+      throw new InternalServerErrorException({
+        success: false,
+        message: '서버 에러',
+      });
+    }
+  }
+
+  @Get('/issignedin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '유저 로그인 여부 확인' })
+  @ApiResponse({
+    status: 201,
+    description: '유저 로그인 되어있는 상태',
+    schema: {
+      example: {
+        success: true,
+        message: '로그인한 상태입니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: '유저 로그인 되어있지 않은 상태',
+    schema: {
+      example: {
+        success: false,
+        message: '로그인이 필요합니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
+  })
+  @UseGuards(AuthGuard())
+  async isSignedIn(): Promise<{ success: boolean; message: string }> {
+    try {
+      return {
+        success: true,
+        message: '로그인한 상태입니다.',
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
