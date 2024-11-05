@@ -146,21 +146,13 @@ export class QuestionController {
   async getAnswerByQuestionId(
     @Param('question_id') questionId: number,
     @Res() res,
-  ): Promise<void> {
-    try {
+  ): Promise<{success: boolean, message: string, data: Answer[]}> {
+
       const answers =
         await this.questionService.getAnswerByQuestionId(questionId);
-      res.status(HttpStatus.OK).send({
-        success: true,
-        message: '성공적으로 답변을 조회하였습니다.',
-        data: answers,
-      });
-    } catch (err) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
-        success: false,
-        message: '오류가 발생하였습니다.',
-      });
-    }
+      console.log(answers)
+      return {success: true, message:  "성공적으로 답변을 조회하였습니다.", data: answers};
+   
   }
 
   @Get('query/:query')
@@ -294,6 +286,10 @@ export class QuestionController {
     description: '잘못된 입력',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '오류 발생',
   })
@@ -338,7 +334,7 @@ export class QuestionController {
   @ApiResponse({
     status: 400,
     description: '잘못된 요청입니다.',
-  })
+  }) 
   @ApiResponse({
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
@@ -370,6 +366,10 @@ export class QuestionController {
   @ApiResponse({
     status: 400,
     description: '중복된 입력',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
     status: 403,

@@ -13,6 +13,7 @@ export class SuccessInterceptor implements NestInterceptor {
     return next.handle().pipe(
       map((data) => {
         console.log('작동');
+        console.log(data)
         const response = context.switchToHttp().getResponse();
         const statusCode = response.statusCode;
         if (!isArray(data) && data?.revised === 1) {

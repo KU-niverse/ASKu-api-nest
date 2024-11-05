@@ -167,6 +167,7 @@ export class QuestionService {
 
   // QuestionId로 Answer 가져오기
   async getAnswerByQuestionId(questionId: number): Promise<Answer[]> {
+    console.log("1")
     const answers = await this.answerRepository.query(
       `SELECT answers.*, wiki_history.user_id, wiki_history.version, wiki_history.index_title,
       users.nickname, users.rep_badge, wiki_docs.title, 
@@ -181,6 +182,7 @@ export class QuestionService {
       ORDER BY answers.created_at ASC;`,
       [questionId],
     );
+    console.log("@")
     if (!answers.length) {
       throw new NotFoundException('해당 ID를 가진 답변이 존재하지 않습니다');
     }

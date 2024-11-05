@@ -19,6 +19,7 @@ export class BadgeController {
 
   // TODO: 이 api 기존 api와 달라짐
   @Get('/all')
+  @UseGuards(AuthGuard())
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '모든 배지',
@@ -49,7 +50,7 @@ export class BadgeController {
     description: '유저 배지 히스토리를 조회합니다.',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: '유저 배지 히스토리를 성공적으로 조회했습니다.',
     type: BadgeHistory,
     isArray: true,
