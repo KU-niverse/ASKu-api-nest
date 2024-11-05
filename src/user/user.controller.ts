@@ -19,12 +19,16 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { WikiHistoryResponseDto } from './dto/wikiHistory.dto';
 import { QuestionService } from '../question/question.service';
+import { Debate } from '../debate/entities/debate.entity';
+import { DebateHistory } from '../debate/entities/debateHistory.entity';
+import { DebateService } from '../debate/debate.service';
 
 @Controller('user')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly questionService: QuestionService,
+    private readonly debateService: DebateService,
   ) {}
   @Get('mypage/info')
   @UseGuards(AuthGuard())
@@ -234,5 +238,71 @@ export class UserController {
       data: questions,
       message: `나의 질문 리스트를 ${arrange === 'latest' ? '최신순' : '좋아요순'}으로 조회하였습니다.`,
     };
+  }
+
+  @Get('mypage/debatehistory')
+  @HttpCode(201)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '유저 토론 히스토리',
+    description: '유저의 토론 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '토론 히스토리 불러오기 성공',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              debate_id: { type: 'number', example: 101 },
+              debate_subject: { type: 'string', example: '인공지능의 장단점' },
+              debate_content: {
+                type: 'string',
+                example:
+                  '인공지능은 많은 분야에서 유용하게 사용될 수 있지만, 동시에 그것이 가져오는 부정적인 측면에 대해서도 고민해야 합니다.',
+              },
+              debate_content_time: {
+                type: 'string',
+                example: '2023-07-25T10:23:14Z',
+              },
+              is_bad: { type: 'boolean', example: false },
+              doc_title: { type: 'string', example: '인공지능' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '서버 에러' },
+      },
+    },
+  })
+  async getMyDebateHistory(@GetUser() user: User): Promise<any> {
+    try {
+      const debateHistory = await this.debateService.getMyDebateHistory(
+        user.id,
+      );
+      return {
+        success: true,
+        message: debateHistory,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '서버 에러',
+      });
+    }
   }
 }
