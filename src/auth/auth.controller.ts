@@ -109,7 +109,7 @@ export class AuthController {
     return { message: '로그인에 성공하였습니다!' };
   }
 
-  @Post('/signup')
+  @Post('/signup/koreanpas')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '회원가입' })
   @ApiBody({ type: KoreapasCredentialsDto })
