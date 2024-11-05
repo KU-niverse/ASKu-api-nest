@@ -10,12 +10,22 @@ import { AuthModule } from 'src/auth/auth.module';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { UserRepository } from './user.repository';
 import { AiSession } from 'src/ai/entities/aiSession.entity';
+import { WikiHistory } from 'src/wiki/entities/wikiHistory.entity';
+import { QuestionModule } from 'src/question/question.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserAttend, UserAction, Badge, AiSession]),
+    TypeOrmModule.forFeature([
+      User,
+      UserAttend,
+      UserAction,
+      Badge,
+      AiSession,
+      WikiHistory,
+    ]),
     forwardRef(() => BadgeModule),
     forwardRef(() => AuthModule),
+    forwardRef(() => QuestionModule),
   ],
   controllers: [UserController],
   providers: [UserService, UserRepository],

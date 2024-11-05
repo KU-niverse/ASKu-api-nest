@@ -7,7 +7,6 @@ import {
   UseGuards,
   Param,
   ParseIntPipe,
-  NotFoundException,
   Res,
   Post,
   Body,
@@ -30,44 +29,6 @@ import { CreateQuestionDto } from './dto/create-question.dto';
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
-
-  // TODO: 이 api 기존 api와 달라짐
-  @Get('me/history/:arrange')
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard())
-  @ApiOperation({
-    summary: '유저 질문 히스토리',
-    description: '유저 질문 히스토리를 조회합니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '유저 질문 히스토리 조회를 성공했습니다.',
-    type: Question,
-    isArray: true,
-  })
-  @ApiResponse({
-    status: 400,
-    description: '잘못된 요청입니다. 질문 히스토리 불러오기에 실패하였습니다.',
-  })
-  @ApiResponse({
-    status: 401,
-    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
-  })
-  @ApiResponse({
-    status: 402,
-    description:
-      '잘못된 요청입니다. arrange위치에 latest 혹은 popularity가 들어가야합니다.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: '서버 내부 에러가 발생했습니다.',
-  })
-  getQuestionHistory(
-    @GetUser() user: User,
-    @Param('arrange') arrange: string,
-  ): Promise<Question[]> {
-    return this.questionService.getQuestionsByUserId(user.id, arrange);
-  }
 
   @Get('/lookup/:id')
   @ApiOperation({

@@ -7,6 +7,7 @@ import { UserAttend } from 'src/user/entities/userAttend.entity';
 import { Repository } from 'typeorm';
 import { BadgeService } from 'src/badge/badge.service';
 import { AiSession } from 'src/ai/entities/aiSession.entity';
+import { WikiHistory } from '../wiki/entities/wikiHistory.entity';
 
 @Injectable()
 export class UserService {
@@ -20,7 +21,8 @@ export class UserService {
     @InjectRepository(AiSession)
     private aiSessionRepository: Repository<AiSession>,
     private badgeService: BadgeService,
-
+    @InjectRepository(WikiHistory)
+    private wikiHistoryRepository: Repository<WikiHistory>,
     // private aiService: AiService,
   ) {}
 
@@ -107,5 +109,17 @@ export class UserService {
     // 유저의 대표 배지를 수정
     user.repBadge = badgeId;
     await this.userRepository.save(user);
+  }
+
+  async getWikiHistory(userId: number): Promise<any[]> {
+    const rows = await this.wikiHistoryRepository.query(
+      `SELECT wiki_history.*, wiki_docs.title 
+       FROM wiki_history 
+       INNER JOIN wiki_docs ON wiki_history.doc_id = wiki_docs.id 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC`,
+      [userId],
+    );
+    return rows;
   }
 }

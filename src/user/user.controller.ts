@@ -7,6 +7,8 @@ import {
   ValidationPipe,
   Body,
   UseGuards,
+  InternalServerErrorException,
+  Param,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -15,12 +17,16 @@ import { UpdateUserRepBadgeDto } from 'src/user/dto/updateRepBadge.dto';
 import { Badge } from 'src/badge/entities/badge.entity';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { WikiHistoryResponseDto } from './dto/wikiHistory.dto';
+import { QuestionService } from '../question/question.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
-  // TODO: 이 api 기존 api와 달라짐
-  @Get('me/info')
+  constructor(
+    private readonly userService: UserService,
+    private readonly questionService: QuestionService,
+  ) {}
+  @Get('mypage/info')
   @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '내 정보 조회',
@@ -51,7 +57,7 @@ export class UserController {
     return user;
   }
 
-  @Put('/me/setrepbadge')
+  @Put('/mypage/setrepbadge')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard())
   @ApiOperation({
@@ -76,5 +82,157 @@ export class UserController {
     @Body(ValidationPipe) updateUserRepBadgeDto: UpdateUserRepBadgeDto,
   ): Promise<void> {
     await this.userService.updateRepBadge(user, updateUserRepBadgeDto.badgeId);
+  }
+
+  @Get('mypage/wikihistory')
+  @UseGuards(AuthGuard())
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '위키 히스토리 조회',
+    description: '사용자의 위키 편집 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '위키 히스토리를 불러오는데 성공했습니다.',
+    type: WikiHistoryResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: '유저 로그인 되어있지 않은 상태',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '로그인이 필요합니다.' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '서버 에러' },
+      },
+    },
+  })
+  async getWikiHistory(@GetUser() user: User): Promise<any> {
+    try {
+      const wikiHistory: any[] = await this.userService.getWikiHistory(user.id);
+      return {
+        success: true,
+        data: wikiHistory,
+        message: '위키 히스토리를 불러오는데 성공했습니다.',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '서버 에러',
+      });
+    }
+  }
+
+  @Get('mypage/questionhistory/:arrange')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '유저 질문 히스토리',
+    description: '유저 질문 히스토리를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '질문 히스토리 불러오기 성공',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: '나의 질문 리스트를 최신순으로 조회하였습니다.',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 50 },
+              doc_id: { type: 'number', example: 6 },
+              user_id: { type: 'number', example: 2 },
+              index_title: { type: 'string', example: '1 개요' },
+              content: { type: 'string', example: '음 잘 모르겠네~' },
+              created_at: {
+                type: 'string',
+                example: '2023-09-03T06:11:12.000Z',
+              },
+              answer_or_not: { type: 'number', example: 1 },
+              is_bad: { type: 'number', example: 0 },
+              nickname: { type: 'string', example: '키키키키키키키' },
+              rep_badge: { type: 'number', example: 1 },
+              badge_image: {
+                type: 'string',
+                example:
+                  'https://kr.object.ncloudstorage.com/image-bucket/badge/1_%EB%8B%A8%EA%B5%B0%ED%95%A0%EC%95%84%EB%B2%84%EC%A7%80%20%ED%84%B0%20%EC%9E%A1%EC%9C%BC%EC%8B%9C%EA%B3%A0.png',
+              },
+              like_count: { type: 'number', example: 0 },
+              doc_title: { type: 'string', example: '멀틱스' },
+              answer_count: { type: 'number', example: 4 },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: '유저 로그인 되어있지 않은 상태',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '로그인이 필요합니다.' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 402,
+    description: '잘못된 값을 넣었을 때',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example:
+            '잘못된 요청입니다. arrange위치에 latest 혹은 popularity가 들어가야합니다.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '서버 에러' },
+      },
+    },
+  })
+  async getQuestionHistory(
+    @GetUser() user: User,
+    @Param('arrange') arrange: string,
+  ): Promise<any> {
+    const questions = await this.questionService.questionHistory(
+      user.id,
+      arrange,
+    );
+    return {
+      success: true,
+      data: questions,
+      message: `나의 질문 리스트를 ${arrange === 'latest' ? '최신순' : '좋아요순'}으로 조회하였습니다.`,
+    };
   }
 }
