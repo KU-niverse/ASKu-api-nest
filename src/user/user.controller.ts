@@ -22,6 +22,7 @@ import { QuestionService } from '../question/question.service';
 import { Debate } from '../debate/entities/debate.entity';
 import { DebateHistory } from '../debate/entities/debateHistory.entity';
 import { DebateService } from '../debate/debate.service';
+import { EditNickDto } from './dto/editNick.dto';
 
 @Controller('user')
 export class UserController {
@@ -297,6 +298,79 @@ export class UserController {
       return {
         success: true,
         message: debateHistory,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '서버 에러',
+      });
+    }
+  }
+
+  @Put('mypage/editnick')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '닉네임 수정',
+    description: '사용자의 닉네임을 수정합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '닉네임 수정 성공',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: '닉네임이 "new_nickname"으로 수정되었습니다.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청 또는 중복된 닉네임',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example: '해당 유저가 존재하지 않거나 중복된 항목이 있습니다.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '서버 에러' },
+      },
+    },
+  })
+  async editNick(
+    @GetUser() user: User,
+    @Body(ValidationPipe) editNickDto: EditNickDto,
+  ) {
+    try {
+      const result = await this.userService.editNick(
+        editNickDto.nickname,
+        user.id,
+      );
+      if (!result) {
+        return {
+          success: false,
+          message: '해당 유저가 존재하지 않거나 중복된 항목이 있습니다.',
+        };
+      }
+      return {
+        success: true,
+        message: `닉네임이 "${editNickDto.nickname}"으로 수정되었습니다.`,
       };
     } catch (error) {
       throw new InternalServerErrorException({

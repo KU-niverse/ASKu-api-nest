@@ -4,7 +4,7 @@ import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { User } from 'src/user/entities/user.entity';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { BadgeService } from 'src/badge/badge.service';
 import { AiSession } from 'src/ai/entities/aiSession.entity';
 import { WikiHistory } from '../wiki/entities/wikiHistory.entity';
@@ -121,5 +121,29 @@ export class UserService {
       [userId],
     );
     return rows;
+  }
+
+  async editNick(nickname: string, userId: number): Promise<boolean> {
+    try {
+      const existingUser = await this.userRepository.findOne({
+        where: { nickname, id: Not(userId) },
+      });
+
+      if (existingUser) {
+        return false;
+      }
+
+      const result = await this.userRepository
+        .createQueryBuilder()
+        .update(User)
+        .set({ nickname })
+        .where('id = :id', { id: userId })
+        .execute();
+
+      return result.affected > 0;
+    } catch (error) {
+      console.error('editNick 서비스에서 오류가 발생했습니다:', error);
+      return false;
+    }
   }
 }
