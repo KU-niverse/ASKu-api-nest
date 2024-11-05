@@ -11,7 +11,7 @@ import {
   Param,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { UpdateUserRepBadgeDto } from 'src/user/dto/updateRepBadge.dto';
 import { Badge } from 'src/badge/entities/badge.entity';
@@ -24,6 +24,7 @@ import { DebateHistory } from '../debate/entities/debateHistory.entity';
 import { DebateService } from '../debate/debate.service';
 import { EditNickDto } from './dto/editNick.dto';
 
+@ApiTags('user')
 @Controller('user')
 export class UserController {
   constructor(

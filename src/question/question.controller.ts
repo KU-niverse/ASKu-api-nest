@@ -15,7 +15,7 @@ import {
   InternalServerErrorException,
   ForbiddenException,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
 import { Question } from './entities/question.entity';
 import { AuthGuard } from '@nestjs/passport';
@@ -26,6 +26,7 @@ import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
+@ApiTags('Question')
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}

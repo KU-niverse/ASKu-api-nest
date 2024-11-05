@@ -8,7 +8,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
@@ -18,6 +18,7 @@ import { GetUser } from '../auth/get-user.decorator';
 // import { User } from 'src/user/entities/user.entity';
 import { User } from '../user/entities/user.entity';
 
+@ApiTags('debates')
 @Controller('debate')
 export class DebateController {
   constructor(private readonly debateService: DebateService) {}
