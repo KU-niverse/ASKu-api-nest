@@ -82,10 +82,15 @@ export class QuestionController {
       title,
       flag,
     );
+
     return {
       success: true,
       message: '질문 목록을 조회하였습니다.',
-      data: questions,
+      data: {
+        success: true,
+        message: '질문 목록을 조회하였습니다.',
+        data: questions,
+      },
     };
   }
 
