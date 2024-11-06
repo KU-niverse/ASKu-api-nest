@@ -4,15 +4,18 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  HttpException,
   Param,
+  Body,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
 import { AuthGuard } from '@nestjs/passport';
+import { CreateHistoryDto } from './dto/create-history.dto';
 // import { GetUser } from 'src/auth/get-user.decorator';
 import { GetUser } from '../auth/get-user.decorator';
 // import { User } from 'src/user/entities/user.entity';
@@ -151,7 +154,8 @@ export class DebateController {
   }
 
   @Post('new/:title')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '토론방 생성.',
     description: '토론방 생성 성공',
@@ -170,7 +174,6 @@ export class DebateController {
     status: 500,
     description: '오류가 발생했습니다.',
   })
-  @UseGuards(AuthGuard())
   async debateNewTitle(
     @Param('title') title: string,
     @GetUser() user: User,
@@ -188,6 +191,61 @@ export class DebateController {
     };
     const result = await this.debateService.createDebateNewTitle(newDebate);
     return result;
+  }
+
+  @Post(':title/new/:debate')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard())
+  @ApiOperation({
+    summary: '토론방에서 메세지 입력',
+    description: '토론방에서 메세지 입력 성공',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '토론방에서 메세지 입력 성공',
+    type: Debate,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '메세지 내용을 입력하세요.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.'
+  })
+  @ApiResponse({
+    status: 404,
+    description: '해당 토론은 존재하지 않습니다.'
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생했습니다.',
+  })
+  @ApiBody({
+    description: '메시지 생성 데이터',
+    type: CreateHistoryDto,
+  })
+  async createHistory(
+    @Param('title') title: string,
+    @Param('debate') debateId: number,
+    @Body('content') content: string,
+    @GetUser() userId: User["id"],
+  ): Promise<any> {
+    //return await this.debateService.createHistory(debateId, userId, content);
+    const history = await this.debateService.createHistory(debateId, userId, content);
+    return {
+      success: true,
+      message: "토론 메시지를 생성하였습니다.",
+      data: [{
+        id: history.id,
+        debate_id: history.debateId,
+        user_id: history.userId,
+        content: history.content,
+        is_bad: history.isBad ? 1 : 0,
+        created_at: history.createdAt
+      }]
+    };
   }
 
   // TODO: 이 api 기존 api와 달라짐

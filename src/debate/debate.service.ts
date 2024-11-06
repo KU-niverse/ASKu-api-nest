@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -132,6 +133,29 @@ export class DebateService {
   ): Promise<Omit<Debate, 'wikiDoc'>> {
     const result = await this.debate.save(newDebate);
     return this.getDebateWithoutWikiDoc(result.id);
+  }
+
+  async createHistory(debateId: number, userId: number, content: string): Promise<DebateHistory> {
+    if (!content) {
+      throw new BadRequestException('메시지 내용을 입력하세요.');
+    }
+    const debate = await this.debate.findOne({ where: { id: debateId } });
+    if (!debate) {
+      throw new NotFoundException('존재하지 않는 토론입니다.');
+    }
+    try {
+      debate.recentEditedAt = new Date();
+      await this.debate.save(debate);
+      const newHistory = this.debateRepository.create({
+        debateId,
+        userId,
+        content: decodeURIComponent(content),
+      });
+      const savedHistory = await this.debateRepository.save(newHistory);
+      return savedHistory;
+    } catch(err) {
+      throw new InternalServerErrorException('오류가 발생하였습니다.')
+    }
   }
 
   async getDebateWithoutWikiDoc(id: number): Promise<Omit<Debate, 'wikiDoc'>> {
