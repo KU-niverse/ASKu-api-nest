@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -39,44 +41,48 @@ export class DebateService {
     return debate;
   }
 
-  async getDebateListBySubject(subject: string): Promise<Debate[]> {
-    // TODO: 위키 모듈의 서비스 함수로 분리
-    const wikidoc: WikiDoc = await this.wikiDoc.findOne({
-      where: { title: subject },
+  async getDebateListByTitle(title: string): Promise<Debate[]> {
+    const wikiDoc = await this.wikiDoc.findOne({
+      where: { title },
     });
-    // TODO: 한번에 조회로 묶을 수도?
-    const debate: Debate[] = await this.debate.find({
-      where: { wikiDoc: { id: wikidoc.id } },
+
+    if (!wikiDoc) {
+      throw new BadRequestException('존재하지 않는 문서입니다.');
+    }
+
+    const debates = await this.debate.find({
+      where: { wikiDoc: { id: wikiDoc.id } },
+      relations: ['wikiDoc'],
       order: { createdAt: 'DESC' },
     });
-    return debate;
+
+    return debates;
   }
 
   async getDebateListByQuery(title: string, query: string): Promise<Debate[]> {
     const regex = /[\{\}\[\]?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]/g; // eslint-disable-line
-    // TODO: 로직 설명 추가 요함
     const query_result = query.trim().replace(regex, '');
 
     if (!query_result) {
       throw new BadRequestException('잘못된 검색어입니다.');
     }
+
     const decoded_query: string = decodeURIComponent(query_result);
     const decoded_title: string = decodeURIComponent(title);
     const wikiDoc = await this.wikiDoc.findOne({
       where: { title: decoded_title },
     });
 
-    let debates: Debate[] = await this.debate.find({
+    if (!wikiDoc) {
+      throw new BadRequestException('문서를 찾을 수 없습니다.');
+    }
+
+    const debates = await this.debate.find({
       where: {
         wikiDoc: { id: wikiDoc.id },
         subject: Like(`%${decoded_query}%`),
       },
       order: { createdAt: 'DESC' },
-    });
-
-    debates = debates.map((debate) => {
-      delete debate.wikiDoc;
-      return debate;
     });
 
     return debates;
@@ -100,20 +106,44 @@ export class DebateService {
     return debate;
   }
 
-  async endDebate(id: string): Promise<void> {
-    const [flag] = await this.debateRepository.query(
-      `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
-      [id],
-    );
+  async endDebate(id: string): Promise<any> {
+    try {
+      const [flag] = await this.debateRepository.query(
+        `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
+        [id],
+      );
 
-    if (!flag || flag.doneOrNot) {
-      throw new Error('이미 종료된 토론방입니다.');
-    } else {
+      if (!flag || flag.doneOrNot) {
+        throw new HttpException(
+          {
+            success: false,
+            message: '이미 종료된 토론방입니다.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const date = new Date();
       date.setHours(date.getHours() + 9);
       await this.debateRepository.query(
         `UPDATE debates SET done_or_not = true, done_at = ? WHERE id = ?`,
         [date.toISOString().slice(0, 19).replace('T', ' '), id],
+      );
+
+      return {
+        success: true,
+        message: '토론방을 종료하였습니다.',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error; // 이미 생성된 HttpException은 그대로 전달
+      }
+      throw new HttpException(
+        {
+          success: false,
+          message: '오류가 발생하였습니다.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -124,14 +154,16 @@ export class DebateService {
       where: { title },
       select: ['id'],
     });
-    return wikiDoc?.id;
+
+    if (!wikiDoc) {
+      throw new BadRequestException('존재하지 않는 문서입니다.');
+    }
+
+    return wikiDoc.id;
   }
 
-  async createDebateNewTitle(
-    newDebate: Partial<Debate>,
-  ): Promise<Omit<Debate, 'wikiDoc'>> {
-    const result = await this.debate.save(newDebate);
-    return this.getDebateWithoutWikiDoc(result.id);
+  async createDebateNewTitle(newDebate: Partial<Debate>): Promise<Debate> {
+    return await this.debate.save(newDebate);
   }
 
   async getDebateWithoutWikiDoc(id: number): Promise<Omit<Debate, 'wikiDoc'>> {
@@ -168,6 +200,16 @@ export class DebateService {
       .where('debateHistory.debateId = :debateId', { debateId })
       .orderBy('debateHistory.createdAt')
       .getMany();
+
+    if (!result || result.length === 0) {
+      throw new HttpException(
+        {
+          success: false,
+          message: '토론 메시지를 찾을 수 없습니다.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     return result;
   }
