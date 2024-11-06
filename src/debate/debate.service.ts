@@ -149,14 +149,16 @@ export class DebateService {
       where: { title },
       select: ['id'],
     });
-    return wikiDoc?.id;
+
+    if (!wikiDoc) {
+      throw new BadRequestException('존재하지 않는 문서입니다.');
+    }
+
+    return wikiDoc.id;
   }
 
-  async createDebateNewTitle(
-    newDebate: Partial<Debate>,
-  ): Promise<Omit<Debate, 'wikiDoc'>> {
-    const result = await this.debate.save(newDebate);
-    return this.getDebateWithoutWikiDoc(result.id);
+  async createDebateNewTitle(newDebate: Partial<Debate>): Promise<Debate> {
+    return await this.debate.save(newDebate);
   }
 
   async getDebateWithoutWikiDoc(id: number): Promise<Omit<Debate, 'wikiDoc'>> {

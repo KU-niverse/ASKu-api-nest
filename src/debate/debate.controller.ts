@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -9,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DebateService } from './debate.service';
 import { DebateHistory } from './entities/debateHistory.entity';
 import { Debate } from './entities/debate.entity';
@@ -342,41 +343,140 @@ export class DebateController {
   @Post('new/:title')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '토론방 생성.',
-    description: '토론방 생성 성공',
+    summary: '토론방 생성',
+    description: '문서에 새로운 토론을 생성합니다',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['subject'],
+      properties: {
+        subject: {
+          type: 'string',
+          example: '고양이의 방언 명칭 문제',
+          description: '토론 제목',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
-    description: '토론방 생성 성공',
-    type: Debate,
-    isArray: true,
+    schema: {
+      properties: {
+        success: {
+          type: 'boolean',
+          example: true,
+        },
+        message: {
+          type: 'string',
+          example: '토론을 생성하였습니다.',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 2 },
+              doc_id: { type: 'number', example: 1 },
+              user_id: { type: 'number', example: 1 },
+              subject: { type: 'string', example: '고양이의 방언 명칭 문제' },
+              created_at: {
+                type: 'string',
+                example: '2023-08-05T11:36:11.000Z',
+              },
+              recent_edited_at: {
+                type: 'string',
+                example: '2023-08-05T11:36:11.000Z',
+              },
+              done_or_not: { type: 'number', example: 0 },
+              done_at: { type: 'string', example: null, nullable: true },
+              is_bad: { type: 'number', example: 0 },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: '토론 제목을 입력하세요.',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '토론 제목을 입력하세요.' },
+      },
+    },
   })
   @ApiResponse({
     status: 500,
-    description: '오류가 발생했습니다.',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '오류가 발생하였습니다.' },
+      },
+    },
   })
   @UseGuards(AuthGuard())
   async debateNewTitle(
     @Param('title') title: string,
+    @Body() body: { subject: string },
     @GetUser() user: User,
-  ): Promise<Omit<Debate, 'wikiDoc'>> {
-    if (!title || title.trim() === '') {
-      throw new BadRequestException('토론 제목이 필요합니다.');
+  ): Promise<{ success: boolean; message: string; data: any[] }> {
+    try {
+      if (!body.subject || body.subject.trim() === '') {
+        throw new BadRequestException('토론 제목을 입력하세요.');
+      }
+
+      const docId = await this.debateService.getIdByTitle(
+        decodeURIComponent(title),
+      );
+
+      if (!docId) {
+        throw new BadRequestException('존재하지 않는 문서입니다.');
+      }
+
+      const newDebate = {
+        docId,
+        userId: user.id,
+        subject: body.subject,
+      };
+
+      const result = await this.debateService.createDebateNewTitle(newDebate);
+
+      return {
+        success: true,
+        message: '토론을 생성하였습니다.',
+        data: [
+          {
+            id: result.id,
+            doc_id: result.docId,
+            user_id: result.userId,
+            subject: result.subject,
+            created_at: result.createdAt,
+            recent_edited_at: result.recentEditedAt,
+            done_or_not: result.doneOrNot ? 1 : 0,
+            done_at: result.doneAt,
+            is_bad: result.isBad ? 1 : 0,
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw new HttpException(
+          {
+            success: false,
+            message: error.message,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      throw new HttpException(
+        {
+          success: false,
+          message: '오류가 발생하였습니다.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-    const docId = await this.debateService.getIdByTitle(
-      decodeURIComponent(title),
-    );
-    const newDebate: Partial<Debate> = {
-      docId,
-      userId: user.id,
-      subject: title,
-    };
-    const result = await this.debateService.createDebateNewTitle(newDebate);
-    return result;
   }
 
   // TODO: 이 api 기존 api와 달라짐
