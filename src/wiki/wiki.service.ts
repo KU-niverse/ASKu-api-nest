@@ -513,7 +513,7 @@ export class WikiService {
       const newHistory = await this.wikiRepository.createHistory({
         userId: user.id,
         docId: doc.id,
-        textPointer: `${process.env.S3_ENDPOINT}${process.env.S3_BUCKET_NAME}/${title}/r${newVersion}.wiki`,
+        textPointer: `${process.env.S3_BUCKET_NAME}/${title}/r${newVersion}.wiki`,
         summary: editWikiDto.summary,
         count: editWikiDto.new_content.length,
         diff: editWikiDto.new_content.length - recentHistory.count,

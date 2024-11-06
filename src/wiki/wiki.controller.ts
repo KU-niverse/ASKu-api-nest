@@ -103,6 +103,7 @@ export class WikiController {
   // 위키 문서 수정하기 및 기여도 지급
   // TODO: 기여도 로직 추가 요함
   @Post('contents/:title')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '위키 문서 수정',
@@ -679,9 +680,10 @@ export class WikiController {
   @Get('historys')
   @UseGuards(AuthGuard())
   @ApiOperation({
-    summary: '최근 위키 히스토리 조회',
+    summary: '최근 위키 히스토리 조회/실제 url은 wiki/historys?type={type} 입니다.',
     description: '최근 위키 히스토리를 조회합니다.',
   })
+  
   @ApiResponse({
     status: 200,
     description: '최근 위키 히스토리 조회 성공',
@@ -692,6 +694,7 @@ export class WikiController {
   })
   async getRecentHistory(
     @Query('type') type: string,
+    //') type: string,
     @Res() res,
   ): Promise<void> {
     try {
