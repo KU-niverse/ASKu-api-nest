@@ -1,5 +1,7 @@
 import {
-  BadRequestException, HttpException, HttpStatus,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -54,29 +56,28 @@ export class DebateService {
 
   async getDebateListByQuery(title: string, query: string): Promise<Debate[]> {
     const regex = /[\{\}\[\]?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]/g; // eslint-disable-line
-    // TODO: 로직 설명 추가 요함
     const query_result = query.trim().replace(regex, '');
 
     if (!query_result) {
       throw new BadRequestException('잘못된 검색어입니다.');
     }
+
     const decoded_query: string = decodeURIComponent(query_result);
     const decoded_title: string = decodeURIComponent(title);
     const wikiDoc = await this.wikiDoc.findOne({
       where: { title: decoded_title },
     });
 
-    let debates: Debate[] = await this.debate.find({
+    if (!wikiDoc) {
+      throw new BadRequestException('문서를 찾을 수 없습니다.');
+    }
+
+    const debates = await this.debate.find({
       where: {
         wikiDoc: { id: wikiDoc.id },
         subject: Like(`%${decoded_query}%`),
       },
       order: { createdAt: 'DESC' },
-    });
-
-    debates = debates.map((debate) => {
-      delete debate.wikiDoc;
-      return debate;
     });
 
     return debates;
