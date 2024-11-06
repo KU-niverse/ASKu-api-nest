@@ -2,7 +2,7 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
-  Injectable,
+  Injectable, InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -30,15 +30,44 @@ export class DebateService {
     return result;
   }
 
-  async getAllDebateByEdit(): Promise<Debate[]> {
-    const debate: Debate[] = await this.debate
-      .createQueryBuilder('debate')
-      .innerJoinAndSelect('debate.wikiDoc', 'wikiDoc')
-      .select(['debate', 'wikiDoc.title'])
-      .orderBy('debate.recentEditedAt', 'DESC')
-      .getMany();
+  async getAllDebateByEdit(): Promise<any> {
+    try {
+      const debates = await this.debate
+        .createQueryBuilder('debate')
+        .innerJoinAndSelect('debate.wikiDoc', 'wikiDoc')
+        .select([
+          'debate.id as id',
+          'debate.docId as doc_id',
+          'debate.userId as user_id',
+          'debate.subject as subject',
+          'debate.createdAt as created_at',
+          'debate.recentEditedAt as recent_edited_at',
+          'debate.doneOrNot as done_or_not',
+          'debate.doneAt as done_at',
+          'debate.isBad as is_bad',
+          'wikiDoc.title as title',
+        ])
+        .orderBy('debate.recentEditedAt', 'DESC')
+        .getRawMany();
 
-    return debate;
+      // Transform boolean values to numbers (0 or 1)
+      const transformedDebates = debates.map((debate) => ({
+        ...debate,
+        done_or_not: debate.done_or_not ? 1 : 0,
+        is_bad: debate.is_bad ? 1 : 0,
+      }));
+
+      return {
+        success: true,
+        message: '전체 최신 수정순 토론방 목록을 조회하였습니다.',
+        data: transformedDebates,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '오류가 발생하였습니다.',
+      });
+    }
   }
 
   async getDebateListByTitle(title: string): Promise<Debate[]> {
