@@ -26,7 +26,7 @@ import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
-@ApiTags('Question')
+@ApiTags('question')
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
@@ -82,10 +82,15 @@ export class QuestionController {
       title,
       flag,
     );
+
     return {
       success: true,
       message: '질문 목록을 조회하였습니다.',
-      data: questions,
+      data: {
+        success: true,
+        message: '질문 목록을 조회하였습니다.',
+        data: questions,
+      },
     };
   }
 
@@ -107,14 +112,15 @@ export class QuestionController {
   })
   async getAnswerByQuestionId(
     @Param('question_id') questionId: number,
-    @Res() res,
-  ): Promise<{success: boolean, message: string, data: Answer[]}> {
-
-      const answers =
-        await this.questionService.getAnswerByQuestionId(questionId);
-      console.log(answers)
-      return {success: true, message:  "성공적으로 답변을 조회하였습니다.", data: answers};
-   
+  ): Promise<{ success: boolean; message: string; data: Answer[] }> {
+    const answers =
+      await this.questionService.getAnswerByQuestionId(questionId);
+    console.log(answers);
+    return {
+      success: true,
+      message: '성공적으로 답변을 조회하였습니다.',
+      data: answers,
+    };
   }
 
   @Get('query/:query')
@@ -296,7 +302,7 @@ export class QuestionController {
   @ApiResponse({
     status: 400,
     description: '잘못된 요청입니다.',
-  }) 
+  })
   @ApiResponse({
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
