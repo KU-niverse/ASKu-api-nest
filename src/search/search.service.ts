@@ -12,17 +12,19 @@ export class SearchService {
   ) {}
 
   async getKeywordRank(): Promise<SearchKeywordDto[]> {
-    const results = await this.searchHistoryRepository.query(
-      `SELECT keyword, COUNT(*) as count 
-       FROM search_history
-       WHERE TIMESTAMPDIFF(DAY, search_time, NOW()) <= 30
-       GROUP BY keyword 
-       ORDER BY count DESC 
-       LIMIT 5`,
-    );
-  return results.map(result => ({
-    keyword: result.keyword,
-    count: Number(result.count),
+    const results = await this.searchHistoryRepository
+      .createQueryBuilder('search_history')
+      .where('TIMESTAMPDIFF(HOUR, search_history.search_time, NOW()) <= :hours', { hours: 24 })
+      .select('search_history.keyword', 'keyword')
+      .addSelect('COUNT(search_history.keyword)', 'count')
+      .groupBy('search_history.keyword')
+      .orderBy('count', 'DESC')
+      .limit(5)
+      .getRawMany();
+
+    return results.map(result => ({
+      keyword: result.keyword,
+      count: Number(result.count),
     }));
   }
 }

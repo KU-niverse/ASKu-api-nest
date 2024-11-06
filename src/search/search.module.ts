@@ -8,5 +8,6 @@ import { SearchHistory } from 'src/search/searchHistory.entity';
   imports: [TypeOrmModule.forFeature([SearchHistory])],
   controllers: [SearchController],
   providers: [SearchService],
+  exports: [SearchService, TypeOrmModule],
 })
 export class SearchModule {}
