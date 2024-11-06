@@ -951,19 +951,38 @@ export class WikiController {
   async fetchWikiSectionContent(
     @Param('title') title: string,
     @Param('section', ParseIntPipe) section: number,
-    @Body() createWikiDto: CreateWikiDto,
+    @Body() editWikiDto: EditWikiDto,
     @GetUser() user: User,
   ) {
     const result = await this.wikiService.fetchSectionContent(
       title,
       section,
       user,
+      editWikiDto,
     );
 
-    await this.newActionRecord(user, result.content.length);
+    const result2 = await this.wikiService.createHistoryMid(
+      result,
+      editWikiDto,
+      user,
+    );
+    const result3 = await this.wikiService.wikiChangeRecentContentMid(
+      title,
+      section,
+      result,
+      editWikiDto,
+      user,
+    );
+    await this.wikiService.givePoint(
+      user.id,
+      result.diff,
+      editWikiDto.is_q_based,
+    );
+
+    await this.newActionRecord(user, result.diff);
     await this.newActionRevise(user);
 
-    if (createWikiDto.is_q_based === 1) {
+    if (editWikiDto.is_q_based === 1) {
       await this.newActionAnswer(user);
     }
 

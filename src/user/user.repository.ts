@@ -57,4 +57,8 @@ export class UserRepository {
   //     return false;
   //   }
   // }
+
+  async incrementPoint(userId: number, point: number) {
+    await this.userRepository.increment({ id: userId }, 'point', point);
+  }
 }

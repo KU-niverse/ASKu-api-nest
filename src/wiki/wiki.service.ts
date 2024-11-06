@@ -6,6 +6,8 @@ import {
   NotFoundException,
   ConflictException,
   UnprocessableEntityException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
@@ -22,6 +24,7 @@ import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
 import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 import { CreateWikiDto } from './dto/createWiki.dto';
 import { UserAction } from 'src/user/entities/userAction.entity';
+import { Answer } from 'src/question/entities/answer.entity';
 
 @Injectable()
 export class WikiService {
@@ -36,8 +39,148 @@ export class WikiService {
     private readonly wikiDocsViewRepository: Repository<WikiDocsView>,
     @InjectRepository(WikiHistory)
     private wikiHistoryRepository: Repository<WikiHistory>,
+    @InjectRepository(Answer)
+    private answerRepository: Repository<Answer>,
   ) {}
   // -------------------------이 아래로 영섭 작업물 -------------------------//
+
+  async givePoint(user_id: number, point: number, is_q_based: number) {
+    if (point <= 0) {
+      return;
+    }
+    if (is_q_based == 1) {
+      point = point * 5;
+    } else {
+      point = point * 4;
+    }
+    await this.userRepository.incrementPoint(user_id, point);
+    return;
+  }
+
+  async wikiChangeRecentContentMid(
+    title: string,
+    section: number,
+    result: any,
+    editWikiDto: EditWikiDto,
+    user: User,
+  ) {
+    const doc_id = await this.wikiRepository.getWikiDocsIdByTitle(title);
+    const rows = await this.getRecentWikiHistoryByDocId(doc_id);
+    const parsedTitle = title.replace(/\/+/g, '_');
+    const version = rows.version;
+    let text = '';
+
+    text = await this.wikiRepository.getWikiContent(parsedTitle, version);
+    // 위키 문법 필터링
+    text = text.replace(/\n([^=].*?)\n/g, '$1 ');
+    text = text.replace(/'''([^=].*?)'''/g, '$1');
+    text = text.replace(/''(.+?)''/g, '$1');
+    text = text.replace(/--(.+?)--/g, '$1');
+    text = text.replace(/&amp;/g, '&');
+    text = text.replace(/={2,}/g, '');
+    text = text.replace(/={2,}/g, '');
+    text = text.replace(/\n/g, ' ');
+    text = text.replace(/\n/g, ' ');
+    text = text.replace(/\[\[.*http.*\]\]/g, ''); // Remove [[...http...]]
+    text = text.replace(/\[\[(.+?)\]\]/g, '$1'); // Remove brackets from [[...]]
+
+    await this.wikiRepository.updateRecentContent(doc_id, text);
+  }
+
+  async createHistoryMid(result: any, editWikiDto: EditWikiDto, user: User) {
+    // 프론트에서 질문 기반 수정이면 꼭 req.body.is_q_based = 1와 req.body.qid 넣어주기
+
+    // const newHistory = {
+    //   doc_id: docId,
+    //   text_pointer: `${edp}wiki-bucket/${parsedTitle}/r${new_version}.wiki`,
+    //   summary: result.summary,
+    //   count: result.count,
+    //   diff: result.diff,
+    //   version: result.version,
+    // };
+    try {
+      const is_q_based: boolean = editWikiDto.is_q_based == 1 ? true : false;
+      const is_rollback = false;
+      const index_title =
+        editWikiDto.index_title !== undefined
+          ? editWikiDto.index_title
+          : '전체';
+
+      // const new_wiki_history = {
+      //   userId: user.id,
+      //   docId: result.doc_id,
+      //   textPointer: result.text_pointer,
+      //   summary: result.summary,
+      //   count: result.count,
+      //   diff: result.diff,
+      //   version: result.version,
+      //   isQBased: is_q_based,
+      //   isRollback: is_rollback,
+      //   indexTitle: index_title,
+      // };
+      const wiki_history = await this.wikiHistoryRepository.insert({
+        userId: user.id,
+        docId: result.doc_id,
+        textPointer: result.text_pointer,
+        summary: result.summary,
+        count: result.count,
+        diff: result.diff,
+        version: result.version,
+        isQBased: is_q_based,
+        isRollback: is_rollback,
+        indexTitle: index_title,
+      });
+
+      await this.wikiDocRepository.update(result.doc_id, {
+        textPointer: result.text_pointer,
+        latestVer: result.version,
+      });
+      const wiki_history_id = wiki_history.identifiers[0].id;
+
+      // editWikiDto.is_q_based = is_q_based ? 1 : 0;
+
+      // // res message 정의 (롤백 제외)
+      // req.message = '위키 히스토리를 생성하였습니다.';
+
+      // /* 알림 변수 정의*/
+      // if (!req.body.types_and_conditions) {
+      //   // type_id: 6(글 생성)의 경우 newWikiPostMid에서 이미 변수가 정의됨
+      //   req.body.types_and_conditions = [];
+      // }
+
+      // 질문 기반 수정 -> type_id: 2, 3
+      if (is_q_based == true) {
+        // 답변 생성
+        await this.answerRepository.insert({
+          wikiHistoryId: wiki_history_id,
+          questionId: editWikiDto.qid,
+        });
+        // editWikiDto.types_and_conditions.push([2, editWikiDto.qid]);
+        // editWikiDto.types_and_conditions.push([3, editWikiDto.qid]);
+      }
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException({
+        success: false,
+        message: '위키 히스토리 생성 중 오류',
+      });
+    }
+  }
+
+  async createAnswer(wiki_history_id: number, qid: number): Promise<number> {
+    const result = this.answerRepository.create({
+      wikiHistoryId: wiki_history_id,
+      questionId: qid,
+    });
+    await this.answerRepository.save(result);
+
+    const answer_id = result.id;
+
+    await this.questionRepository.update(qid, { answerOrNot: true });
+
+    return answer_id;
+  }
+
   async getRecentWikiHistoryByDocId(doc_id: number): Promise<WikiHistory> {
     const wikiHistory: WikiHistory =
       await this.wikiRepository.getWikiHistoryByDocId(doc_id);
@@ -408,7 +551,7 @@ export class WikiService {
   async getRandomWikiDoc(): Promise<{ [key: string]: string | boolean }> {
     const randomWikiDoc = await this.wikiRepository.getRandomDoc();
     return {
-      'title': randomWikiDoc ? randomWikiDoc.title : 'No Document Found',
+      title: randomWikiDoc ? randomWikiDoc.title : 'No Document Found',
       success: true,
     };
   }
@@ -906,73 +1049,133 @@ export class WikiService {
     };
   }
 
-  async fetchSectionContent(title: string, section_number: number, user: User) {
-    const doc: WikiDoc = await this.getWikiDocsByTitle(title);
-    const docId = doc.id;
+  async fetchSectionContent(
+    title: string,
+    section_number: number,
+    user: User,
+    editWikiDto: EditWikiDto,
+  ) {
+    try {
+      const doc: WikiDoc = await this.getWikiDocsByTitle(title);
+      const docId = doc.id;
 
-    const recentHistory: WikiHistory =
-      await this.getRecentWikiHistoryByDocId(docId);
-    const parsedTitle: string = title.replace(/\/+/g, '_');
-    const version = recentHistory.version;
+      const rows: WikiHistory =
+        await this.wikiRepository.getWikiHistoryByDocId(docId);
 
-    const text = await this.wikiRepository.getWikiContent(parsedTitle, version);
-
-    const lines = text.split(/\r?\n/);
-    console.log('🚀 ~ WikiService ~ lines:', lines);
-
-    let current_section = null;
-    let current_content = '';
-    const sections = [];
-    let is_started = false;
-
-    for (let line of lines) {
-      const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/);
-      if (matches !== null) {
-        if (current_section !== null) {
-          current_section.content.push(current_content);
-          sections.push(current_section);
+      if (doc.isManaged === true) {
+        if (user.isAuthorized !== true) {
+          throw new ForbiddenException({
+            success: false,
+            message: '인증된 회원만 편집이 가능한 문서입니다.',
+            new_content: editWikiDto.new_content,
+          });
         }
-        current_section = {
-          title: matches[2],
-          content: [],
-        };
-        current_content = '';
-      } else {
-        is_started = true;
-        if (current_content !== '') {
-          current_content += '\n';
-        }
-        current_content += line;
       }
-    }
 
-    if (current_section !== null) {
-      current_section.content.push(current_content);
-      sections.push(current_section);
-    } else if (!is_started) {
-      sections.push({
-        title: 'No Section Title',
-        content: lines,
+      if (editWikiDto.version != rows.version) {
+        // 426 반환
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Version is not matched',
+            new_content: editWikiDto.new_content,
+          },
+          426,
+        );
+      }
+
+      // 섹션 수정하고 새 위키 파일(버전) 만들기
+      const parsedTitle: string = title.replace(/\/+/g, '_');
+      const latest_ver = rows.version;
+      const new_version = latest_ver + 1;
+      const updated_section_index = section_number - 1;
+      const new_content = editWikiDto.new_content;
+
+      // 이전 파일의 내용에서 일부 섹션을 다른 내용으로 대체하는 함수
+      const updateFileContent = async () => {
+        try {
+          const fileContent = await this.wikiRepository.getWikiContent(
+            parsedTitle,
+            latest_ver,
+          );
+          const lines = fileContent.split(/\r?\n/);
+
+          let updated_content = '';
+          let current_sectionIndex = -1;
+          let flag = 0;
+
+          lines.forEach((line) => {
+            if (/^(={2,})\s+(.+?)\s+\1\s*$/.test(line)) {
+              current_sectionIndex++;
+            }
+            if (current_sectionIndex === updated_section_index && flag === 0) {
+              updated_content += new_content + '\n';
+              flag = 1;
+            } else if (
+              current_sectionIndex === updated_section_index &&
+              flag === 1
+            ) {
+              void 0; // 아무것도 안함 섹션 내용을 아예 갈아끼운 것
+            } else {
+              updated_content += line + '\n';
+            }
+          });
+
+          updated_content = updated_content.replace(/\s+$/, '');
+          await this.wikiRepository.saveWikiContent(
+            parsedTitle,
+            new_version,
+            updated_content,
+          );
+
+          console.log('The file has been updated!');
+          const edp = 'https://kr.object.ncloudstorage.com/';
+          const newHistory = {
+            doc_id: docId,
+            text_pointer: `${edp}wiki-bucket/${parsedTitle}/r${new_version}.wiki`,
+            summary: editWikiDto.summary,
+            count: updated_content.length,
+            diff: updated_content.length - rows.count,
+            version: new_version,
+          };
+          console.log('여기여기');
+
+          // 히스토리 생성 -> 기여도 -> 알림
+          return newHistory;
+        } catch (error) {
+          console.log(error);
+          throw new HttpException(
+            {
+              success: false,
+              message: '섹션 수정 중 오류',
+              new_content: new_content,
+            },
+            432,
+          );
+        }
+      };
+
+      // 파일 내용 없데이트 실행
+      return await updateFileContent();
+    } catch (error) {
+      console.error('섹션 수정 중 오류:', Object.keys(error));
+      console.log(error.response);
+      console.log(error.status);
+      console.log(error.message);
+      console.log(error.name);
+      console.log(error.options);
+
+      if (error.status !== undefined) {
+        throw error;
+      }
+      throw new InternalServerErrorException({
+        success: false,
+        message: '섹션 수정 중 오류222',
+        new_content: editWikiDto.new_content,
       });
     }
-
-    if (section_number > sections.length || section_number < 1) {
-      throw new NotFoundException('해당 섹션을 찾을 수 없습니다.');
-    }
-
-    const section = sections[section_number - 1];
-
-    const jsonData = {
-      doc_id: docId,
-      version: version,
-      title: title,
-      content: section.content.join('\n'),
-      is_managed: doc.isManaged,
-      success: true,
-    };
-
-    return jsonData;
   }
+
   async updateUserAction(user: User, diff: number, actionType: string) {
     try {
       let userAction = await UserAction.findOne({ where: { userId: user.id } });
