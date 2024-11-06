@@ -24,8 +24,6 @@ import { User } from '../user/entities/user.entity';
 @Controller('debate')
 export class DebateController {
   constructor(private readonly debateService: DebateService) {}
-  // TODO: 이 api 기존 api와 달라짐
-  // GET /debate/all/recent 최근 수정된 전체 토론방 목록 조회(전체, 최근 수정순)
   @Get('all/recent')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -35,14 +33,38 @@ export class DebateController {
   @ApiResponse({
     status: 200,
     description: '전체 토론방 목록 조회 성공',
-    type: Debate,
-    isArray: true,
+    schema: {
+      example: {
+        success: true,
+        message: "전체 최신 수정순 토론방 목록을 조회하였습니다.",
+        data: [
+          {
+            id: 2,
+            doc_id: 1,
+            user_id: 1,
+            subject: "고양이의 방언 명칭 문제",
+            created_at: "2023-08-05T11:36:11.000Z",
+            recent_edited_at: "2023-08-05T11:54:04.000Z",
+            done_or_not: 1,
+            done_at: "2023-08-05T12:04:18.000Z",
+            is_bad: 0,
+            title: "고양이"
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({
     status: 500,
     description: '오류가 발생했습니다.',
+    schema: {
+      example: {
+        success: false,
+        message: "오류가 발생하였습니다.",
+      },
+    },
   })
-  getAllDebateByEdit(): Promise<Debate[]> {
+  async getAllDebateByEdit(): Promise<any> {
     return this.debateService.getAllDebateByEdit();
   }
 
