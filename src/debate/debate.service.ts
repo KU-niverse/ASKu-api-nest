@@ -1,5 +1,5 @@
 import {
-  BadRequestException,
+  BadRequestException, HttpException, HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -100,20 +100,44 @@ export class DebateService {
     return debate;
   }
 
-  async endDebate(id: string): Promise<void> {
-    const [flag] = await this.debateRepository.query(
-      `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
-      [id],
-    );
+  async endDebate(id: string): Promise<any> {
+    try {
+      const [flag] = await this.debateRepository.query(
+        `SELECT done_or_not AS "doneOrNot" FROM debates WHERE id = ?`,
+        [id],
+      );
 
-    if (!flag || flag.doneOrNot) {
-      throw new Error('이미 종료된 토론방입니다.');
-    } else {
+      if (!flag || flag.doneOrNot) {
+        throw new HttpException(
+          {
+            success: false,
+            message: '이미 종료된 토론방입니다.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const date = new Date();
       date.setHours(date.getHours() + 9);
       await this.debateRepository.query(
         `UPDATE debates SET done_or_not = true, done_at = ? WHERE id = ?`,
         [date.toISOString().slice(0, 19).replace('T', ' '), id],
+      );
+
+      return {
+        success: true,
+        message: '토론방을 종료하였습니다.',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error; // 이미 생성된 HttpException은 그대로 전달
+      }
+      throw new HttpException(
+        {
+          success: false,
+          message: '오류가 발생하였습니다.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

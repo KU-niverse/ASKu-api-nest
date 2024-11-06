@@ -123,9 +123,8 @@ export class DebateController {
     return this.debateService.getSearchAllDebateByQuery(query);
   }
 
-  // TODO: 이 api 기존 api와 달라짐
   // POST /debate/end/{title}/{debate} 토론방 종료
-  @Post('end/:subject/:debate')
+  @Post('end/:title/:debate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '토론방 종료 성공',
