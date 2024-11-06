@@ -41,17 +41,22 @@ export class DebateService {
     return debate;
   }
 
-  async getDebateListBySubject(subject: string): Promise<Debate[]> {
-    // TODO: 위키 모듈의 서비스 함수로 분리
-    const wikidoc: WikiDoc = await this.wikiDoc.findOne({
-      where: { title: subject },
+  async getDebateListByTitle(title: string): Promise<Debate[]> {
+    const wikiDoc = await this.wikiDoc.findOne({
+      where: { title },
     });
-    // TODO: 한번에 조회로 묶을 수도?
-    const debate: Debate[] = await this.debate.find({
-      where: { wikiDoc: { id: wikidoc.id } },
+
+    if (!wikiDoc) {
+      throw new BadRequestException('존재하지 않는 문서입니다.');
+    }
+
+    const debates = await this.debate.find({
+      where: { wikiDoc: { id: wikiDoc.id } },
+      relations: ['wikiDoc'],
       order: { createdAt: 'DESC' },
     });
-    return debate;
+
+    return debates;
   }
 
   async getDebateListByQuery(title: string, query: string): Promise<Debate[]> {

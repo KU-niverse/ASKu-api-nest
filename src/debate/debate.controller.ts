@@ -48,24 +48,85 @@ export class DebateController {
 
   // TODO: 이 api 기존 api와 달라짐
   // GET /debate/list/{title} 토론방 목록 조회(문서별, 최근 생성순)GET /debate/list/:subject 특정 주제의 토론방 목록 조회
-  @Get('list/:subject')
+  @Get('list/:title')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '토론방 목록을 조회하였습니다.',
-    description: '토론방 목록 조회 성공',
+    summary: '토론방 목록 조회',
+    description: '문서의 토론방 목록을 조회합니다',
   })
   @ApiResponse({
     status: 200,
-    description: '토론방 목록 조회 성공',
-    type: Debate,
-    isArray: true,
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: '토론방 목록을 조회하였습니다.' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 2 },
+              doc_id: { type: 'number', example: 1 },
+              user_id: { type: 'number', example: 1 },
+              subject: { type: 'string', example: '고양이의 방언 명칭 문제' },
+              created_at: {
+                type: 'string',
+                example: '2023-08-05T11:36:11.000Z',
+              },
+              recent_edited_at: {
+                type: 'string',
+                example: '2023-08-05T11:54:04.000Z',
+              },
+              done_or_not: { type: 'number', example: 0 },
+              done_at: { type: 'string', example: null, nullable: true },
+              is_bad: { type: 'number', example: 0 },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 500,
-    description: '오류가 발생했습니다.',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: '오류가 발생하였습니다.' },
+      },
+    },
   })
-  getDebateListBySubject(@Param('subject') subject: string): Promise<Debate[]> {
-    return this.debateService.getDebateListBySubject(subject);
+  async getDebateListByTitle(
+    @Param('title') title: string,
+  ): Promise<{ success: boolean; message: string; data: any[] }> {
+    try {
+      const debates = await this.debateService.getDebateListByTitle(
+        decodeURIComponent(title),
+      );
+
+      return {
+        success: true,
+        message: '토론방 목록을 조회하였습니다.',
+        data: debates.map((debate) => ({
+          id: debate.id,
+          doc_id: debate.wikiDoc.id,
+          user_id: debate.userId,
+          subject: debate.subject,
+          created_at: debate.createdAt,
+          recent_edited_at: debate.recentEditedAt,
+          done_or_not: debate.doneOrNot ? 1 : 0,
+          done_at: debate.doneAt,
+          is_bad: debate.isBad ? 1 : 0,
+        })),
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: '오류가 발생하였습니다.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('search/:title/:query')
