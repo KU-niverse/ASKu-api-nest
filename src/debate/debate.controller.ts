@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpException,
   HttpStatus,
   Param,
   Post,
@@ -100,27 +101,128 @@ export class DebateController {
   @Get('searchall/:query')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '토론방 검색에 성공하였습니다.',
-    description: '토론방 목록 검색 조회 성공',
+    summary: '토론방 전체 검색',
+    description: '키워드로 전체 토론방을 검색합니다',
   })
   @ApiResponse({
     status: 200,
-    description: '토론방 목록 검색 조회 성공',
-    type: Debate,
-    isArray: true,
+    schema: {
+      properties: {
+        success: {
+          type: 'boolean',
+          example: true,
+        },
+        message: {
+          type: 'string',
+          example: '토론방 검색에 성공하였습니다.',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 2 },
+              doc_id: { type: 'number', example: 1 },
+              user_id: { type: 'number', example: 1 },
+              subject: { type: 'string', example: '고양이의 방언 명칭 문제' },
+              created_at: {
+                type: 'string',
+                example: '2023-08-05T11:36:11.000Z',
+              },
+              recent_edited_at: {
+                type: 'string',
+                example: '2023-08-05T11:54:04.000Z',
+              },
+              done_or_not: { type: 'number', example: 1 },
+              done_at: {
+                type: 'string',
+                example: '2023-08-05T12:04:18.000Z',
+                nullable: true,
+              },
+              is_bad: { type: 'number', example: 0 },
+              title: { type: 'string', example: '고양이' },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: '잘못된 검색어입니다',
+    schema: {
+      properties: {
+        success: {
+          type: 'boolean',
+          example: false,
+        },
+        message: {
+          type: 'string',
+          example: '잘못된 검색어입니다.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 500,
-    description: '오류가 발생했습니다.',
+    schema: {
+      properties: {
+        success: {
+          type: 'boolean',
+          example: false,
+        },
+        message: {
+          type: 'string',
+          example: '오류가 발생하였습니다.',
+        },
+      },
+    },
   })
   async getSearchAllDebateByQuery(
     @Param('query') query: string,
-  ): Promise<Debate[]> {
-    return this.debateService.getSearchAllDebateByQuery(query);
+  ): Promise<{ success: boolean; message: string; data?: any[] }> {
+    try {
+      const debates = await this.debateService.getSearchAllDebateByQuery(query);
+
+      if (debates.length === 0) {
+        throw new BadRequestException('검색 결과가 없습니다.');
+      }
+
+      const formattedDebates = debates.map((debate) => ({
+        id: debate.id,
+        doc_id: debate.wikiDoc.id,
+        user_id: debate.userId,
+        subject: debate.subject,
+        created_at: debate.createdAt,
+        recent_edited_at: debate.recentEditedAt,
+        done_or_not: debate.doneOrNot ? 1 : 0,
+        done_at: debate.doneAt,
+        is_bad: debate.isBad ? 1 : 0,
+        title: debate.wikiDoc.title,
+      }));
+
+      return {
+        success: true,
+        message: '토론방 검색에 성공하였습니다.',
+        data: formattedDebates,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw new HttpException(
+          {
+            success: false,
+            message: error.message,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      throw new HttpException(
+        {
+          success: false,
+          message: '오류가 발생하였습니다.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   // POST /debate/end/{title}/{debate} 토론방 종료
