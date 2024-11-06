@@ -31,7 +31,6 @@ export class WikiRepository {
     @InjectRepository(WikiDocsView)
     private wikiDocsViewRepository: Repository<WikiDocsView>,
   ) {
-
     // TODO: S3 설정을 환경 변수로 분리
     this.s3Client = new S3Client({
       region: 'kr-standard',
@@ -106,16 +105,20 @@ export class WikiRepository {
 
   // 진권
   async getContributorPoints(docId: number): Promise<WikiContributionsDto[]> {
-    return this.wikiHistoryRepository.createQueryBuilder('wh')
+    return this.wikiHistoryRepository
+      .createQueryBuilder('wh')
       .select('wh.userId', 'userId')
       .addSelect('u.nickname', 'nickname')
-      .addSelect(`SUM(
+      .addSelect(
+        `SUM(
         CASE
           WHEN wh.diff > 0 AND wh.isQBased = 1 THEN wh.diff * 5
           WHEN wh.diff > 0 THEN wh.diff * 4
           ELSE 0
         END
-      )`, 'point')
+      )`,
+        'point',
+      )
       .innerJoin(User, 'u', 'wh.userId = u.id')
       .where('wh.docId = :docId', { docId })
       .andWhere('wh.isBad = 0')
@@ -127,7 +130,8 @@ export class WikiRepository {
   }
 
   async recalculatePoint(userId: number): Promise<number> {
-    const result = await this.userRepository.createQueryBuilder()
+    const result = await this.userRepository
+      .createQueryBuilder()
       .update(User)
       .set({
         point: () => `(
@@ -140,9 +144,9 @@ export class WikiRepository {
           )
           FROM wiki_history
           WHERE user_id = :userId AND is_bad = 0 AND is_rollback = 0
-        )`
+        )`,
       })
-      .where("id = :userId", { userId })
+      .where('id = :userId', { userId })
       .execute();
     return result.affected || 0;
   }
@@ -217,6 +221,7 @@ export class WikiRepository {
       Bucket: 'wiki-bucket',
       Key: `${replacedTitle}/r${version}.wiki`,
     });
+    // TODO: 404에러 처리 요함
     const response = await this.s3Client.send(getObjectCommand);
     const stream = response.Body as Readable;
     const chunks: Buffer[] = [];
@@ -237,6 +242,7 @@ export class WikiRepository {
       Key: `${replacedTitle}/r${version}.wiki`,
       Body: content,
     });
+    // TODO: 에러 처리 요함
     await this.s3Client.send(putObjectCommand);
   }
 
@@ -339,5 +345,7 @@ export class WikiRepository {
     return this.wikiDocRepository.save(newWikiDoc);
   }
 
-
+  async incrementUserPoint(userId: number, point: number): Promise<void> {
+    await this.userRepository.increment({ id: userId }, 'point', point);
+  }
 }

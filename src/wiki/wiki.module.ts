@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 import { WikiFavorites } from 'src/wiki/entities/wikiFavorites';
@@ -29,4 +29,11 @@ import { User } from 'src/user/entities/user.entity';
   providers: [WikiService, WikiRepository],
   exports: [WikiService, TypeOrmModule],
 })
-export class WikiModule {}
+export class WikiModule implements NestModule {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  configure(consumer: MiddlewareConsumer) {
+    // consumer
+    //   .apply(WikiPointAwardMiddleware)
+    //   .forRoutes({ path: 'wiki/contents/:title', method: RequestMethod.POST });
+  }
+}

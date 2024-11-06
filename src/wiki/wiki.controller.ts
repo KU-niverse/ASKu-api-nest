@@ -103,6 +103,7 @@ export class WikiController {
   // 위키 문서 수정하기 및 기여도 지급
   // TODO: 기여도 로직 추가 요함
   @Post('contents/:title')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '위키 문서 수정',
@@ -133,36 +134,36 @@ export class WikiController {
   }
 
   // 위키 문서 삭제하기
-  @Delete('contents/:title')
-  @UseGuards(AuthGuard())
-  // TODO: AdminGuard()
-  @ApiOperation({
-    summary: '위키 문서 삭제',
-    description: '위키 문서를 삭제합니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '위키 문서 삭제 성공',
-  })
-  @ApiResponse({
-    status: 500,
-    description: '위키 문서 삭제 중 오류',
-  })
-  async deleteWikiDocument(@Param('title') title: string, @Res() res) {
-    try {
-      const docId = await this.wikiService.getWikiDocsIdByTitle(title);
-      await this.wikiService.deleteWikiDocsById(docId);
-      return res
-        .status(HttpStatus.OK)
-        .json({ success: true, message: '위키 문서 삭제 성공' });
-    } catch (error) {
-      console.error(error);
-      // TODO: 에러 종류에 따라 다른 상태 코드 반환하도록 개선
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: '위키 문서 삭제 중 오류' });
-    }
-  }
+  // @Delete('contents/:title')
+  // @UseGuards(AuthGuard())
+  // // TODO: AdminGuard()
+  // @ApiOperation({
+  //   summary: '위키 문서 삭제',
+  //   description: '위키 문서를 삭제합니다.',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: '위키 문서 삭제 성공',
+  // })
+  // @ApiResponse({
+  //   status: 500,
+  //   description: '위키 문서 삭제 중 오류',
+  // })
+  // async deleteWikiDocument(@Param('title') title: string, @Res() res) {
+  //   try {
+  //     const docId = await this.wikiService.getWikiDocsIdByTitle(title);
+  //     await this.wikiService.deleteWikiDocsById(docId);
+  //     return res
+  //       .status(HttpStatus.OK)
+  //       .json({ success: true, message: '위키 문서 삭제 성공' });
+  //   } catch (error) {
+  //     console.error(error);
+  //     // TODO: 에러 종류에 따라 다른 상태 코드 반환하도록 개선
+  //     return res
+  //       .status(HttpStatus.INTERNAL_SERVER_ERROR)
+  //       .json({ success: false, message: '위키 문서 삭제 중 오류' });
+  //   }
+  // }
 
   // 모든 글 제목 조회
   @Get('titles')
@@ -679,9 +680,10 @@ export class WikiController {
   @Get('historys')
   @UseGuards(AuthGuard())
   @ApiOperation({
-    summary: '최근 위키 히스토리 조회',
+    summary: '최근 위키 히스토리 조회/실제 url은 wiki/historys?type={type} 입니다.',
     description: '최근 위키 히스토리를 조회합니다.',
   })
+  
   @ApiResponse({
     status: 200,
     description: '최근 위키 히스토리 조회 성공',
@@ -692,6 +694,7 @@ export class WikiController {
   })
   async getRecentHistory(
     @Query('type') type: string,
+    //') type: string,
     @Res() res,
   ): Promise<void> {
     try {
@@ -715,6 +718,10 @@ export class WikiController {
   @ApiResponse({
     status: 200,
     description: '위키 raw 데이터 가져오기 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 문서입니다.',
   })
   @ApiResponse({
     status: 500,
@@ -752,6 +759,10 @@ export class WikiController {
     description: '인증된 회원만 롤백이 가능한 문서입니다.',
   })
   @ApiResponse({
+    status: 404,
+    description: '존재하지 않는 문서입니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '롤백 중 오류 발생',
   })
@@ -786,13 +797,13 @@ export class WikiController {
 
   //post wiki/contents/new/:title(*)
   @Post('/contents/new/:title')
-  //@UseGuards(AuthGuard())
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '새 위키 문서 생성',
     description: 'POST 방식으로 새 위키 문서를 생성합니다.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: '위키 문서 생성 성공',
   })
   @ApiResponse({
@@ -816,7 +827,7 @@ export class WikiController {
         user,
       );
 
-      return res.status(HttpStatus.CREATED).json({
+      return res.status(HttpStatus.OK).json({
         success: true,
         message: '위키 문서 생성 성공',
         docId: result.docId,
@@ -828,6 +839,7 @@ export class WikiController {
         return res.status(HttpStatus.CONFLICT).json({
           success: false,
           message: '이미 존재하는 문서입니다.',
+          content: createWikiDto?.text || '전체',
         });
       }
 
@@ -939,19 +951,38 @@ export class WikiController {
   async fetchWikiSectionContent(
     @Param('title') title: string,
     @Param('section', ParseIntPipe) section: number,
-    @Body() createWikiDto: CreateWikiDto,
+    @Body() editWikiDto: EditWikiDto,
     @GetUser() user: User,
   ) {
     const result = await this.wikiService.fetchSectionContent(
       title,
       section,
       user,
+      editWikiDto,
     );
 
-    await this.newActionRecord(user, result.content.length);
+    const result2 = await this.wikiService.createHistoryMid(
+      result,
+      editWikiDto,
+      user,
+    );
+    const result3 = await this.wikiService.wikiChangeRecentContentMid(
+      title,
+      section,
+      result,
+      editWikiDto,
+      user,
+    );
+    await this.wikiService.givePoint(
+      user.id,
+      result.diff,
+      editWikiDto.is_q_based,
+    );
+
+    await this.newActionRecord(user, result.diff);
     await this.newActionRevise(user);
 
-    if (createWikiDto.is_q_based === 1) {
+    if (editWikiDto.is_q_based === 1) {
       await this.newActionAnswer(user);
     }
 
@@ -984,5 +1015,4 @@ export class WikiController {
       throw new Error('답변 action 오류가 발생하였습니다.');
     }
   }
-
 }

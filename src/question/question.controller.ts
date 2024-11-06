@@ -7,7 +7,6 @@ import {
   UseGuards,
   Param,
   ParseIntPipe,
-  NotFoundException,
   Res,
   Post,
   Body,
@@ -16,7 +15,7 @@ import {
   InternalServerErrorException,
   ForbiddenException,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { QuestionService } from './question.service';
 import { Question } from './entities/question.entity';
 import { AuthGuard } from '@nestjs/passport';
@@ -27,47 +26,10 @@ import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
+@ApiTags('Question')
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
-
-  // TODO: 이 api 기존 api와 달라짐
-  @Get('me/history/:arrange')
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard())
-  @ApiOperation({
-    summary: '유저 질문 히스토리',
-    description: '유저 질문 히스토리를 조회합니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '유저 질문 히스토리 조회를 성공했습니다.',
-    type: Question,
-    isArray: true,
-  })
-  @ApiResponse({
-    status: 400,
-    description: '잘못된 요청입니다. 질문 히스토리 불러오기에 실패하였습니다.',
-  })
-  @ApiResponse({
-    status: 401,
-    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
-  })
-  @ApiResponse({
-    status: 402,
-    description:
-      '잘못된 요청입니다. arrange위치에 latest 혹은 popularity가 들어가야합니다.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: '서버 내부 에러가 발생했습니다.',
-  })
-  getQuestionHistory(
-    @GetUser() user: User,
-    @Param('arrange') arrange: string,
-  ): Promise<Question[]> {
-    return this.questionService.getQuestionsByUserId(user.id, arrange);
-  }
 
   @Get('/lookup/:id')
   @ApiOperation({
@@ -146,21 +108,13 @@ export class QuestionController {
   async getAnswerByQuestionId(
     @Param('question_id') questionId: number,
     @Res() res,
-  ): Promise<void> {
-    try {
+  ): Promise<{success: boolean, message: string, data: Answer[]}> {
+
       const answers =
         await this.questionService.getAnswerByQuestionId(questionId);
-      res.status(HttpStatus.OK).send({
-        success: true,
-        message: '성공적으로 답변을 조회하였습니다.',
-        data: answers,
-      });
-    } catch (err) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
-        success: false,
-        message: '오류가 발생하였습니다.',
-      });
-    }
+      console.log(answers)
+      return {success: true, message:  "성공적으로 답변을 조회하였습니다.", data: answers};
+   
   }
 
   @Get('query/:query')
@@ -294,6 +248,10 @@ export class QuestionController {
     description: '잘못된 입력',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '오류 발생',
   })
@@ -338,7 +296,7 @@ export class QuestionController {
   @ApiResponse({
     status: 400,
     description: '잘못된 요청입니다.',
-  })
+  }) 
   @ApiResponse({
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
@@ -370,6 +328,10 @@ export class QuestionController {
   @ApiResponse({
     status: 400,
     description: '중복된 입력',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
     status: 403,

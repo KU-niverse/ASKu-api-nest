@@ -1,16 +1,14 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
-  Param,
+  InternalServerErrorException,
   Post,
-  Req,
   Res,
+  UnauthorizedException,
   UseGuards,
-  UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -111,7 +109,7 @@ export class AuthController {
     return { message: '로그인에 성공하였습니다!' };
   }
 
-  @Post('/signup')
+  @Post('/signup/koreanpas')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '회원가입' })
   @ApiBody({ type: KoreapasCredentialsDto })
@@ -175,7 +173,23 @@ export class AuthController {
   @ApiOperation({ summary: '로그아웃' })
   @ApiResponse({
     status: 200,
-    description: '로그아웃 성공',
+    description: '유저 로그아웃',
+    schema: {
+      example: {
+        success: true,
+        message: '로그아웃 되었습니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그인 되어있지 않은 상태에서 로그아웃 시도',
+    schema: {
+      example: {
+        success: false,
+        message: '로그인이 필요합니다.',
+      },
+    },
   })
   @ApiResponse({
     status: 500,
@@ -188,22 +202,94 @@ export class AuthController {
     },
   })
   @UseGuards(AuthGuard())
-  async signOut(@Res({ passthrough: true }) res: Response): Promise<void> {
-    res.clearCookie('accessToken', {
-      httpOnly: true,
-      //TODO: 개발시에 true로 변경해야 쿠키 작동
-      secure: true,
-      sameSite: 'none',
-    });
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      //TODO: 개발시에 true로 변경해야 쿠키 작동
-      secure: true,
-      sameSite: 'none',
-    });
+  async signOut(
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+      });
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+      });
+      res.set('Cache-Control', 'no-store');
 
-    res.set('Cache-Control', 'no-store');
-    return;
+      return {
+        success: true,
+        message: '로그아웃 되었습니다.',
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException({
+          success: false,
+          message: '로그인이 필요합니다.',
+        });
+      }
+
+      throw new InternalServerErrorException({
+        success: false,
+        message: '서버 에러',
+      });
+    }
+  }
+
+  @Get('/issignedin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '유저 로그인 여부 확인' })
+  @ApiResponse({
+    status: 201,
+    description: '유저 로그인 되어있는 상태',
+    schema: {
+      example: {
+        success: true,
+        message: '로그인한 상태입니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: '유저 로그인 되어있지 않은 상태',
+    schema: {
+      example: {
+        success: false,
+        message: '로그인이 필요합니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버 에러',
+    schema: {
+      example: {
+        success: false,
+        message: '서버 에러',
+      },
+    },
+  })
+  @UseGuards(AuthGuard())
+  async isSignedIn(): Promise<{ success: boolean; message: string }> {
+    try {
+      return {
+        success: true,
+        message: '로그인한 상태입니다.',
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException({
+          success: false,
+          message: '로그인이 필요합니다.',
+        });
+      }
+
+      throw new InternalServerErrorException({
+        success: false,
+        message: '서버 에러',
+      });
+    }
   }
 
   // TODO: is-not-signed-in-validation.pipe.ts를 사용하여 로그인 여부를 검사

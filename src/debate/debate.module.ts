@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Debate } from 'src/debate/entities/debate.entity';
 import { DebateHistory } from 'src/debate/entities/debateHistory.entity';
@@ -10,9 +10,10 @@ import { WikiDoc } from 'src/wiki/entities/wikiDoc.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Debate, DebateHistory, WikiDoc]),
-    AuthModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [DebateController],
   providers: [DebateService],
+  exports: [DebateService, TypeOrmModule],
 })
 export class DebateModule {}

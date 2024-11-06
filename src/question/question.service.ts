@@ -167,6 +167,7 @@ export class QuestionService {
 
   // QuestionId로 Answer 가져오기
   async getAnswerByQuestionId(questionId: number): Promise<Answer[]> {
+    console.log("1")
     const answers = await this.answerRepository.query(
       `SELECT answers.*, wiki_history.user_id, wiki_history.version, wiki_history.index_title,
       users.nickname, users.rep_badge, wiki_docs.title, 
@@ -181,6 +182,7 @@ export class QuestionService {
       ORDER BY answers.created_at ASC;`,
       [questionId],
     );
+    console.log("@")
     if (!answers.length) {
       throw new NotFoundException('해당 ID를 가진 답변이 존재하지 않습니다');
     }
@@ -374,5 +376,62 @@ export class QuestionService {
     } else {
       return 0;
     }
+  }
+
+  async questionHistory(userId: number, arrange: string): Promise<any[]> {
+    let query: string;
+    if (arrange === 'latest') {
+      query = `
+      SELECT q.*, users.nickname, users.rep_badge, badges.image as badge_image, 
+             wiki_docs.title as doc_title, COALESCE(ql.like_count, 0) AS like_count, 
+             COALESCE(a.answer_count, 0) AS answer_count
+      FROM questions q
+      INNER JOIN users ON q.user_id = users.id
+      INNER JOIN badges ON users.rep_badge = badges.id
+      INNER JOIN wiki_docs ON q.doc_id = wiki_docs.id
+      LEFT JOIN (
+          SELECT id, COUNT(*) as like_count 
+          FROM question_like 
+          GROUP BY id
+      ) ql ON q.id = ql.id
+      LEFT JOIN (
+          SELECT question_id, COUNT(*) as answer_count 
+          FROM answers 
+          GROUP BY question_id
+      ) a ON q.id = a.question_id
+      WHERE users.id = ?
+      ORDER BY q.created_at DESC
+    `;
+    } else if (arrange === 'popularity') {
+      query = `
+      SELECT q.*, users.nickname, users.rep_badge, badges.image as badge_image, 
+             wiki_docs.title as doc_title, COALESCE(ql.like_count, 0) AS like_count, 
+             COALESCE(a.answer_count, 0) AS answer_count
+      FROM questions q
+      INNER JOIN users ON q.user_id = users.id
+      INNER JOIN badges ON users.rep_badge = badges.id
+      INNER JOIN wiki_docs ON q.doc_id = wiki_docs.id
+      LEFT JOIN (
+          SELECT id, COUNT(*) as like_count 
+          FROM question_like 
+          GROUP BY id
+      ) ql ON q.id = ql.id
+      LEFT JOIN (
+          SELECT question_id, COUNT(*) as answer_count 
+          FROM answers 
+          GROUP BY question_id
+      ) a ON q.id = a.question_id
+      WHERE users.id = ?
+      ORDER BY like_count DESC, q.created_at DESC
+    `;
+    } else {
+      throw new BadRequestException({
+        success: false,
+        message: '잘못된 요청입니다. arrange위치에 latest 혹은 popularity가 들어가야합니다.',
+      });
+    }
+
+    const questions = await this.questionRepository.query(query, [userId]);
+    return questions;
   }
 }

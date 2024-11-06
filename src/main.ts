@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
+import { HttpExceptionFilter } from 'src/common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -20,6 +21,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, documentConfig);
   // 노출할 문서의 경로
   SwaggerModule.setup('api-swagger', app, document);
+  app.useGlobalFilters(new HttpExceptionFilter()); // 전역 예외 필터 등록
   await app.listen(8000);
 }
 bootstrap();

@@ -4,9 +4,10 @@ import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { User } from 'src/user/entities/user.entity';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { UserAttend } from 'src/user/entities/userAttend.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { BadgeService } from 'src/badge/badge.service';
 import { AiSession } from 'src/ai/entities/aiSession.entity';
+import { WikiHistory } from '../wiki/entities/wikiHistory.entity';
 
 @Injectable()
 export class UserService {
@@ -20,7 +21,8 @@ export class UserService {
     @InjectRepository(AiSession)
     private aiSessionRepository: Repository<AiSession>,
     private badgeService: BadgeService,
-
+    @InjectRepository(WikiHistory)
+    private wikiHistoryRepository: Repository<WikiHistory>,
     // private aiService: AiService,
   ) {}
 
@@ -107,5 +109,41 @@ export class UserService {
     // 유저의 대표 배지를 수정
     user.repBadge = badgeId;
     await this.userRepository.save(user);
+  }
+
+  async getWikiHistory(userId: number): Promise<any[]> {
+    const rows = await this.wikiHistoryRepository.query(
+      `SELECT wiki_history.*, wiki_docs.title 
+       FROM wiki_history 
+       INNER JOIN wiki_docs ON wiki_history.doc_id = wiki_docs.id 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC`,
+      [userId],
+    );
+    return rows;
+  }
+
+  async editNick(nickname: string, userId: number): Promise<boolean> {
+    try {
+      const existingUser = await this.userRepository.findOne({
+        where: { nickname, id: Not(userId) },
+      });
+
+      if (existingUser) {
+        return false;
+      }
+
+      const result = await this.userRepository
+        .createQueryBuilder()
+        .update(User)
+        .set({ nickname })
+        .where('id = :id', { id: userId })
+        .execute();
+
+      return result.affected > 0;
+    } catch (error) {
+      console.error('editNick 서비스에서 오류가 발생했습니다:', error);
+      return false;
+    }
   }
 }
