@@ -194,6 +194,16 @@ export class DebateService {
       .orderBy('debateHistory.createdAt')
       .getMany();
 
+    if (!result || result.length === 0) {
+      throw new HttpException(
+        {
+          success: false,
+          message: '토론 메시지를 찾을 수 없습니다.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     return result;
   }
 }

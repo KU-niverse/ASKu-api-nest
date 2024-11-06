@@ -380,30 +380,97 @@ export class DebateController {
   }
 
   // TODO: 이 api 기존 api와 달라짐
-  // GET /debate/view/{title}/{debate} 토론방 조회
   @Get('view/:title/:debate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '토론방 메시지 조회 성공',
-    description: '토론 메시지를 조회하였습니다.',
+    summary: '토론방 메시지 조회',
+    description: '토론 메시지를 조회합니다',
   })
   @ApiResponse({
     status: 200,
-    description: '토론 메시지를 조회하였습니다.',
-    type: Debate,
-    isArray: true,
+    schema: {
+      properties: {
+        success: {
+          type: 'boolean',
+          example: true,
+        },
+        message: {
+          type: 'string',
+          example: '토론 메시지를 조회하였습니다.',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 4 },
+              debate_id: { type: 'number', example: 2 },
+              user_id: { type: 'number', example: 1 },
+              content: {
+                type: 'string',
+                example: '교양이라는 방언은 없습니다.',
+              },
+              created_at: {
+                type: 'string',
+                example: '2023-08-05T11:54:04.000Z',
+              },
+              is_bad: { type: 'number', example: 0 },
+              nickname: { type: 'string', example: '고양이조아' },
+              badge_image: { type: 'string', example: 'https://...' },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 500,
-    description: '오류가 발생했습니다.',
+    schema: {
+      properties: {
+        success: {
+          type: 'boolean',
+          example: false,
+        },
+        message: {
+          type: 'string',
+          example: '오류가 발생하였습니다.',
+        },
+      },
+    },
   })
   @UseGuards(AuthGuard())
   async getDebateTitleHistory(
     @Param('title') title: string,
     @Param('debate') debateId: string,
-  ): Promise<DebateHistory[]> {
-    const histories =
-      await this.debateService.getAllDebateHistoryByDebateId(+debateId);
-    return histories;
+  ): Promise<{ success: boolean; message: string; data: any[] }> {
+    try {
+      const histories =
+        await this.debateService.getAllDebateHistoryByDebateId(+debateId);
+
+      const formattedHistories = histories.map((history) => ({
+        id: history.id,
+        debate_id: history.debateId,
+        user_id: history.userId,
+        content: history.content,
+        is_bad: history.isBad ? 1 : 0,
+        created_at: history.createdAt,
+        nickname: history.user.nickname,
+        badge_image: history.user.badge.image,
+      }));
+
+      return {
+        success: true,
+        message: '토론 메시지를 조회하였습니다.',
+        data: formattedHistories,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: '오류가 발생하였습니다.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
