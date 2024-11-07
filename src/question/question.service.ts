@@ -298,7 +298,7 @@ export class QuestionService {
 
     if (!content) {
       throw new BadRequestException({
-        suceess: false,
+        success: false,
         message: '내용을 작성해주세요.',
       });
     }
