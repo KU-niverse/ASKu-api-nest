@@ -10,7 +10,7 @@ import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Admin')
-@Controller('debate')
+@Controller('admin')
 @UseGuards(AuthGuard())
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
