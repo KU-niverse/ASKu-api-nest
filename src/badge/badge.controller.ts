@@ -43,8 +43,8 @@ export class BadgeController {
   }
 
   @Get('me/history')
-  @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard())
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '유저 배지 히스토리',
     description: '유저 배지 히스토리를 조회합니다.',
