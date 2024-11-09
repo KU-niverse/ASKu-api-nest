@@ -86,11 +86,7 @@ export class QuestionController {
     return {
       success: true,
       message: '질문 목록을 조회하였습니다.',
-      data: {
-        success: true,
-        message: '질문 목록을 조회하였습니다.',
-        data: questions,
-      },
+      data: questions,
     };
   }
 
@@ -172,6 +168,10 @@ export class QuestionController {
     description: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '오류가 발생하였습니다.',
   })
@@ -219,6 +219,10 @@ export class QuestionController {
   @ApiResponse({
     status: 400,
     description: '잘못된 요청입니다.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
     status: 500,
