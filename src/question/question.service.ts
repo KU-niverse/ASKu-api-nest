@@ -293,8 +293,9 @@ export class QuestionService {
   async createQuestion(
     createQuestionDto: CreateQuestionDto,
     userId: number,
+    title: string,
   ): Promise<any> {
-    const { content, index_title, title } = createQuestionDto;
+    const { content, index_title } = createQuestionDto;
 
     if (!content) {
       throw new BadRequestException({

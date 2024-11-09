@@ -207,12 +207,12 @@ export class QuestionController {
   @Post('/new/:title')
   @UseGuards(AuthGuard())
   @ApiOperation({
-    summary: '질문 좋아요가 많은 순서대로 인기 질문을 조회',
+    summary: '질문 등록',
     description: '등록 성공',
   })
   @ApiResponse({
     status: 200,
-    description: '인기 질문을 조회하였습니다.',
+    description: '질문을 등록하였습니다.',
     type: Question,
     isArray: true,
   })
@@ -234,10 +234,10 @@ export class QuestionController {
     @Body() createQuestionDto: CreateQuestionDto,
     @GetUser() user: User,
   ): Promise<Question> {
-    createQuestionDto.title = title;
     return await this.questionService.createQuestion(
       createQuestionDto,
       user.id,
+      title,
     );
   }
 

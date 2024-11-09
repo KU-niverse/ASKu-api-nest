@@ -11,9 +11,4 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   @IsString()
   index_title: string;
-
-  @ApiProperty({ description: '문서 제목', default: '고양이' })
-  @IsNotEmpty()
-  @IsString()
-  title: string;
 }
