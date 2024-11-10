@@ -28,7 +28,7 @@ export class DebateController {
   @Get('all/recent')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '전체 토론방 목록 조회',
+    summary: '전체 토론방 목록 조회 (최신 수정 순)',
     description: '전체 토론방 목록 조회 성공',
   })
   @ApiResponse({
@@ -401,9 +401,10 @@ export class DebateController {
   // POST /debate/end/{title}/{debate} 토론방 종료
   @Post('end/:title/:debate')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard())
   @ApiOperation({
-    summary: '토론방 종료 성공',
-    description: '토론방을 종료하였습니다.',
+    summary: '토론방 종료',
+    description: '토론방을 종료 성공',
   })
   @ApiResponse({
     status: 200,
@@ -414,6 +415,10 @@ export class DebateController {
   @ApiResponse({
     status: 400,
     description: '이미 종료된 토론방입니다.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
     status: 500,
