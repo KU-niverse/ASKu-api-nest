@@ -1,5 +1,16 @@
-import { Body, Controller, Post, Req, Res, UseGuards, Param, InternalServerErrorException, UnauthorizedException, HttpCode, HttpStatus, ValidationPipe, Put, HttpException, Request } from "@nestjs/common";
-import { ApiOperation, ApiResponse } from "@nestjs/swagger";
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  Param,
+  HttpCode,
+  HttpStatus,
+  ValidationPipe,
+  Put,
+  Request
+} from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ReportService } from "./report.service";
 import { AuthGuard } from "@nestjs/passport";
 import { Report } from "./entities/report.entity";
@@ -7,13 +18,15 @@ import { GetUser } from "src/auth/get-user.decorator";
 import { User } from "src/user/entities/user.entity";
 import { CreateReportDto } from "./dto/create-report.dto";
 
+@ApiTags('report')
 @Controller('report')
 export class ReportController {
     constructor(private readonly reportService: ReportService) {}
     @Post('/:type')
     @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard())
     @ApiOperation({
-        summary: '신고를 생성하였습니다.',
+        summary: '신고 생성',
         description: '신고 완료',
     })
     @ApiResponse({
@@ -22,10 +35,13 @@ export class ReportController {
         type: Report,
     })
     @ApiResponse({
+      status: 401,
+      description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+    })
+    @ApiResponse({
         status: 500,
         description: '오류가 발생했습니다.',
     })
-    @UseGuards(AuthGuard())
     async reportPostMid(
         @Param('type') typeId: number,
         @Body(ValidationPipe) createReportDto: CreateReportDto,
@@ -56,6 +72,10 @@ export class ReportController {
     @ApiResponse({
       status: 400,
       description: '이미 확인한 신고입니다.',
+    })
+    @ApiResponse({
+      status: 401,
+      description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
     })
     @ApiResponse({
       status: 406,

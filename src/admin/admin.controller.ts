@@ -9,7 +9,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
 
-@ApiTags('Admin')
+@ApiTags('admin')
 @Controller('admin')
 @UseGuards(AuthGuard())
 export class AdminController {
