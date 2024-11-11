@@ -324,7 +324,9 @@ export class WikiController {
     description: '위키 즐겨찾기 조회 중 오류',
   })
   async getFavorite(@GetUser() user: User) {
-    return this.wikiService.getWikiFavoriteByUserId(user.id);
+    const result = await this.wikiService.getWikiFavoriteByUserId(user.id);
+    const snake_result = convertKeysToSnakeCase(result);
+    return { success: true, message: snake_result };
   }
 
   // 위키 즐겨찾기 추가
@@ -704,7 +706,6 @@ export class WikiController {
 
   //wiki/historys?type={type}
   @Get('historys')
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary:
       '최근 위키 히스토리 조회/실제 url은 wiki/historys?type={type} 입니다.',
