@@ -6,6 +6,7 @@ import {
   HttpStatus,
   InternalServerErrorException,
   Post,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
@@ -20,6 +21,8 @@ import {
   KoreapasCredentialsDto,
   KoreapasOAuthDto,
 } from 'src/auth/dto/koreapas-credential.dto';
+import * as jwt from 'jsonwebtoken';
+
 import { GetUser } from 'src/auth/get-user.decorator';
 import { IsNotSignedInValidationPipe } from 'src/auth/pipes/is-not-signed-in-validation.pipe';
 import { User } from 'src/user/entities/user.entity';
@@ -72,6 +75,16 @@ export class AuthController {
       example: {
         success: false,
         message: '이용이 제한된 회원입니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 410,
+    description: '이미 탈퇴한 회원입니다.',
+    schema: {
+      example: {
+        success: false,
+        message: '탈퇴한 회원입니다.',
       },
     },
   })
@@ -270,19 +283,34 @@ export class AuthController {
       },
     },
   })
-  @UseGuards(AuthGuard())
-  async isSignedIn(): Promise<{ success: boolean; message: string }> {
+  async isSignedIn(@Req() req): Promise<{ success: boolean; message: string }> {
     try {
-      return {
-        success: true,
-        message: '로그인한 상태입니다.',
-      };
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      const token = req.cookies?.accessToken;
+
+      if (!token) {
         throw new UnauthorizedException({
           success: false,
           message: '로그인이 필요합니다.',
         });
+      }
+
+      try {
+        // JWT 토큰 검증
+        jwt.verify(token, process.env.JWT_SECRET);
+
+        return {
+          success: true,
+          message: '로그인한 상태입니다.',
+        };
+      } catch (jwtError) {
+        throw new UnauthorizedException({
+          success: false,
+          message: '로그인이 필요합니다.',
+        });
+      }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
       }
 
       throw new InternalServerErrorException({
@@ -291,7 +319,6 @@ export class AuthController {
       });
     }
   }
-
   // TODO: is-not-signed-in-validation.pipe.ts를 사용하여 로그인 여부를 검사
   @Post('/koreapasoauth')
   @ApiResponse({

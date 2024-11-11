@@ -190,7 +190,8 @@ export class WikiRepository {
       where: { userId },
       relations: ['doc'],
     });
-    return favorites.map((favorite) => favorite.doc);
+    const result = favorites.map((favorite) => favorite.doc);
+    return result;
   }
 
   async findFavorite(userId: number, docId: number): Promise<WikiFavorites> {

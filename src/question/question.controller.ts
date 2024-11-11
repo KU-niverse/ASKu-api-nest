@@ -26,7 +26,7 @@ import { EditQuestionDto } from 'src/question/dto/edit-question.dto';
 import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
-@ApiTags('Question')
+@ApiTags('question')
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
@@ -82,6 +82,7 @@ export class QuestionController {
       title,
       flag,
     );
+
     return {
       success: true,
       message: '질문 목록을 조회하였습니다.',
@@ -107,14 +108,15 @@ export class QuestionController {
   })
   async getAnswerByQuestionId(
     @Param('question_id') questionId: number,
-    @Res() res,
-  ): Promise<{success: boolean, message: string, data: Answer[]}> {
-
-      const answers =
-        await this.questionService.getAnswerByQuestionId(questionId);
-      console.log(answers)
-      return {success: true, message:  "성공적으로 답변을 조회하였습니다.", data: answers};
-   
+  ): Promise<{ success: boolean; message: string; data: Answer[] }> {
+    const answers =
+      await this.questionService.getAnswerByQuestionId(questionId);
+    console.log(answers);
+    return {
+      success: true,
+      message: '성공적으로 답변을 조회하였습니다.',
+      data: answers,
+    };
   }
 
   @Get('query/:query')
@@ -166,6 +168,10 @@ export class QuestionController {
     description: '이미 답변이 달렸거나, 다른 회원의 질문입니다.',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '오류가 발생하였습니다.',
   })
@@ -201,18 +207,22 @@ export class QuestionController {
   @Post('/new/:title')
   @UseGuards(AuthGuard())
   @ApiOperation({
-    summary: '질문 좋아요가 많은 순서대로 인기 질문을 조회',
+    summary: '질문 등록',
     description: '등록 성공',
   })
   @ApiResponse({
     status: 200,
-    description: '인기 질문을 조회하였습니다.',
+    description: '질문을 등록하였습니다.',
     type: Question,
     isArray: true,
   })
   @ApiResponse({
     status: 400,
     description: '잘못된 요청입니다.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
     status: 500,
@@ -224,10 +234,10 @@ export class QuestionController {
     @Body() createQuestionDto: CreateQuestionDto,
     @GetUser() user: User,
   ): Promise<Question> {
-    createQuestionDto.title = title;
     return await this.questionService.createQuestion(
       createQuestionDto,
       user.id,
+      title,
     );
   }
 
@@ -296,7 +306,7 @@ export class QuestionController {
   @ApiResponse({
     status: 400,
     description: '잘못된 요청입니다.',
-  }) 
+  })
   @ApiResponse({
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',

@@ -6,11 +6,13 @@ import { BadgeController } from './badge.controller';
 import { BadgeService } from './badge.service';
 import { BadgeHistory } from 'src/badge/entities/badgeHistory.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Badge, BadgeHistory]),
     forwardRef(() => AuthModule),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [BadgeController],
   providers: [BadgeService],

@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
 import { UserModule } from 'src/user/user.module';
+import { BadgeModule } from '../badge/badge.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UserModule } from 'src/user/user.module';
       }),
     }),
     forwardRef(() => UserModule),
+    forwardRef(() => BadgeModule),
     // TypeOrmModule.forFeature([User, UserAttend, UserAction]),
   ],
   controllers: [AuthController],

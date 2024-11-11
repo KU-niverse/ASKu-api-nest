@@ -27,7 +27,14 @@ export class NotificationController {
     description: '유저 알림 목록을 조회하였습니다.',
     type: [Notification],
   })
-  @ApiResponse({ status: 500, description: '오류가 발생하였습니다.' })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생하였습니다.'
+  })
   async getUserNotifications(
     @Param('userId') userId: number,
   ): Promise<Notification[]> {
@@ -42,6 +49,10 @@ export class NotificationController {
     status: 200,
     description: '관리자 알림 목록을 조회하였습니다.',
     type: [Notification],
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({ status: 500, description: '오류가 발생하였습니다.' })
   async getAdminNotifications(
@@ -72,8 +83,18 @@ export class NotificationController {
     status: 400,
     description: '이미 읽음 표시한 알림입니다.',
   })
-  @ApiResponse({ status: 404, description: '알림을 찾을 수 없습니다.' })
-  @ApiResponse({ status: 500, description: '오류가 발생하였습니다.' })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '알림을 찾을 수 없습니다.'
+  })
+  @ApiResponse({
+    status: 500,
+    description: '오류가 발생하였습니다.'
+  })
   async markNotificationAsRead(
     @Body('notificationId') notificationId: number,
   ): Promise<Notification> {

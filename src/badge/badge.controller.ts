@@ -22,7 +22,7 @@ export class BadgeController {
   @UseGuards(AuthGuard())
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: '모든 배지',
+    summary: '모든 배지 정보',
     description: '존재하는 모든 배지를 조회합니다.',
   })
   @ApiResponse({
@@ -43,8 +43,8 @@ export class BadgeController {
   }
 
   @Get('me/history')
-  @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard())
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '유저 배지 히스토리',
     description: '유저 배지 히스토리를 조회합니다.',

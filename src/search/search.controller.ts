@@ -8,7 +8,7 @@ import {
   import { SearchHistory } from './entities/searchHistory.entity'
   import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-@ApiTags('Search')
+@ApiTags('search')
 @Controller('search')
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}

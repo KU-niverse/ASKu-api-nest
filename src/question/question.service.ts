@@ -103,41 +103,37 @@ export class QuestionService {
     const id = await this.getDocumentIdByTitle(title);
 
     let questions: Question[];
+    const baseQuery = `
+        SELECT
+            q.*,
+            users.nickname,
+            badges.image AS badge_image,
+            CONVERT(COALESCE(ql.like_count, 0), SIGNED) AS like_count,
+            CONVERT(COALESCE(a.answer_count, 0), SIGNED) AS answer_count
+        FROM questions q
+                 INNER JOIN users ON q.user_id = users.id
+                 INNER JOIN badges ON users.rep_badge = badges.id
+                 LEFT JOIN (
+            SELECT id, CONVERT(COUNT(*), SIGNED) as like_count
+            FROM question_like
+            GROUP BY id
+        ) ql ON q.id = ql.id
+                 LEFT JOIN (
+            SELECT question_id, CONVERT(COUNT(*), SIGNED) as answer_count
+            FROM answers
+            GROUP BY question_id
+        ) a ON q.id = a.question_id
+        WHERE q.doc_id = ?`;
+
     if (flag === '1') {
       questions = await this.questionRepository.query(
-        `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
-      FROM questions q
-      INNER JOIN users ON q.user_id = users.id
-      LEFT JOIN (
-          SELECT id, COUNT(*) as like_count 
-          FROM question_like 
-          GROUP BY id
-      ) ql ON q.id = ql.id
-      LEFT JOIN (
-          SELECT question_id, COUNT(*) as answer_count 
-          FROM answers 
-          GROUP BY question_id
-      ) a ON q.id = a.question_id
-      WHERE q.doc_id = ${id}
-      ORDER BY like_count DESC, q.created_at DESC`,
+        `${baseQuery} ORDER BY like_count DESC, q.created_at DESC`,
+        [id],
       );
     } else if (flag === '0') {
       questions = await this.questionRepository.query(
-        `SELECT q.*, users.nickname, COALESCE(ql.like_count, 0) AS like_count, COALESCE(a.answer_count, 0) AS answer_count
-      FROM questions q
-      INNER JOIN users ON q.user_id = users.id
-      LEFT JOIN (
-          SELECT id, COUNT(*) as like_count 
-          FROM question_like 
-          GROUP BY id
-      ) ql ON q.id = ql.id
-      LEFT JOIN (
-          SELECT question_id, COUNT(*) as answer_count 
-          FROM answers 
-          GROUP BY question_id
-      ) a ON q.id = a.question_id
-      WHERE q.doc_id = ${id}
-      ORDER BY q.created_at DESC`,
+        `${baseQuery} ORDER BY q.created_at DESC`,
+        [id],
       );
     } else {
       throw new BadRequestException({
@@ -146,6 +142,7 @@ export class QuestionService {
       });
     }
 
+    // Ensure like_count and answer_count are numbers
     return questions;
   }
 
@@ -167,7 +164,7 @@ export class QuestionService {
 
   // QuestionId로 Answer 가져오기
   async getAnswerByQuestionId(questionId: number): Promise<Answer[]> {
-    console.log("1")
+    console.log('1');
     const answers = await this.answerRepository.query(
       `SELECT answers.*, wiki_history.user_id, wiki_history.version, wiki_history.index_title,
       users.nickname, users.rep_badge, wiki_docs.title, 
@@ -296,12 +293,13 @@ export class QuestionService {
   async createQuestion(
     createQuestionDto: CreateQuestionDto,
     userId: number,
+    title: string,
   ): Promise<any> {
-    const { content, index_title, title } = createQuestionDto;
+    const { content, index_title } = createQuestionDto;
 
     if (!content) {
       throw new BadRequestException({
-        suceess: false,
+        success: false,
         message: '내용을 작성해주세요.',
       });
     }
