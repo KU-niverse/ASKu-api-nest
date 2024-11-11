@@ -179,7 +179,7 @@ export class QuestionService {
       ORDER BY answers.created_at ASC;`,
       [questionId],
     );
-    console.log("@")
+    console.log('@');
     if (!answers.length) {
       throw new NotFoundException('해당 ID를 가진 답변이 존재하지 않습니다');
     }
@@ -425,11 +425,17 @@ export class QuestionService {
     } else {
       throw new BadRequestException({
         success: false,
-        message: '잘못된 요청입니다. arrange위치에 latest 혹은 popularity가 들어가야합니다.',
+        message:
+          '잘못된 요청입니다. arrange위치에 latest 혹은 popularity가 들어가야합니다.',
       });
     }
 
     const questions = await this.questionRepository.query(query, [userId]);
+
+    questions.forEach((question) => {
+      question.like_count = parseInt(question.like_count, 10);
+      question.answer_count = parseInt(question.answer_count, 10);
+    });
     return questions;
   }
 }
