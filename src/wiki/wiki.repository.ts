@@ -287,7 +287,7 @@ export class WikiRepository {
     return results.map((result) => {
       const wikiDoc = new WikiDoc();
       Object.assign(wikiDoc, result);
-      wikiDoc.isFavorite = result.is_favorite;
+      //wikiDoc.isFavorite = result.is_favorite;
       return wikiDoc;
     });
   }

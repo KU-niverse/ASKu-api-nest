@@ -580,8 +580,14 @@ export class WikiController {
     description: '위키 문서 검색 성공',
     type: WikiDoc,
   })
-  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
-  @ApiResponse({ status: 404, description: '문서를 찾을 수 없음' })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 검색어',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '서버에서 예상치 못한 오류가 발생했습니다.',
+  })
   async searchWikiDocsByTitle(@Param('title') title: string, @Request() req) {
     const userId = req.user ? req.user.id : 0;
     const decodedTitle = decodeURIComponent(title)

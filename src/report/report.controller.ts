@@ -17,6 +17,30 @@ import { Report } from "./entities/report.entity";
 import { GetUser } from "src/auth/get-user.decorator";
 import { User } from "src/user/entities/user.entity";
 import { CreateReportDto } from "./dto/create-report.dto";
+import { CheckReportDto } from "./dto/check-report.dto";
+
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+function convertKeysToSnakeCase(input: any): any {
+  if (Array.isArray(input)) {
+    return input.map((item) => convertKeysToSnakeCase(item));
+  } else if (input instanceof Date) {
+    // Date 객체인 경우 ISO 문자열로 변환
+    return input.toISOString();
+  } else if (typeof input === 'object' && input !== null) {
+    const result: Record<string, any> = {};
+    for (const key in input) {
+      if (input.hasOwnProperty(key)) {
+        const snakeKey = camelToSnake(key);
+        const value = input[key];
+        result[snakeKey] = convertKeysToSnakeCase(value);
+      }
+    }
+    return result;
+  }
+  return input;
+}
 
 @ApiTags('report')
 @Controller('report')
@@ -55,7 +79,9 @@ export class ReportController {
         newReport.comment = createReportDto.comment;
     
         const result = await this.reportService.createReport(newReport);
-        return { data: [result] };
+        const snakeResult = convertKeysToSnakeCase(result);
+
+        return {success: true, data: snakeResult, message: '신고 완료'};
     }
 
     @Put('/check')
@@ -86,11 +112,14 @@ export class ReportController {
       description: '오류가 발생했습니다.',
     })
     async checkReport(
-    @Body('id') id: number,
-    @Body('is_checked') isChecked: number,
-    @Request() req,
-    ) {
-        const user = req.user; 
-        return this.reportService.handleCheckReport(id, isChecked, user);
-    }
+      @Body(ValidationPipe) checkReportDto: CheckReportDto,
+      @Request() req,
+  ) {
+      const user = req.user;
+      return this.reportService.handleCheckReport(
+          checkReportDto.report_id,
+          checkReportDto.is_checked,
+          user
+      );
+  }
 }
