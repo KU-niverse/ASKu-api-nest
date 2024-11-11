@@ -140,7 +140,7 @@ export class UserService {
     };
   }
 
-  async updateRepBadge(user: User, badgeId: number): Promise<void> {
+  async updateRepBadge(user: User, badgeId: number): Promise<any> {
     // badgeId가 유효한가
     this.badgeService.validateBadgeId(badgeId);
 
