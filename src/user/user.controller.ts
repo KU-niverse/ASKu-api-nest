@@ -33,6 +33,7 @@ export class UserController {
     private readonly debateService: DebateService,
   ) {}
   @Get('mypage/info')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '내 정보 조회',
@@ -59,12 +60,24 @@ export class UserController {
     status: 500,
     description: '서버 에러',
   })
-  async getUserInfoById(@GetUser() user: User): Promise<User> {
-    return user;
+  async getUserInfoById(@GetUser() user: User): Promise<any> {
+    try {
+      const userInfo = await this.userService.getUserInfo(user.id);
+      return {
+        success: true,
+        data: userInfo,
+        message: '유저 정보를 불러오는데 성공했습니다.',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException({
+        success: false,
+        message: '서버 에러',
+      });
+    }
   }
 
   @Put('/mypage/setrepbadge')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '유저 배지 수정',
