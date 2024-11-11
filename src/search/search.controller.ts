@@ -1,12 +1,7 @@
-import {
-    Controller,
-    Get,
-    HttpCode,
-    HttpStatus,
-  } from '@nestjs/common';
-  import { SearchService } from './search.service';
-  import { SearchHistory } from './entities/searchHistory.entity'
-  import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { SearchService } from './search.service';
+import { SearchHistory } from './entities/searchHistory.entity';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('search')
 @Controller('search')
@@ -30,6 +25,10 @@ export class SearchController {
   })
   async popularRankGetMid(): Promise<any> {
     const ranks = await this.searchService.getKeywordRank();
-    return { success: true, message: '인기순 검색어를 조회하였습니다.', data: ranks };
+    return {
+      success: true,
+      message: '인기순 검색어를 조회하였습니다.',
+      data: ranks,
+    };
   }
 }

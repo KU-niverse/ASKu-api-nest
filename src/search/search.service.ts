@@ -12,18 +12,19 @@ export class SearchService {
   ) {}
 
   async getKeywordRank(): Promise<SearchKeywordDto[]> {
+    // TODO: days 30으로 변경
     const results = await this.searchHistoryRepository
       .createQueryBuilder('search_history')
-      .where(
-        'TIMESTAMPDIFF(HOUR, search_history.search_time, NOW()) <= :hours',
-        { hours: 24 },
-      )
+      .where('TIMESTAMPDIFF(DAY, search_history.search_time, NOW()) <= :days', {
+        days: 180,
+      })
       .select('search_history.keyword', 'keyword')
       .addSelect('COUNT(search_history.keyword)', 'count')
       .groupBy('search_history.keyword')
       .orderBy('count', 'DESC')
       .limit(12)
       .getRawMany();
+    console.log('🚀 ~ SearchService ~ getKeywordRank ~ results:', results);
 
     return results.map((result) => ({
       keyword: result.keyword,
