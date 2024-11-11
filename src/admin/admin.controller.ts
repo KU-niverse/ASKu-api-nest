@@ -49,6 +49,18 @@ export class AdminController {
                 type: 'string',
                 example: '2023-08-03T13:16:16.000Z',
               },
+              updated_at: {
+                type: 'string',
+                example: '2023-08-03T14:30:00.000Z',
+              },
+              is_managed: {
+                type: 'boolean',
+                example: false,
+              },
+              docs_views: {
+                type: 'number',
+                example: 83
+              }
             },
           },
         },
