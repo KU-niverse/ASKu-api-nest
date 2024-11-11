@@ -5,7 +5,8 @@ import {
   HttpCode,
   HttpStatus,
   InternalServerErrorException,
-  Post, Req,
+  Post,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
@@ -74,6 +75,16 @@ export class AuthController {
       example: {
         success: false,
         message: '이용이 제한된 회원입니다.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 410,
+    description: '이미 탈퇴한 회원입니다.',
+    schema: {
+      example: {
+        success: false,
+        message: '탈퇴한 회원입니다.',
       },
     },
   })
