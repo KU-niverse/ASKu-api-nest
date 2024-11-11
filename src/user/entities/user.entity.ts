@@ -44,7 +44,11 @@ export class User extends BaseEntity {
   @CreateDateColumn({
     nullable: false,
   })
-  @ApiProperty({ description: '계정 생성 시간', type: String })
+  @ApiProperty({
+    name: 'created_at',
+    description: '계정 생성 시간',
+    type: String,
+  })
   createdAt: Date;
 
   @Column({
@@ -61,6 +65,7 @@ export class User extends BaseEntity {
     nullable: false,
   })
   @ApiProperty({
+    name: 'is_admin',
     description: '[유저 종류] false: 일반 유저, true: 관리자 유저',
     default: false,
   })
@@ -70,7 +75,12 @@ export class User extends BaseEntity {
     type: 'date',
     nullable: true,
   })
-  @ApiProperty({ description: '이용 제한 기한', nullable: true, type: String })
+  @ApiProperty({
+    name: 'restricted_period',
+    description: '이용 제한 기한',
+    nullable: true,
+    type: String,
+  })
   restrictPeriod: Date | null;
 
   @Column({
@@ -78,7 +88,11 @@ export class User extends BaseEntity {
     default: 0,
     nullable: false,
   })
-  @ApiProperty({ description: '이용 제한 횟수 (기본값: 0)', default: 0 })
+  @ApiProperty({
+    name: 'restrict_count',
+    description: '이용 제한 횟수 (기본값: 0)',
+    default: 0,
+  })
   restrictCount: number;
 
   @Column({
@@ -87,7 +101,10 @@ export class User extends BaseEntity {
     unique: true,
     nullable: false,
   })
-  @ApiProperty({ description: '식별을 위한 UUID', maxLength: 255 })
+  @ApiProperty({
+    description: '식별을 위한 UUID',
+    maxLength: 255
+  })
   uuid: string;
 
   @Column({
@@ -96,6 +113,7 @@ export class User extends BaseEntity {
     nullable: false,
   })
   @ApiProperty({
+    name: 'is_deleted',
     description: '[탈퇴 여부] false: 존재 회원, true: 탈퇴 회원',
     default: false,
   })
@@ -107,8 +125,8 @@ export class User extends BaseEntity {
     nullable: false,
   })
   @ApiProperty({
-    description:
-      '[인증된 유저 여부] false: 인증되지 않은 유저, true: 인증된 유저',
+    name: 'is_authorized',
+    description: '[인증된 유저 여부] false: 인증되지 않은 유저, true: 인증된 유저',
     default: false,
   })
   isAuthorized: boolean;

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UserInfoResponseDto } from './dto/userInfoResponse.dto';
 import { KoreapasCredentialsDto } from 'src/auth/dto/koreapas-credential.dto';
 import { User } from 'src/user/entities/user.entity';
 import { UserAction } from 'src/user/entities/userAction.entity';
@@ -100,6 +101,43 @@ export class UserService {
       throw new NotFoundException('해당 ID를 가진 유저가 존재하지 않습니다.');
     }
     return result;
+  }
+
+  async getUserInfo(userId: number): Promise<any> {
+    const user = await this.userRepository
+      .createQueryBuilder('users')
+      .leftJoinAndSelect('users.badge', 'badges')
+      .select([
+        'users.id as id',
+        'users.repBadge as rep_badge_id',
+        'users.nickname as nickname',
+        'users.createdAt as created_at',
+        'users.point as point',
+        'users.isAdmin as is_admin',
+        'users.isAuthorized as is_authorized',
+        'users.restrictPeriod as restrict_period',
+        'users.restrictCount as restrict_count',
+        'badges.name as rep_badge_name',
+        'badges.image as rep_badge_image',
+      ])
+      .where('users.id = :userId', { userId })
+      .getRawOne();
+
+    if (!user) {
+      throw new NotFoundException({
+        success: false,
+        message: '사용자를 찾을 수 없습니다.',
+      });
+    }
+
+    // 민감한 정보 마스킹 처리
+    return {
+      ...user,
+      name: '***',
+      stuId: '**********',
+      email: '*******@korea.ac.kr',
+      loginId: '*******',
+    };
   }
 
   async updateRepBadge(user: User, badgeId: number): Promise<void> {
