@@ -93,14 +93,22 @@ export class UserController {
     description: '잘못된 요청입니다. 유효한 userId와 badgeId가 필요합니다.',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다.',
+  })
+  @ApiResponse({
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
   async updateMyRepBadge(
     @GetUser() user: User,
     @Body(ValidationPipe) updateUserRepBadgeDto: UpdateUserRepBadgeDto,
-  ): Promise<void> {
-    await this.userService.updateRepBadge(user, updateUserRepBadgeDto.badgeId);
+  ): Promise<any> {
+    await this.userService.updateRepBadge(user, updateUserRepBadgeDto.rep_badge_id);
+    return {
+      success: true,
+      message: `대표뱃지가 ${updateUserRepBadgeDto.rep_badge_id}로 변경되었습니다.`,
+    };
   }
 
   @Get('mypage/wikihistory')
@@ -117,14 +125,7 @@ export class UserController {
   })
   @ApiResponse({
     status: 401,
-    description: '유저 로그인 되어있지 않은 상태',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: false },
-        message: { type: 'string', example: '로그인이 필요합니다.' },
-      },
-    },
+    description: '인증되지 않은 사용자입니다.',
   })
   @ApiResponse({
     status: 500,
