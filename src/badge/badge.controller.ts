@@ -7,12 +7,36 @@ import {
 } from '@nestjs/common';
 import { BadgeService } from './badge.service';
 import { BadgeHistory } from './entities/badgeHistory.entity';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Badge } from './entities/badge.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/entities/user.entity';
 
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+function convertKeysToSnakeCase(input: any): any {
+  if (Array.isArray(input)) {
+    return input.map((item) => convertKeysToSnakeCase(item));
+  } else if (input instanceof Date) {
+    // Date 객체인 경우 ISO 문자열로 변환
+    return input.toISOString();
+  } else if (typeof input === 'object' && input !== null) {
+    const result: Record<string, any> = {};
+    for (const key in input) {
+      if (input.hasOwnProperty(key)) {
+        const snakeKey = camelToSnake(key);
+        const value = input[key];
+        result[snakeKey] = convertKeysToSnakeCase(value);
+      }
+    }
+    return result;
+  }
+  return input;
+}
+
+ApiTags('badge');
 @Controller('badge')
 export class BadgeController {
   constructor(private readonly badgeService: BadgeService) {}
@@ -77,7 +101,9 @@ export class BadgeController {
     status: 500,
     description: '서버 내부 에러가 발생했습니다.',
   })
-  getBadgeHistory(@GetUser() user: User): Promise<BadgeHistory[]> {
-    return this.badgeService.getBadgeHistoryByUserId(user.id);
+  async getBadgeHistory(@GetUser() user: User): Promise<BadgeHistory[]> {
+    const result = await this.badgeService.getBadgeHistoryByUserId(user.id);
+    const snake_result = convertKeysToSnakeCase(result);
+    return snake_result;
   }
 }
