@@ -244,7 +244,7 @@ export class QuestionService {
       WHERE q.answer_or_not = 0
       GROUP BY q.id
       ORDER BY like_count DESC
-      LIMIT 5;`,
+      LIMIT 8;`,
     );
     if (!rows.length) {
       throw new InternalServerErrorException('오류가 발생하였습니다.');
