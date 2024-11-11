@@ -43,7 +43,28 @@ import { CreateWikiDto } from './dto/createWiki.dto';
 import { WikiContributionsDto } from './dto/wiki-contributions-response.dto';
 import { NotFoundError } from 'rxjs';
 import { EntityNotFoundError } from 'typeorm';
-
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+function convertKeysToSnakeCase(input: any): any {
+  if (Array.isArray(input)) {
+    return input.map((item) => convertKeysToSnakeCase(item));
+  } else if (input instanceof Date) {
+    // Date 객체인 경우 ISO 문자열로 변환
+    return input.toISOString();
+  } else if (typeof input === 'object' && input !== null) {
+    const result: Record<string, any> = {};
+    for (const key in input) {
+      if (input.hasOwnProperty(key)) {
+        const snakeKey = camelToSnake(key);
+        const value = input[key];
+        result[snakeKey] = convertKeysToSnakeCase(value);
+      }
+    }
+    return result;
+  }
+  return input;
+}
 @ApiTags('wiki')
 @Controller('wiki')
 export class WikiController {
@@ -412,7 +433,10 @@ export class WikiController {
   async getHistorys(@Param('title') title: string, @Res() res): Promise<void> {
     try {
       const historys = await this.wikiService.getHistorysByTitle(title);
-      res.status(HttpStatus.OK).json({ success: true, historys });
+      const snake_history = convertKeysToSnakeCase(historys);
+      res
+        .status(HttpStatus.OK)
+        .json({ success: true, historys: snake_history });
     } catch (error) {
       console.error(error);
       res
@@ -473,7 +497,9 @@ export class WikiController {
   ): Promise<WikiContributionsDto> {
     try {
       const doc_id = await this.wikiService.getWikiDocsIdByTitle(title);
-      return await this.wikiService.getWikiContributions(doc_id);
+      const result = await this.wikiService.getWikiContributions(doc_id);
+      const snakeResult = convertKeysToSnakeCase(result);
+      return snakeResult;
     } catch (error) {
       if (error.status === 404) {
         throw new NotFoundException(`위키 문서 "${title}" 존재하지 않음`);
@@ -680,10 +706,10 @@ export class WikiController {
   @Get('historys')
   @UseGuards(AuthGuard())
   @ApiOperation({
-    summary: '최근 위키 히스토리 조회/실제 url은 wiki/historys?type={type} 입니다.',
+    summary:
+      '최근 위키 히스토리 조회/실제 url은 wiki/historys?type={type} 입니다.',
     description: '최근 위키 히스토리를 조회합니다.',
   })
-  
   @ApiResponse({
     status: 200,
     description: '최근 위키 히스토리 조회 성공',
@@ -695,16 +721,15 @@ export class WikiController {
   async getRecentHistory(
     @Query('type') type: string,
     //') type: string,
-    @Res() res,
-  ): Promise<void> {
+  ) {
     try {
       const history = await this.wikiService.getRecentWikiHistorys(type);
-      res.status(HttpStatus.OK).json({ success: true, message: history });
+      console.log('🚀 ~ WikiController ~ history:', history);
+      const snake_history = convertKeysToSnakeCase(history);
+      console.log('🚀 ~ WikiController ~ snake_history:', snake_history);
+      return { message: snake_history };
     } catch (error) {
-      console.error(error);
-      res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: '위키 히스토리 불러오기 중 오류' });
+      throw new InternalServerErrorException('위키 히스토리 조회 중 오류 발생');
     }
   }
 
