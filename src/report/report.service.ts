@@ -21,14 +21,16 @@ export class ReportService {
         return this.reportRepository.findOne({ where: { id } });
     }
 
-    async handleCheckReport(id: number, isChecked: number, user: { isAdmin: boolean }): Promise<any> {
-        if (!user || !user.isAdmin) {
-            throw new HttpException('관리자가 아닙니다.', HttpStatus.FORBIDDEN);
-        }
-
-        if (isChecked !== 1) {
-            throw new HttpException('잘못된 확인값입니다.', HttpStatus.NOT_ACCEPTABLE);
-        }
+    async handleCheckReport(id: number, isChecked: number, user: any): Promise<any> {
+      this.logger.debug(`Checking user permissions: ${JSON.stringify(user)}`);
+      
+      if (!user) {
+          throw new HttpException('사용자 정보가 없습니다.', HttpStatus.UNAUTHORIZED);
+      }
+      
+      if (!user.isAdmin) {
+          throw new HttpException('관리자 권한이 없습니다.', HttpStatus.FORBIDDEN);
+      }
         const result = await this.checkReport(id, isChecked);
 
         if (result && result.changedRows === 1) {
