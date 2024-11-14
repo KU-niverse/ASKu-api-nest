@@ -23,12 +23,24 @@ export class DebateService {
     private wikiDoc: Repository<WikiDoc>,
   ) {}
 
-  async getMyDebateHistory(userId: number): Promise<DebateHistory[]> {
-    const result: DebateHistory[] = await this.debateRepository.find({
-      where: { userId },
-      relations: ['debate'],
-    });
-    return result;
+  async getMyDebateHistory(userId: number): Promise<any[]> {
+    const results = await this.debateRepository
+      .createQueryBuilder('debateHistory')
+      .innerJoinAndSelect('debateHistory.debate', 'debates')
+      .innerJoinAndSelect('debates.wikiDoc', 'wikiDocs')
+      .select([
+        'debates.id AS debate_id',
+        'debates.subject AS debate_subject',
+        'debateHistory.content AS debate_content',
+        'debateHistory.createdAt AS debate_content_time',
+        'debateHistory.isBad AS is_bad',
+        'wikiDocs.title AS doc_title',
+      ])
+      .where('debateHistory.userId = :userId', { userId })
+      .orderBy('debateHistory.createdAt', 'DESC')
+      .getRawMany();
+
+    return results;
   }
 
   async getAllDebateByEdit(): Promise<any> {
