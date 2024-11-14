@@ -477,7 +477,6 @@ export class WikiController {
   // 진권
   @Get('contributions/:title(*)')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '위키 문서 내 기여도 조회',
     description: 'GET 방식으로 위키 문서 내 기여도를 조회합니다.',
