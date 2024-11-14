@@ -740,7 +740,6 @@ export class WikiController {
 
   //get wiki/historys/:title(*)/version/:version
   @Get('historys/:title/version/:version')
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '특정 버전의 위키 내용 가져오기',
     description: 'GET 방식으로 특정 버전의 위키 내용을 가져옵니다.',
