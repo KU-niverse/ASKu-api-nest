@@ -688,7 +688,6 @@ export class DebateController {
       },
     },
   })
-  @UseGuards(AuthGuard())
   async getDebateTitleHistory(
     @Param('title') title: string,
     @Param('debate') debateId: string,

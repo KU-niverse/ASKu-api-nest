@@ -777,7 +777,6 @@ export class WikiController {
   //post wiki/historys/:title(*)/version/:version
 
   @Post('/historys/:title/version/:version')
-  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '특정 버전의 위키 내용 롤백',
     description: 'POST 방식으로 특정 버전의 위키 내용을 롤백합니다.',
