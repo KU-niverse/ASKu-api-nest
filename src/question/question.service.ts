@@ -19,9 +19,18 @@ import { QuestionLike } from './entities/questionLike.entity';
 import { Pool } from 'mysql2/typings/mysql/lib/Pool';
 import { Action } from 'rxjs/internal/scheduler/Action';
 import { CreateQuestionDto } from 'src/question/dto/create-question.dto';
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
+
+const diff = require('diff');
+
 
 @Injectable()
 export class QuestionService {
+  private readonly s3Client: S3Client;
   constructor(
     @InjectRepository(Question)
     private readonly questionRepository: Repository<Question>,
@@ -37,7 +46,16 @@ export class QuestionService {
     private readonly wikiHistoryRepository: Repository<WikiHistory>,
     @InjectRepository(QuestionLike)
     private readonly questionLikeRepository: Repository<QuestionLike>,
-  ) {}
+  ) {
+    this.s3Client = new S3Client({
+      region: 'kr-standard',
+      endpoint: 'https://kr.object.ncloudstorage.com/',
+      credentials: {
+        accessKeyId: process.env.ACCESSKEY,
+        secretAccessKey: process.env.SECRETACCESSKEY,
+      },
+    });
+  }
   async getQuestionsByUserId(
     userId: number,
     arrange: string,
@@ -183,8 +201,58 @@ export class QuestionService {
     if (!answers.length) {
       throw new NotFoundException('해당 ID를 가진 답변이 존재하지 않습니다');
     }
-    return answers;
+    // return answers;
+    const updatedAnswers = await Promise.all(
+      answers.map(async (item) => {
+        // 두 버전의 컨텐츠 가져오기
+        const [postVersion, currentVersion] = await Promise.all([
+          this.getWikiContent(item.title, item.version - 1),
+          this.getWikiContent(item.title, item.version),
+        ]);
+  
+        // 두 버전의 컨텐츠 비교
+        const diffResult = diff.diffChars(postVersion, currentVersion);
+  
+        // added 속성이 true인 항목만 필터링하고, 문자열로 합치기
+        const content = diffResult
+          .filter((change) => change.added)
+          .map((change) => change.value)
+          .join("\n")
+          .trimEnd()
+          .replace(/\[\[File:.*?\]\]/g, "[이미지]")
+          .replace(/\[\[(https?:\/\/[^\]|]+)(?:\|([^\]]+))?\]\]/g, "$1")
+          .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, doc, alias) => alias || doc)
+          .replace(/..\/wiki\//g, "");
+  
+        return {
+          ...item,
+          content,
+        };
+      })
+    );
+  
+    return updatedAnswers;
+
   }
+  private async getWikiContent(title: string, version: number): Promise<string> {
+    const replacedTitle = title.replace(/\/+/g, '_');
+    
+    try {
+      const command = new GetObjectCommand({
+        Bucket: 'wiki-bucket',
+        Key: `${replacedTitle}/r${version}.wiki`,
+      });
+
+      const response = await this.s3Client.send(command);
+      const streamToString = await response.Body.transformToString();
+      return streamToString;
+      
+    } catch (error) {
+      console.error('Error fetching wiki content:', error);
+      throw new NotFoundException('위키 컨텐츠를 찾을 수 없습니다.');
+    }
+  }
+  
 
   // 쿼리 문자열을 포함하는 질문들을 데이터베이스에서 검색
   async getQuestionsByQuery(query: string): Promise<any> {
