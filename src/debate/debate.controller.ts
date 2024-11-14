@@ -37,19 +37,19 @@ export class DebateController {
     schema: {
       example: {
         success: true,
-        message: "전체 최신 수정순 토론방 목록을 조회하였습니다.",
+        message: '전체 최신 수정순 토론방 목록을 조회하였습니다.',
         data: [
           {
             id: 2,
             doc_id: 1,
             user_id: 1,
-            subject: "고양이의 방언 명칭 문제",
-            created_at: "2023-08-05T11:36:11.000Z",
-            recent_edited_at: "2023-08-05T11:54:04.000Z",
+            subject: '고양이의 방언 명칭 문제',
+            created_at: '2023-08-05T11:36:11.000Z',
+            recent_edited_at: '2023-08-05T11:54:04.000Z',
             done_or_not: 1,
-            done_at: "2023-08-05T12:04:18.000Z",
+            done_at: '2023-08-05T12:04:18.000Z',
             is_bad: 0,
-            title: "고양이"
+            title: '고양이',
           },
         ],
       },
@@ -61,7 +61,7 @@ export class DebateController {
     schema: {
       example: {
         success: false,
-        message: "오류가 발생하였습니다.",
+        message: '오류가 발생하였습니다.',
       },
     },
   })
@@ -587,11 +587,11 @@ export class DebateController {
   })
   @ApiResponse({
     status: 401,
-    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.'
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
     status: 404,
-    description: '해당 토론은 존재하지 않습니다.'
+    description: '해당 토론은 존재하지 않습니다.',
   })
   @ApiResponse({
     status: 500,
@@ -605,21 +605,27 @@ export class DebateController {
     @Param('title') title: string,
     @Param('debate') debateId: number,
     @Body('content') content: string,
-    @GetUser() userId: User["id"],
+    @GetUser() userId: User['id'],
   ): Promise<any> {
     //return await this.debateService.createHistory(debateId, userId, content);
-    const history = await this.debateService.createHistory(debateId, userId, content);
+    const history = await this.debateService.createHistory(
+      debateId,
+      userId,
+      content,
+    );
     return {
       success: true,
-      message: "토론 메시지를 생성하였습니다.",
-      data: [{
-        id: history.id,
-        debate_id: history.debateId,
-        user_id: history.userId,
-        content: history.content,
-        is_bad: history.isBad ? 1 : 0,
-        created_at: history.createdAt
-      }]
+      message: '토론 메시지를 생성하였습니다.',
+      data: [
+        {
+          id: history.id,
+          debate_id: history.debateId,
+          user_id: history.userId,
+          content: history.content,
+          is_bad: history.isBad ? 1 : 0,
+          created_at: history.createdAt,
+        },
+      ],
     };
   }
 
@@ -687,34 +693,24 @@ export class DebateController {
     @Param('title') title: string,
     @Param('debate') debateId: string,
   ): Promise<{ success: boolean; message: string; data: any[] }> {
-    try {
-      const histories =
-        await this.debateService.getAllDebateHistoryByDebateId(+debateId);
+    const histories =
+      await this.debateService.getAllDebateHistoryByDebateId(+debateId);
 
-      const formattedHistories = histories.map((history) => ({
-        id: history.id,
-        debate_id: history.debateId,
-        user_id: history.userId,
-        content: history.content,
-        is_bad: history.isBad ? 1 : 0,
-        created_at: history.createdAt,
-        nickname: history.user.nickname,
-        badge_image: history.user.badge.image,
-      }));
+    const formattedHistories = histories.map((history) => ({
+      id: history.id,
+      debate_id: history.debateId,
+      user_id: history.userId,
+      content: history.content,
+      is_bad: history.isBad ? 1 : 0,
+      created_at: history.createdAt,
+      nickname: history.user.nickname,
+      badge_image: history.user.badge.image,
+    }));
 
-      return {
-        success: true,
-        message: '토론 메시지를 조회하였습니다.',
-        data: formattedHistories,
-      };
-    } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: '오류가 발생하였습니다.',
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return {
+      success: true,
+      message: '토론 메시지를 조회하였습니다.',
+      data: formattedHistories,
+    };
   }
 }
