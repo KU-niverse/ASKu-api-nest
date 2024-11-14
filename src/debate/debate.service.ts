@@ -196,7 +196,11 @@ export class DebateService {
     return await this.debate.save(newDebate);
   }
 
-  async createHistory(debateId: number, userId: number, content: string): Promise<DebateHistory> {
+  async createHistory(
+    debateId: number,
+    userId: number,
+    content: string,
+  ): Promise<DebateHistory> {
     if (!content) {
       throw new BadRequestException('메시지 내용을 입력하세요.');
     }
@@ -214,8 +218,8 @@ export class DebateService {
       });
       const savedHistory = await this.debateRepository.save(newHistory);
       return savedHistory;
-    } catch(err) {
-      throw new InternalServerErrorException('오류가 발생하였습니다.')
+    } catch (err) {
+      throw new InternalServerErrorException('오류가 발생하였습니다.');
     }
   }
 
@@ -253,16 +257,6 @@ export class DebateService {
       .where('debateHistory.debateId = :debateId', { debateId })
       .orderBy('debateHistory.createdAt')
       .getMany();
-
-    if (!result || result.length === 0) {
-      throw new HttpException(
-        {
-          success: false,
-          message: '토론 메시지를 찾을 수 없습니다.',
-        },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     return result;
   }
