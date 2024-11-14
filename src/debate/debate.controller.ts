@@ -634,7 +634,7 @@ export class DebateController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '토론방 메시지 조회',
-    description: '토론 메시지를 조회합니다',
+    description: '토론 메시지를 조회합니다'
   })
   @ApiResponse({
     status: 200,
