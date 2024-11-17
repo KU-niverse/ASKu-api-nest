@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   GoneException,
   Injectable,
@@ -923,29 +924,29 @@ export class WikiService {
     user: User,
   ): Promise<void> {
     const doc = await this.wikiRepository.findDocByTitle(title);
-
     if (!doc) {
       throw new NotFoundException('존재하지 않는 문서입니다.');
     }
 
-    const recentHistory = await this.wikiRepository.getMostRecentHistory(
-      doc.id,
-    );
+    const recentHistory = await this.wikiRepository.getMostRecentHistory(doc.id);
     const currentVersion = recentHistory.version;
 
     if (doc.isManaged && !user.isAuthorized) {
       throw new ForbiddenException('인증된 회원만 롤백이 가능합니다.');
     }
 
-    const newVersion = currentVersion + 1;
-    const content = await this.wikiRepository.getWikiContent(
-      title,
-      rollbackVersion,
-    );
+    // 버전 유효성 검사 추가
+    if (rollbackVersion >= currentVersion) {
+      throw new BadRequestException('유효하지 않은 버전입니다.');
+    }
+
+    let content: string;
+    content = await this.wikiRepository.getWikiContent(title, rollbackVersion);
     const lines = content.split(/\r?\n/).join('\n');
+    const newVersion = currentVersion + 1;
 
+    // 트랜잭션 추가 고려
     await this.wikiRepository.saveWikiContent(title, newVersion, lines);
-
     const newHistory = await this.wikiRepository.createHistory({
       userId: user.id,
       docId: doc.id,

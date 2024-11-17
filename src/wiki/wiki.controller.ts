@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
   Param,
@@ -539,7 +540,7 @@ export class WikiController {
     @Param('hisid') hisid: string,
     @Res() res,
     @Req() req,
-  ): Promise<any> {
+  ): Promise<void> {
     try {
       const user = req.user;
       // parseInt(hisid, 10) 값은 Integer, 'NaN' 중 하나임을 이용 || 음수일 경우 제외
@@ -770,9 +771,10 @@ export class WikiController {
         .json({ success: false, message: '위키 raw data 불러오기 중 오류' });
     }
   }
-  //post wiki/historys/:title(*)/version/:version
 
+  //post wiki/historys/:title(*)/version/:version
   @Post('/historys/:title/version/:version')
+  @UseGuards(AuthGuard())
   @ApiOperation({
     summary: '특정 버전의 위키 내용 롤백',
     description: 'POST 방식으로 특정 버전의 위키 내용을 롤백합니다.',
@@ -782,12 +784,16 @@ export class WikiController {
     description: '위키 롤백 성공',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
+  })
+  @ApiResponse({
     status: 403,
     description: '인증된 회원만 롤백이 가능한 문서입니다.',
   })
   @ApiResponse({
     status: 404,
-    description: '존재하지 않는 문서입니다.',
+    description: '존재하지 않는 문서 버전입니다.',
   })
   @ApiResponse({
     status: 500,
@@ -808,19 +814,39 @@ export class WikiController {
         message: '위키 롤백 성공',
       });
     } catch (error) {
-      if (error.status === HttpStatus.FORBIDDEN) {
-        return res.status(HttpStatus.FORBIDDEN).json({
-          success: false,
-          message: '인증된 회원만 롤백이 가능한 문서입니다.',
-        });
-      }
-
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+    if (error instanceof NotFoundException) {
+      return res.status(HttpStatus.NOT_FOUND).json({
         success: false,
-        message: '롤백 중 오류 발생',
+        statusCode: 404,
+        message: error.message, // repository나 service에서 정의한 상세 메시지가 전달됨
       });
     }
+
+    if (error instanceof ForbiddenException) {
+      return res.status(HttpStatus.FORBIDDEN).json({
+        success: false,
+        statusCode: 403,
+        message: error.message,
+      });
+    }
+
+    if (error instanceof BadRequestException) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        statusCode: 400,
+        message: error.message,
+      });
+    }
+
+    // 기타 에러 처리
+    console.error(error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      statusCode: 500,
+      message: error.message || '롤백 중 오류 발생',
+    });
   }
+}
 
   //post wiki/contents/new/:title(*)
   @Post('/contents/new/:title')
@@ -960,7 +986,7 @@ export class WikiController {
   })
   @ApiResponse({
     status: 401,
-    description: '로그인이 필요한 서비스입니다.',
+    description: '인증되지 않은 사용자입니다. 로그인이 필요합니다.',
   })
   @ApiResponse({
     status: 403,

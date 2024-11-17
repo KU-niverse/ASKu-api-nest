@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WikiHistory } from './entities/wikiHistory.entity';
@@ -219,17 +219,25 @@ export class WikiRepository {
     // TODO: S3 버킷 이름을 환경 변수로 분리
     const replacedTitle = title.replace(/\/+/g, '_');
     const getObjectCommand = new GetObjectCommand({
-      Bucket: 'wiki-bucket',
+      // 원래 Bucket 정의: "Bucket: 'wiki-bucket'"
+      Bucket: process.env.S3_BUCKET_NAME || 'wiki-bucket',
       Key: `${replacedTitle}/r${version}.wiki`,
     });
-    // TODO: 404에러 처리 요함
-    const response = await this.s3Client.send(getObjectCommand);
-    const stream = response.Body as Readable;
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
+    // 404에러 처리 추가
+    try {
+      const response = await this.s3Client.send(getObjectCommand);
+      const stream = response.Body as Readable;
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks).toString('utf-8');
+    } catch (error) {
+      if (error.name === 'NoSuchKey') {
+        throw new NotFoundException(`버전 ${version}의 내용을 찾을 수 없습니다.`);
+      }
+      throw new InternalServerErrorException('콘텐츠 조회 중 오류가 발생했습니다.');
     }
-    return Buffer.concat(chunks).toString('utf-8');
   }
 
   async saveWikiContent(
