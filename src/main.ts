@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://61.109.238.126:8080'],
+    origin: ['https://asku.wiki, http://localhost:3000'],
     credentials: true,
     exposedHeaders: ['Authorization'],
   });
