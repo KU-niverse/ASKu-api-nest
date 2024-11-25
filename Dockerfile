@@ -23,6 +23,13 @@ WORKDIR /usr/src/app
 # pm2 설치
 RUN npm install pm2 -g
 
+# tzdata 설치 및 시간대 설정
+RUN apt-get update && apt-get install -y tzdata && \
+    ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
+    echo "Asia/Seoul" > /etc/timezone && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
 # 빌드 결과물과 필요한 파일만 복사
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/node_modules ./node_modules
