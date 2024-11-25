@@ -357,7 +357,11 @@ export class DebateController {
       const debates = await this.debateService.getSearchAllDebateByQuery(query);
 
       if (debates.length === 0) {
-        throw new BadRequestException('검색 결과가 없습니다.');
+        return {
+          success: true,
+          message: '토론방 검색에 성공하였습니다.',
+          data: [], 
+        };
       }
 
       const formattedDebates = debates.map((debate) => ({
