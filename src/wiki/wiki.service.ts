@@ -8,7 +8,7 @@ import {
   ConflictException,
   UnprocessableEntityException,
   HttpException,
-  HttpStatus,
+
 } from '@nestjs/common';
 import { WikiRepository } from './wiki.repository';
 import { UserRepository } from '../user/user.repository';
@@ -26,12 +26,14 @@ import { TotalContributionsListDto } from './dto/total-contributions-list.dto';
 import { CreateWikiDto } from './dto/createWiki.dto';
 import { UserAction } from 'src/user/entities/userAction.entity';
 import { Answer } from 'src/question/entities/answer.entity';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class WikiService {
   constructor(
     private wikiRepository: WikiRepository,
     private userRepository: UserRepository,
+    private readonly dataSource: DataSource,
     @InjectRepository(Question)
     private questionRepository: Repository<Question>,
     @InjectRepository(WikiDoc)
@@ -619,6 +621,9 @@ export class WikiService {
   }
 
   async editWikiDoc(title: string, editWikiDto: EditWikiDto, user: User) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     //TODO: 앞쪽 히스토리 저장과 뒤쪽 히스토리 저장이 모두 완료가 되었을때만 성공 반환. transactional 처리 요망
     try {
       const doc = await this.wikiRepository.findDocByTitle(title);
@@ -636,22 +641,27 @@ export class WikiService {
         });
       }
 
-      const recentHistory = await this.wikiRepository.getMostRecentHistory(
-        doc.id,
-      );
+      const recentHistory = await this.wikiRepository.getMostRecentHistory(doc.id);
+      if (!recentHistory) {
+        throw new NotFoundException('히스토리 정보를 찾을 수 없습니다.');
+      }
+
       if (recentHistory.version !== editWikiDto.version) {
-        throw new GoneException({
-          success: false,
-          message: '버전이 일치하지 않습니다.',
-        });
+        throw new GoneException('버전이 일치하지 않습니다.');
       }
 
       const newVersion = recentHistory.version + 1;
-      await this.wikiRepository.saveWikiContent(
-        title,
-        newVersion,
-        editWikiDto.new_content,
-      );
+      try {
+        await this.wikiRepository.saveWikiContent(
+          title,
+          newVersion,
+          editWikiDto.new_content,
+        );
+      } catch (error) {
+        throw new InternalServerErrorException(
+          '문서 저장 중 오류가 발생했습니다.',
+        );
+      }
 
       // TODO: newHistory를 활용하는 로직 구현 (예: 기여도 계산, 알림 생성 등)
       const newHistory = await this.wikiRepository.createHistory({
@@ -672,11 +682,26 @@ export class WikiService {
 
       return { success: true, message: '위키 문서 수정 성공', statusCode: 200 };
     } catch (error) {
-      console.error(error);
+
+      await queryRunner.rollbackTransaction();
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException ||
+        error instanceof GoneException
+      ) {
+        throw error;
+      }
+
+      console.error('문서 수정 중 오류:', error);
       throw new InternalServerErrorException({
         success: false,
         message: '위키 문서 수정 중 오류',
+        error: error.message,
       });
+    } finally {
+      // 쿼리 러너 해제
+      await queryRunner.release();
     }
   }
 
