@@ -628,8 +628,13 @@ export class WikiService {
           message: '존재하지 않는 문서입니다.',
         });
       }
-
-      if (doc.isManaged && !user.isAuthorized) {
+      if (doc.isDeleted && !user.isAdmin) {
+        throw new GoneException({
+          success: false,
+          message: '삭제된 문서입니다.',
+        });
+      }
+      if (doc.isManaged && !user.isAdmin) {
         throw new ForbiddenException({
           success: false,
           message: '인증된 회원만 편집이 가능한 문서입니다.',
@@ -640,10 +645,7 @@ export class WikiService {
         doc.id,
       );
       if (recentHistory.version !== editWikiDto.version) {
-        throw new GoneException({
-          success: false,
-          message: '버전이 일치하지 않습니다.',
-        });
+        throw new HttpException('버전이 일치하지 않습니다.', HttpStatus.UPGRADE_REQUIRED || 426);
       }
 
       const newVersion = recentHistory.version + 1;

@@ -136,6 +136,10 @@ export class WikiController {
     description: '위키 문서 수정 성공',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다.',
+  })
+  @ApiResponse({
     status: 403,
     description: '인증된 회원만 편집 가능한 문서',
   })
@@ -342,6 +346,10 @@ export class WikiController {
     description: '위키 즐겨찾기 추가 성공',
   })
   @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다.',
+  })
+  @ApiResponse({
     status: 404,
     description: '존재하지 않는 문서입니다.',
   })
@@ -379,6 +387,10 @@ export class WikiController {
   @ApiResponse({
     status: 200,
     description: '위키 즐겨찾기 삭제 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증되지 않은 사용자입니다.',
   })
   @ApiResponse({
     status: 404,
