@@ -156,6 +156,7 @@ export class WikiController {
     @Body() editWikiDto: EditWikiDto,
     @GetUser() user: User,
   ) {
+    console.log('api without section');
     return this.wikiService.editWikiDoc(title, editWikiDto, user);
   }
 
@@ -283,7 +284,7 @@ export class WikiController {
   async uploadImage(@UploadedFile() file, @Res() res) {
     // TODO: 파일 업로드 로직을 WikiService로 이동
     try {
-      console.log(file);
+      // console.log(file);
       return res.status(HttpStatus.OK).json({
         status: 200,
         success: true,
@@ -638,9 +639,9 @@ export class WikiController {
     @Param('questionId', ParseIntPipe)
     questionId: number,
   ) {
-    console.log('🚀 ~ WikiController ~ questionId:', questionId);
+    // console.log('🚀 ~ WikiController ~ questionId:', questionId);
     const result = await this.wikiService.checkIndexExist(user, questionId);
-    console.log('🚀 ~ WikiController ~ result:', result);
+    // console.log('🚀 ~ WikiController ~ result:', result);
     return result;
   }
 
@@ -741,9 +742,9 @@ export class WikiController {
   ) {
     try {
       const history = await this.wikiService.getRecentWikiHistorys(type);
-      console.log('🚀 ~ WikiController ~ history:', history);
+      // console.log('🚀 ~ WikiController ~ history:', history);
       const snake_history = convertKeysToSnakeCase(history);
-      console.log('🚀 ~ WikiController ~ snake_history:', snake_history);
+      // console.log('🚀 ~ WikiController ~ snake_history:', snake_history);
       return { message: snake_history };
     } catch (error) {
       throw new InternalServerErrorException('위키 히스토리 조회 중 오류 발생');
@@ -1019,6 +1020,7 @@ export class WikiController {
     @Body() editWikiDto: EditWikiDto,
     @GetUser() user: User,
   ) {
+    console.log('api start');
     const result = await this.wikiService.fetchSectionContent(
       title,
       section,
@@ -1026,11 +1028,14 @@ export class WikiController {
       editWikiDto,
     );
 
+    console.log('result =', result);
     const result2 = await this.wikiService.createHistoryMid(
       result,
       editWikiDto,
       user,
     );
+    console.log('result 2 = ', result2);
+
     const result3 = await this.wikiService.wikiChangeRecentContentMid(
       title,
       section,

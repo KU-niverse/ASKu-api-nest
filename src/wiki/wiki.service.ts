@@ -89,17 +89,9 @@ export class WikiService {
   }
 
   async createHistoryMid(result: any, editWikiDto: EditWikiDto, user: User) {
-    // 프론트에서 질문 기반 수정이면 꼭 req.body.is_q_based = 1와 req.body.qid 넣어주기
-
-    // const newHistory = {
-    //   doc_id: docId,
-    //   text_pointer: `${edp}wiki-bucket/${parsedTitle}/r${new_version}.wiki`,
-    //   summary: result.summary,
-    //   count: result.count,
-    //   diff: result.diff,
-    //   version: result.version,
-    // };
     try {
+      console.log('[createHistoryMid] Started with doc_id:', result.doc_id);
+
       const is_q_based: boolean = editWikiDto.is_q_based == 1 ? true : false;
       const is_rollback = false;
       const index_title =
@@ -107,18 +99,14 @@ export class WikiService {
           ? editWikiDto.index_title
           : '전체';
 
-      // const new_wiki_history = {
-      //   userId: user.id,
-      //   docId: result.doc_id,
-      //   textPointer: result.text_pointer,
-      //   summary: result.summary,
-      //   count: result.count,
-      //   diff: result.diff,
-      //   version: result.version,
-      //   isQBased: is_q_based,
-      //   isRollback: is_rollback,
-      //   indexTitle: index_title,
-      // };
+      console.log('[createHistoryMid] Inserting wiki history', {
+        userId: user.id,
+        docId: result.doc_id,
+        version: result.version,
+        isQBased: is_q_based,
+        indexTitle: index_title,
+      });
+
       const wiki_history = await this.wikiHistoryRepository.insert({
         userId: user.id,
         docId: result.doc_id,
@@ -132,35 +120,34 @@ export class WikiService {
         indexTitle: index_title,
       });
 
+      console.log(
+        '[createHistoryMid] Wiki history created with ID:',
+        wiki_history.identifiers[0].id,
+      );
+
+      console.log('[createHistoryMid] Updating wiki doc', {
+        docId: result.doc_id,
+        newVersion: result.version
+      });
+
       await this.wikiDocRepository.update(result.doc_id, {
         textPointer: result.text_pointer,
         latestVer: result.version,
       });
       const wiki_history_id = wiki_history.identifiers[0].id;
 
-      // editWikiDto.is_q_based = is_q_based ? 1 : 0;
-
-      // // res message 정의 (롤백 제외)
-      // req.message = '위키 히스토리를 생성하였습니다.';
-
-      // /* 알림 변수 정의*/
-      // if (!req.body.types_and_conditions) {
-      //   // type_id: 6(글 생성)의 경우 newWikiPostMid에서 이미 변수가 정의됨
-      //   req.body.types_and_conditions = [];
-      // }
-
-      // 질문 기반 수정 -> type_id: 2, 3
       if (is_q_based == true) {
-        // 답변 생성
-        await this.answerRepository.insert({
-          wikiHistoryId: wiki_history_id,
-          questionId: editWikiDto.qid,
-        });
-        // editWikiDto.types_and_conditions.push([2, editWikiDto.qid]);
-        // editWikiDto.types_and_conditions.push([3, editWikiDto.qid]);
+        console.log(
+          '[createHistoryMid] Creating answer for question:',
+          editWikiDto.qid,
+        );
+        await this.createAnswer(wiki_history_id, editWikiDto.qid);
+        console.log('[createHistoryMid] Answer created successfully');
       }
+
+      console.log('[createHistoryMid] Completed successfully');
     } catch (err) {
-      console.log(err);
+      console.error('[createHistoryMid] Error occurred:', err);
       throw new InternalServerErrorException({
         success: false,
         message: '위키 히스토리 생성 중 오류',
@@ -189,29 +176,29 @@ export class WikiService {
   }
 
   async checkIndexExist(user: User, question_id: number) {
-    console.log(
-      '🚀 ~ WikiService ~ checkIndexExist ~ question_id:',
-      question_id,
-    );
-    console.log('hihi');
+    // console.log(
+    //   '🚀 ~ WikiService ~ checkIndexExist ~ question_id:',
+    //   question_id,
+    // );
+    // console.log('hihi');
     //질문 가져오기
     const question: Question = await this.questionRepository.findOne({
       where: { id: question_id },
     });
-    console.log('🚀 ~ WikiService ~ checkIndexExist ~ question:', question);
+    // console.log('🚀 ~ WikiService ~ checkIndexExist ~ question:', question);
 
     // 질문에 해당하는 문서를 가져와서 목차를 가져온다
     const recentWikiHistory: WikiHistory =
       await this.getRecentWikiHistoryByDocId(question.docId);
-    console.log(
-      '🚀 ~ WikiService ~ checkIndexExist ~ recentWikiHistory:',
-      recentWikiHistory,
-    );
+    // console.log(
+    //   '🚀 ~ WikiService ~ checkIndexExist ~ recentWikiHistory:',
+    //   recentWikiHistory,
+    // );
 
     const wikiDoc: WikiDoc = await this.wikiRepository.getWikiDocsById(
       question.docId,
     );
-    console.log('🚀 ~ WikiService ~ checkIndexExist ~ wikiDoc:', wikiDoc);
+    // console.log('🚀 ~ WikiService ~ checkIndexExist ~ wikiDoc:', wikiDoc);
 
     const title: string = wikiDoc.title.replace(/\/+/g, '_');
     const version: number = Number(recentWikiHistory.version);
@@ -220,7 +207,7 @@ export class WikiService {
 
     // S3에서 제목과 이름으로 이전 문서 가져오기
     text = await this.wikiRepository.getWikiContent(title, version);
-    console.log('2');
+    // console.log('2');
     // 원래 통으로 가져오는 코드
     const lines = text.split(/\r?\n/);
     text = lines.join('\n');
@@ -232,7 +219,7 @@ export class WikiService {
     let current_section = null;
     let current_content = null;
     const numbers = [];
-    console.log('3');
+    // console.log('3');
     // 파일 읽고 section 나누기
     for (const line of lines) {
       const matches = line.match(/^(={2,})\s+(.+?)\s+\1\s*$/); // 정규식 패턴에 맞는지 검사합니다.
@@ -257,7 +244,7 @@ export class WikiService {
         current_content += line;
       }
     }
-    console.log('4');
+    // console.log('4');
     if (current_section !== null) {
       // 마지막 섹션 push
       current_section.content.push(current_content);
@@ -273,7 +260,7 @@ export class WikiService {
         content_json[i].index + ' ' + content_json[i].title,
       );
     }
-    console.log('5');
+    // console.log('5');
     const found = index_title_list.includes(question.indexTitle);
 
     // 목차를 순회하면서 질문과 같은 목차가 있는지 확인한다
@@ -287,9 +274,9 @@ export class WikiService {
     else {
       jsonData['based_on_section'] = false;
     }
-    console.log('6');
+    // console.log('6');
     jsonData['success'] = true;
-    console.log('6');
+    // console.log('6');
     return jsonData;
   }
 
@@ -349,7 +336,7 @@ export class WikiService {
     jsonData['version'] = using_version;
     jsonData['text'] = text;
     jsonData['contents'] = [];
-    console.log('🚀 ~ WikiService ~ jsonData:', jsonData);
+    // console.log('🚀 ~ WikiService ~ jsonData:', jsonData);
 
     const sections = [];
     let current_section = null;
@@ -428,7 +415,7 @@ export class WikiService {
     const wikiDoc: WikiDoc = await this.wikiDocRepository.findOne({
       where: { title },
     });
-    console.log('🚀 ~ WikiService ~ getWikiDocsByTitle ~ wikiDoc:', wikiDoc);
+    // console.log('🚀 ~ WikiService ~ getWikiDocsByTitle ~ wikiDoc:', wikiDoc);
     return wikiDoc;
   }
 
@@ -462,14 +449,14 @@ export class WikiService {
   ) {
     try {
       const doc: WikiDoc = await this.getWikiDocsByTitle(title);
-      console.log('🚀 ~ WikiService ~ doc:', doc);
+      // console.log('🚀 ~ WikiService ~ doc:', doc);
       const docId = doc.id;
       const recentHistory: WikiHistory =
         await this.getRecentWikiHistoryByDocId(docId);
       const parsedTitle: string = title.replace(/\/+/g, '_');
-      console.log('🚀 ~ WikiService ~ parsedTitle:', parsedTitle);
+      // console.log('🚀 ~ WikiService ~ parsedTitle:', parsedTitle);
       const version = recentHistory.version;
-      console.log('🚀 ~ WikiService ~ version:', version);
+      // console.log('🚀 ~ WikiService ~ version:', version);
 
       let text = '';
       let sections = [];
@@ -481,7 +468,7 @@ export class WikiService {
 
       // 정규화로 섹션 분리
       const lines = text.split(/\r?\n/);
-      console.log('🚀 ~ WikiService ~ lines:', lines);
+      // console.log('🚀 ~ WikiService ~ lines:', lines);
       let current_section = null;
       let current_content = null;
 
@@ -510,11 +497,11 @@ export class WikiService {
         current_section.content.push(current_content);
         sections.push(current_section);
       }
-      console.log('🚀 ~ WikiService ~ sections:', sections);
+      // console.log('🚀 ~ WikiService ~ sections:', sections);
 
       // 섹션 번호에 맞는 섹션 불러오기
       section = sections[section_number - 1];
-      console.log('🚀 ~ WikiService ~ section:', section);
+      // console.log('🚀 ~ WikiService ~ section:', section);
       jsonData = {};
       jsonData['doc_id'] = docId;
       jsonData['version'] = version;
@@ -544,7 +531,7 @@ export class WikiService {
     if (!wikiDoc) {
       throw new NotFoundException('존재하지 않는 문서입니다.');
     }
-    console.log('Found document ID:', wikiDoc);
+    // console.log('Found document ID:', wikiDoc);
 
     return wikiDoc.id;
   }
@@ -619,8 +606,9 @@ export class WikiService {
   }
 
   async editWikiDoc(title: string, editWikiDto: EditWikiDto, user: User) {
-    //TODO: 앞쪽 히스토리 저장과 뒤쪽 히스토리 저장이 모두 완료가 되었을때만 성공 반환. transactional 처리 요망
     try {
+      console.log('[editWikiDoc] Started editing wiki doc:', title);
+
       const doc = await this.wikiRepository.findDocByTitle(title);
       if (!doc) {
         throw new NotFoundException({
@@ -645,8 +633,10 @@ export class WikiService {
         doc.id,
       );
       if (recentHistory.version !== editWikiDto.version) {
-        throw new HttpException('버전이 일치하지 않습니다.', HttpStatus.UPGRADE_REQUIRED || 426);
+        throw new HttpException('버전이 일치하지 않습니다.', 426);
       }
+
+      console.log('[editWikiDoc] Saving new content with version:', recentHistory.version + 1);
 
       const newVersion = recentHistory.version + 1;
       await this.wikiRepository.saveWikiContent(
@@ -655,8 +645,7 @@ export class WikiService {
         editWikiDto.new_content,
       );
 
-      // TODO: newHistory를 활용하는 로직 구현 (예: 기여도 계산, 알림 생성 등)
-      const newHistory = await this.wikiRepository.createHistory({
+      const historyData = {
         userId: user.id,
         docId: doc.id,
         textPointer: `${process.env.S3_BUCKET_NAME}/${title}/r${newVersion}.wiki`,
@@ -667,14 +656,26 @@ export class WikiService {
         isQBased: Boolean(editWikiDto.is_q_based),
         isRollback: false,
         indexTitle: editWikiDto.index_title,
-      });
-      await this.wikiRepository.saveNewHistory(newHistory);
+      };
+
+      // create와 save를 사용하여 새로운 히스토리 엔티티를 생성하고 저장
+      const newHistory = this.wikiRepository.createHistory(historyData);
+      const savedHistory = await this.wikiRepository.saveNewHistory(await newHistory);
+
+      console.log('[editWikiDoc] Saved new history with ID:', savedHistory.id);
+
+      if (editWikiDto.is_q_based && editWikiDto.qid) {
+        console.log('[editWikiDoc] Creating answer for question:', editWikiDto.qid);
+        await this.createAnswer(savedHistory.id, editWikiDto.qid);
+        console.log('[editWikiDoc] Answer created successfully');
+      }
 
       // TODO: 기여도 로직 추가 요함
 
+      console.log('[editWikiDoc] Completed successfully');
       return { success: true, message: '위키 문서 수정 성공', statusCode: 200 };
     } catch (error) {
-      console.error(error);
+      console.error('[editWikiDoc] Error occurred:', error);
       throw new InternalServerErrorException({
         success: false,
         message: '위키 문서 수정 중 오류',
